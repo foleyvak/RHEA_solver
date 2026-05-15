@@ -19,13 +19,13 @@ import nozzlegeometry as nz_cont
 ########## SET PARAMETERS ############
 
 ###################### DATA IMPORT SETTINGS ##########################
-output_iter     = 1300  # Select imported data iteration
+output_iter     = 100  # Select imported data iteration
 
 num_grid_x      = 70  # Number of internal grid points in the x-direction
 num_grid_y      = 50  # Number of internal grid points in the y-direction
 num_grid_z      = 1  # Number of internal grid points in the z-direction
 
-name_file_out   = 'output_data_'  # Name of output data [-]
+name_file_out   = 'output_data/output_data_'  # Name of output data [-]
 filename = name_file_out + str(output_iter) + '.csv'
 ######################################################################
 
@@ -314,6 +314,13 @@ contour_y = physical_plane[1:num_grid_x,-2,1,1] # 0.5 * ( physical_plane[1:num_g
 #             else:
 #                 state_2d[i][j] = 5                                                      # SUBCRITICAL GAS
 
+plt.figure()
+plt.scatter(physical_plane[1:num_grid_x,1:num_grid_y,1,0], physical_plane[1:num_grid_x,1:num_grid_y,1,1], c=P_2d[1:num_grid_x,1:num_grid_y]/1e5, cmap='viridis', s=2)
+plt.colorbar()
+plt.show()
+
+exit()
+
 print('! Generating subplots')
 fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2,2)
 
@@ -369,7 +376,7 @@ ax4.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.4f'))
 
 # Show subplot
 plt.tight_layout()
-#plt.show()
+plt.show()
 
 png_filename = f'plot_iter_{output_iter}.png'
 

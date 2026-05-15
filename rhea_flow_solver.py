@@ -63,7 +63,7 @@ name_restart    = 'output_data_1400.csv'  # Name of restart data [-]
 ######################################################################
 
 ###################### DATA OUTPUT SETTINGS ##########################
-name_file_out   = 'output_data'  # Name of output data [-]
+name_file_out   = 'output_data/output_data'  # Name of output data [-]
 output_iter     = 100  # Output data every given number of iterations
 ######################################################################
 
@@ -628,8 +628,8 @@ def update_boundaries(sos, rho, rhou, rhov, rhow, rhoE, u, v, w, P, T, grid):
             # P_g = P_in  # Neumann - Zero gradient not normal to the surface
             # T_g = T_in  # Neumann - Zero gradient not notmal to the surface
 
-            P_g = P[i][j-1][k] + (P[i+1][j-1][k]-P[i-1][j-1][k])/(2*delta_x)*(delta_y*L_y[i])/(grid[i][j][k][1]*drc_dx[i]-n_y/n_x)
-            T_g = T[i][j-1][k] + (T[i+1][j-1][k]-T[i-1][j-1][k])/(2*delta_x)*(delta_y*L_y[i])/(grid[i][j][k][1]*drc_dx[i]-n_y/n_x)
+            P_g = P[i][j-1][k] + (P[i+1][j-1][k]-P[i-1][j-1][k])/(2*delta_x)*(delta_y*L_y[i])/(grid[i][j][k][1]*drc_dx[i]-n_y/(n_x+epsilon))
+            T_g = T[i][j-1][k] + (T[i+1][j-1][k]-T[i-1][j-1][k])/(2*delta_x)*(delta_y*L_y[i])/(grid[i][j][k][1]*drc_dx[i]-n_y/(n_x+epsilon))
 
             # Specific internal energy and density
             rho_g = -1.0
@@ -973,8 +973,7 @@ def spatial_discretization(grid):
 
                 # Unevenly-spaced (stretched) cell centroids
                 grid[i][j][k][0] = x_0 + L_x * eta_x + A_x * (0.5 * L_x - L_x * eta_x) * (1.0 - eta_x) * eta_x
-                grid[i][j][k][1] = y_0 + L_y_var * eta_y + A_y * (0.5 * L_y_var - L_y_var * eta_y) * (
-                            1.0 - eta_y) * eta_y
+                grid[i][j][k][1] = y_0 + L_y_var * eta_y + A_y * (0.5 * L_y_var - L_y_var * eta_y) * (1.0 - eta_y) * eta_y
                 grid[i][j][k][2] = z_0 + L_z * eta_z + A_z * (0.5 * L_z - L_z * eta_z) * (1.0 - eta_z) * eta_z
                 # Adjust (symmetric) boundary cell centroids
                 if (grid[i][j][k][0] < x_0):
@@ -982,23 +981,19 @@ def spatial_discretization(grid):
                     grid[i][j][k][0] = x_0 - (L_x * eta_x + A_x * (0.5 * L_x - L_x * eta_x) * (1.0 - eta_x) * eta_x)
                 if (grid[i][j][k][0] > (x_0 + L_x)):
                     eta_x = (num_grid_x - 0.5) / num_grid_x
-                    grid[i][j][k][0] = x_0 + 2.0 * L_x - (
-                                L_x * eta_x + A_x * (0.5 * L_x - L_x * eta_x) * (1.0 - eta_x) * eta_x)
+                    grid[i][j][k][0] = x_0 + 2.0 * L_x - (L_x * eta_x + A_x * (0.5 * L_x - L_x * eta_x) * (1.0 - eta_x) * eta_x)
                 if (grid[i][j][k][1] < y_0):
                     eta_y = (1.0 - 0.5) / num_grid_y
-                    grid[i][j][k][1] = y_0 - (
-                                L_y_var * eta_y + A_y * (0.5 * L_y_var - L_y_var * eta_y) * (1.0 - eta_y) * eta_y)
+                    grid[i][j][k][1] = y_0 - (L_y_var * eta_y + A_y * (0.5 * L_y_var - L_y_var * eta_y) * (1.0 - eta_y) * eta_y)
                 if (grid[i][j][k][1] > (y_0 + L_y_var)):
                     eta_y = (num_grid_y - 0.5) / num_grid_y
-                    grid[i][j][k][1] = y_0 + 2.0 * L_y_var - (
-                                L_y_var * eta_y + A_y * (0.5 * L_y_var - L_y_var * eta_y) * (1.0 - eta_y) * eta_y)
+                    grid[i][j][k][1] = y_0 + 2.0 * L_y_var - (L_y_var * eta_y + A_y * (0.5 * L_y_var - L_y_var * eta_y) * (1.0 - eta_y) * eta_y)
                 if (grid[i][j][k][2] < z_0):
                     eta_z = (1.0 - 0.5) / num_grid_z
                     grid[i][j][k][2] = z_0 - (L_z * eta_z + A_z * (0.5 * L_z - L_z * eta_z) * (1.0 - eta_z) * eta_z)
                 if (grid[i][j][k][2] > (z_0 + L_z)):
                     eta_z = (num_grid_z - 0.5) / num_grid_z
-                    grid[i][j][k][2] = z_0 + 2.0 * L_z - (
-                                L_z * eta_z + A_z * (0.5 * L_z - L_z * eta_z) * (1.0 - eta_z) * eta_z)
+                    grid[i][j][k][2] = z_0 + 2.0 * L_z - (L_z * eta_z + A_z * (0.5 * L_z - L_z * eta_z) * (1.0 - eta_z) * eta_z)
     # print( grid )
 
 ### Define computational plane from physical plane
@@ -1010,10 +1005,10 @@ def generate_computationalDomain(physical_grid, computational_grid):
                 computational_grid[i][j][k][1] = physical_grid[i][j][k][1]/(0.5*(physical_grid[i][-1][k][1]+physical_grid[i][-2][k][1]))
                 computational_grid[i][j][k][2] = physical_grid[i][j][k][2]
 
-def compute_normalVector(n, drc_dx):
-    for i in range(0, num_grid_x+2):
-        n[i][0] = drc_dx[i] / np.sqrt(drc_dx[i]**2+1)
-        n[i][1] = - 1/np.sqrt(drc_dx[i]**2+1)
+# def compute_normalVector(n, drc_dx):
+#     for i in range(0, num_grid_x+2):
+#         n[i][0] = drc_dx[i] / np.sqrt(drc_dx[i]**2+1)
+#         n[i][1] = - 1/np.sqrt(drc_dx[i]**2+1)
 
 
 ### Contour axial derivative
@@ -1095,16 +1090,12 @@ def initialize_thermodynamics(rho, E, s, u, v, w, P, T):
             for k in range(0, num_grid_z + 2):
                 rho_aux = -1.0
                 e_aux = -1.0
-                rho_aux, e_aux = thermodynamics.calculateDensityInternalEnergyFromPressureTemperature(rho_aux, e_aux,
-                                                                                                      P[i][j][k],
-                                                                                                      T[i][j][
-                                                                                                          k])  # Calculate density and Internal Energy
+                rho_aux, e_aux = thermodynamics.calculateDensityInternalEnergyFromPressureTemperature(rho_aux, e_aux, P[i][j][k], T[i][j][k])  # Calculate density and Internal Energy
                 rho[i][j][k] = rho_aux
                 e = e_aux
                 ke = 0.5 * (u[i][j][k] ** 2.0 + v[i][j][k] ** 2.0 + w[i][j][k] ** 2.0)
                 E[i][j][k] = e + ke
-                s[i][j][k] = thermodynamics.calculateEntropyFromPressureTemperatureDensity(P[i][j][k], T[i][j][k],
-                                                                                           rho[i][j][k])
+                s[i][j][k] = thermodynamics.calculateEntropyFromPressureTemperatureDensity(P[i][j][k], T[i][j][k], rho[i][j][k])
     # print( rho )
     # print( E )
     # print( s )
@@ -1118,12 +1109,9 @@ def calculate_speed_sound(sos, rho, P, P_thermo, T):
         for j in range(0, num_grid_y + 2):
             for k in range(0, num_grid_z + 2):
                 if (artificial_compressibility_method):
-                    sos[i][j][k] = (1.0 / (alpha_acm + epsilon)) * thermodynamics.calculateSoundSpeed(P_thermo,
-                                                                                                      T[i][j][k],
-                                                                                                      rho[i][j][k])
+                    sos[i][j][k] = (1.0 / (alpha_acm + epsilon)) * thermodynamics.calculateSoundSpeed(P_thermo, T[i][j][k], rho[i][j][k])
                 else:
-                    sos[i][j][k] = thermodynamics.calculateSoundSpeed(P[i][j][k], T[i][j][k],
-                                                                      rho[i][j][k])  # Calculate a speed of sound
+                    sos[i][j][k] = thermodynamics.calculateSoundSpeed(P[i][j][k], T[i][j][k], rho[i][j][k])  # Calculate a speed of sound
     # print( sos )
 
 
@@ -1238,10 +1226,8 @@ def waves_speed(rho_L, rho_R, u_L, u_R, P_L, P_R, a_L, a_R):
 
     hat_u = (u_L * np.sqrt(rho_L) + u_R * np.sqrt(rho_R)) / (np.sqrt(rho_L) + np.sqrt(rho_R))
     hat_a = np.sqrt(
-        ((a_L * a_L * np.sqrt(rho_L) + a_R * a_R * np.sqrt(rho_R)) / (np.sqrt(rho_L) + np.sqrt(rho_R))) + 0.5 * (
-                    (np.sqrt(rho_L) * np.sqrt(rho_R)) / (
-                        (np.sqrt(rho_L) + np.sqrt(rho_R)) * (np.sqrt(rho_L) + np.sqrt(rho_R)))) * (u_R - u_L) * (
-                    u_R - u_L))
+        ((a_L * a_L * np.sqrt(rho_L) + a_R * a_R * np.sqrt(rho_R)) / (np.sqrt(rho_L) + np.sqrt(rho_R))) + 0.5 * ((np.sqrt(rho_L) * np.sqrt(rho_R)) / 
+                    ((np.sqrt(rho_L) + np.sqrt(rho_R)) * (np.sqrt(rho_L) + np.sqrt(rho_R)))) * (u_R - u_L) * (u_R - u_L))
 
     S_L = min(u_L - a_L, hat_u - hat_a)
     S_R = max(u_R + a_R, hat_u + hat_a)
@@ -1562,34 +1548,34 @@ def inviscid_fluxes(rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v, 
                 delta_x = 0.5 * (grid[i + 1][j][k][0] - grid[i - 1][j][k][0]) # epsilon
                 delta_y = 0.5 * (grid[i][j + 1][k][1] - grid[i][j - 1][k][1]) # nu
                 delta_z = 0.5 * (grid[i][j][k + 1][2] - grid[i][j][k - 1][2]) # z
-                xi_x = 1.0
-                xi_y = 0.0
-                xi_z = 0.0
-                eta_x = - grid[i][j][k][1]/L_y[i] * drc_dx[i]
-                eta_y = 1.0 / L_y[i]
-                eta_z = 0.0
-                zeta_x = 0.0
-                zeta_y = 0.0
-                zeta_z = 1.0
-                module_xi = np.sqrt(xi_x**2+xi_y**2+xi_z**2)
-                module_eta = np.sqrt(eta_x**2+eta_y**2+eta_z**2)
-                module_zeta = np.sqrt(zeta_x**2+zeta_y**2+zeta_z**2)
-                n_xi_x = xi_x / module_xi
-                n_xi_y = xi_y / module_xi
-                n_xi_z = xi_z / module_xi
-                n_eta_x = eta_x / module_eta
-                n_eta_y = eta_y / module_eta
-                n_eta_z = eta_z / module_eta
-                n_zeta_x = zeta_x / module_zeta
-                n_zeta_y = zeta_y / module_zeta
-                n_zeta_z = zeta_z / module_zeta
+                dxi_dx = 1.0
+                dxi_dy = 0.0
+                dxi_dz = 0.0
+                deta_dx = - grid[i][j][k][1]/L_y[i] * drc_dx[i]
+                deta_dy = 1.0 / L_y[i]
+                deta_dz = 0.0
+                dzeta_dx = 0.0
+                dzeta_dy = 0.0
+                dzeta_dz = 1.0
+                module_grad_xi = np.sqrt(dxi_dx**2+dxi_dy**2+dxi_dz**2)
+                module_grad_eta = np.sqrt(deta_dx**2+deta_dy**2+deta_dz**2)
+                module_grad_zeta = np.sqrt(dzeta_dx**2+dzeta_dy**2+dzeta_dz**2)
+                n_xi_x = dxi_dx / module_grad_xi
+                n_xi_y = dxi_dy / module_grad_xi
+                n_xi_z = dxi_dz / module_grad_xi
+                n_eta_x = deta_dx / module_grad_eta
+                n_eta_y = deta_dy / module_grad_eta
+                n_eta_z = deta_dz / module_grad_eta
+                n_zeta_x = dzeta_dx / module_grad_zeta
+                n_zeta_y = dzeta_dy / module_grad_zeta
+                n_zeta_z = dzeta_dz / module_grad_zeta
                 ## x-direction i+1/2
                 t1_xi_x = n_xi_y
                 t1_xi_y = - n_xi_x
                 t1_xi_z = 0.0
-                t2_xi_x = n_xi_x * n_xi_z
-                t2_xi_y = n_xi_z*n_xi_y
-                t2_xi_z = - n_xi_y**2 - n_xi_x**2
+                t2_xi_x = n_xi_x*n_xi_z
+                t2_xi_y = n_xi_y*n_xi_z
+                t2_xi_z = - n_xi_x**2 - n_xi_y**2
                 module_t1_xi = np.sqrt(t1_xi_x**2+t1_xi_y**2+t1_xi_z**2)
                 module_t2_xi = np.sqrt(t2_xi_x**2+t2_xi_y**2+t2_xi_z**2)
                 t1_xi_x /= module_t1_xi
@@ -1621,32 +1607,32 @@ def inviscid_fluxes(rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v, 
                 P_rhouvw_L = P_L - P_thermo
                 P_rhouvw_R = P_R - P_thermo  # P_Thermo = 0.0 when ACM is deactivated
 
-                u_xi_L = u_L * n_xi_x + v_L * n_xi_y + w_L * n_xi_z
-                u_xi_R = u_R * n_xi_x + v_R * n_xi_y + w_R * n_xi_z
-                v_xi_L = u_L * t1_xi_x + v_L * t1_xi_y + w_L * t1_xi_z
-                v_xi_R = u_R * t1_xi_x + v_R * t1_xi_y + w_R * t1_xi_z
-                w_xi_L = u_L * t2_xi_x + v_L * t2_xi_y + w_L * t2_xi_z
-                w_xi_R = u_R * t2_xi_x + v_R * t2_xi_y + w_R * t2_xi_z
+                V_n_xi_L_p = u_L * n_xi_x + v_L * n_xi_y + w_L * n_xi_z
+                V_n_xi_R_p = u_R * n_xi_x + v_R * n_xi_y + w_R * n_xi_z
+                V_t1_xi_L_p = u_L * t1_xi_x + v_L * t1_xi_y + w_L * t1_xi_z
+                V_t1_xi_R_p = u_R * t1_xi_x + v_R * t1_xi_y + w_R * t1_xi_z
+                V_t2_xi_L_p = u_L * t2_xi_x + v_L * t2_xi_y + w_L * t2_xi_z
+                V_t2_xi_R_p = u_R * t2_xi_x + v_R * t2_xi_y + w_R * t2_xi_z
 
                 # rho
                 var_type = 0
-                rho_F_p_x = HLLC_flux(rho_L, rho_R, u_xi_L, u_xi_R, v_xi_L, v_xi_R, w_xi_L, w_xi_R, E_L, E_R, s_L, s_R, P_L, P_R, T_L, T_R,
+                rho_F_p_x = HLLC_flux(rho_L, rho_R, V_n_xi_L_p, V_n_xi_R_p, V_t1_xi_L_p, V_t1_xi_R_p, V_t2_xi_L_p, V_t2_xi_R_p, E_L, E_R, s_L, s_R, P_L, P_R, T_L, T_R,
                                      a_L, a_R, var_type)
                 # rhou
                 var_type = 1
-                rho_n_F_p_x = HLLC_flux(rho_L, rho_R, u_xi_L, u_xi_R, v_xi_L, v_xi_R, w_xi_L, w_xi_R, E_L, E_R, s_L, s_R, P_rhouvw_L,
+                rho_n_F_p_x = HLLC_flux(rho_L, rho_R, V_n_xi_L_p, V_n_xi_R_p, V_t1_xi_L_p, V_t1_xi_R_p, V_t2_xi_L_p, V_t2_xi_R_p, E_L, E_R, s_L, s_R, P_rhouvw_L,
                                       P_rhouvw_R, T_L, T_R, a_L, a_R, var_type)
                 # rhov
                 var_type = 2
-                rho_t1_F_p_x = HLLC_flux(rho_L, rho_R, u_xi_L, u_xi_R, v_xi_L, v_xi_R, w_xi_L, w_xi_R, E_L, E_R, s_L, s_R, P_rhouvw_L,
+                rho_t1_F_p_x = HLLC_flux(rho_L, rho_R, V_n_xi_L_p, V_n_xi_R_p, V_t1_xi_L_p, V_t1_xi_R_p, V_t2_xi_L_p, V_t2_xi_R_p, E_L, E_R, s_L, s_R, P_rhouvw_L,
                                       P_rhouvw_R, T_L, T_R, a_L, a_R, var_type)
                 # rhow
                 var_type = 3
-                rho_t2_F_p_x = HLLC_flux(rho_L, rho_R, u_xi_L, u_xi_R, v_xi_L, v_xi_R, w_xi_L, w_xi_R, E_L, E_R, s_L, s_R, P_rhouvw_L,
+                rho_t2_F_p_x = HLLC_flux(rho_L, rho_R, V_n_xi_L_p, V_n_xi_R_p, V_t1_xi_L_p, V_t1_xi_R_p, V_t2_xi_L_p, V_t2_xi_R_p, E_L, E_R, s_L, s_R, P_rhouvw_L,
                                       P_rhouvw_R, T_L, T_R, a_L, a_R, var_type)
                 # rhoE
                 var_type = 4
-                rhoE_F_p_x = HLLC_flux(rho_L, rho_R, u_xi_L, u_xi_R, v_xi_L, v_xi_R, w_xi_L, w_xi_R, E_L, E_R, s_L, s_R, P_L, P_R, T_L,
+                rhoE_F_p_x = HLLC_flux(rho_L, rho_R, V_n_xi_L_p, V_n_xi_R_p, V_t1_xi_L_p, V_t1_xi_R_p, V_t2_xi_L_p, V_t2_xi_R_p, E_L, E_R, s_L, s_R, P_L, P_R, T_L,
                                       T_R, a_L, a_R, var_type)
                 
                 rhou_F_p_x = rho_n_F_p_x * n_xi_x + rho_t1_F_p_x * t1_xi_x + rho_t2_F_p_x * t2_xi_x
@@ -1677,32 +1663,32 @@ def inviscid_fluxes(rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v, 
                 P_rhouvw_L = P_L - P_thermo
                 P_rhouvw_R = P_R - P_thermo  # P_Thermo = 0.0 when ACM is deactivated
 
-                u_xi_L = u_L * n_xi_x + v_L * n_xi_y + w_L * n_xi_z
-                u_xi_R = u_R * n_xi_x + v_R * n_xi_y + w_R * n_xi_z
-                v_xi_L = u_L * t1_xi_x + v_L * t1_xi_y + w_L * t1_xi_z
-                v_xi_R = u_R * t1_xi_x + v_R * t1_xi_y + w_R * t1_xi_z
-                w_xi_L = u_L * t2_xi_x + v_L * t2_xi_y + w_L * t2_xi_z
-                w_xi_R = u_R * t2_xi_x + v_R * t2_xi_y + w_R * t2_xi_z
+                V_n_xi_L_n = u_L * n_xi_x + v_L * n_xi_y + w_L * n_xi_z
+                V_n_xi_R_n = u_R * n_xi_x + v_R * n_xi_y + w_R * n_xi_z
+                V_t1_xi_L_n = u_L * t1_xi_x + v_L * t1_xi_y + w_L * t1_xi_z
+                V_t1_xi_R_n = u_R * t1_xi_x + v_R * t1_xi_y + w_R * t1_xi_z
+                V_t2_xi_L_n = u_L * t2_xi_x + v_L * t2_xi_y + w_L * t2_xi_z
+                V_t2_xi_R_n = u_R * t2_xi_x + v_R * t2_xi_y + w_R * t2_xi_z
 
                 # rho
                 var_type = 0
-                rho_F_m_x = HLLC_flux(rho_L, rho_R, u_xi_L, u_xi_R, v_xi_L, v_xi_R, w_xi_L, w_xi_R, E_L, E_R, s_L, s_R, P_L, P_R, T_L, T_R,
+                rho_F_m_x = HLLC_flux(rho_L, rho_R, V_n_xi_L_n, V_n_xi_R_n, V_t1_xi_L_n, V_t1_xi_R_n, V_t2_xi_L_n, V_t2_xi_R_n, E_L, E_R, s_L, s_R, P_L, P_R, T_L, T_R,
                                      a_L, a_R, var_type)
                 # rhou
                 var_type = 1
-                rho_n_F_m_x = HLLC_flux(rho_L, rho_R, u_xi_L, u_xi_R, v_xi_L, v_xi_R, w_xi_L, w_xi_R, E_L, E_R, s_L, s_R, P_rhouvw_L,
+                rho_n_F_m_x = HLLC_flux(rho_L, rho_R, V_n_xi_L_n, V_n_xi_R_n, V_t1_xi_L_n, V_t1_xi_R_n, V_t2_xi_L_n, V_t2_xi_R_n, E_L, E_R, s_L, s_R, P_rhouvw_L,
                                       P_rhouvw_R, T_L, T_R, a_L, a_R, var_type)
                 # rhov
                 var_type = 2
-                rho_t1_F_m_x = HLLC_flux(rho_L, rho_R, u_xi_L, u_xi_R, v_xi_L, v_xi_R, w_xi_L, w_xi_R, E_L, E_R, s_L, s_R, P_rhouvw_L,
+                rho_t1_F_m_x = HLLC_flux(rho_L, rho_R, V_n_xi_L_n, V_n_xi_R_n, V_t1_xi_L_n, V_t1_xi_R_n, V_t2_xi_L_n, V_t2_xi_R_n, E_L, E_R, s_L, s_R, P_rhouvw_L,
                                       P_rhouvw_R, T_L, T_R, a_L, a_R, var_type)
                 # rhow
                 var_type = 3
-                rho_t2_F_m_x = HLLC_flux(rho_L, rho_R, u_xi_L, u_xi_R, v_xi_L, v_xi_R, w_xi_L, w_xi_R, E_L, E_R, s_L, s_R, P_rhouvw_L,
+                rho_t2_F_m_x = HLLC_flux(rho_L, rho_R, V_n_xi_L_n, V_n_xi_R_n, V_t1_xi_L_n, V_t1_xi_R_n, V_t2_xi_L_n, V_t2_xi_R_n, E_L, E_R, s_L, s_R, P_rhouvw_L,
                                       P_rhouvw_R, T_L, T_R, a_L, a_R, var_type)
                 # rhoE
                 var_type = 4
-                rhoE_F_m_x = HLLC_flux(rho_L, rho_R, u_xi_L, u_xi_R, v_xi_L, v_xi_R, w_xi_L, w_xi_R, E_L, E_R, s_L, s_R, P_L, P_R, T_L,
+                rhoE_F_m_x = HLLC_flux(rho_L, rho_R, V_n_xi_L_n, V_n_xi_R_n, V_t1_xi_L_n, V_t1_xi_R_n, V_t2_xi_L_n, V_t2_xi_R_n, E_L, E_R, s_L, s_R, P_L, P_R, T_L,
                                       T_R, a_L, a_R, var_type)
                 
 
