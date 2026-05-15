@@ -6,20 +6,20 @@ import numpy as np
 import math
 import nozzlegeometry as nz_cont
 
-from rhea_thermodynamics_transport_coefficients import BaseThermodynamicModel
-from rhea_thermodynamics_transport_coefficients import IdealGasModel
-from rhea_thermodynamics_transport_coefficients import PengRobinsonModel
-from rhea_thermodynamics_transport_coefficients import CoolPropModel
-from rhea_thermodynamics_transport_coefficients import BaseTransportCoefficients
-from rhea_thermodynamics_transport_coefficients import ConstantTransportCoefficients
-from rhea_thermodynamics_transport_coefficients import LowPressureGasTransportCoefficients
-from rhea_thermodynamics_transport_coefficients import HighPressureTransportCoeficients
-from rhea_thermodynamics_transport_coefficients import CoolPropTransportCoefficients
+# from rhea_thermodynamics_transport_coefficients import BaseThermodynamicModel
+# from rhea_thermodynamics_transport_coefficients import IdealGasModel
+# from rhea_thermodynamics_transport_coefficients import PengRobinsonModel
+# from rhea_thermodynamics_transport_coefficients import CoolPropModel
+# from rhea_thermodynamics_transport_coefficients import BaseTransportCoefficients
+# from rhea_thermodynamics_transport_coefficients import ConstantTransportCoefficients
+# from rhea_thermodynamics_transport_coefficients import LowPressureGasTransportCoefficients
+# from rhea_thermodynamics_transport_coefficients import HighPressureTransportCoeficients
+# from rhea_thermodynamics_transport_coefficients import CoolPropTransportCoefficients
 
 ########## SET PARAMETERS ############
 
 ###################### DATA IMPORT SETTINGS ##########################
-output_iter     = 12000  # Select imported data iteration
+output_iter     = 1300  # Select imported data iteration
 
 num_grid_x      = 70  # Number of internal grid points in the x-direction
 num_grid_y      = 50  # Number of internal grid points in the y-direction
@@ -82,12 +82,12 @@ association_factor      = 0.0  # Association factor [-]
 #################### SELECT THERMODYNAMIC AND TRANSPORT COEFFICIENTS MODEL ##################
 # thermodynamics = IdealGasModel(R_specific, gamma)
 # thermodynamics = PengRobinsonModel(molecular_weight, acentric_factor, critical_temperature, critical_pressure, critical_molar_volume, NASA_coefficients)
-thermodynamics = CoolPropModel(substance)
+# thermodynamics = CoolPropModel(substance)
 #############################################################################################
 # transport_coefficients = ConstantTransportCoefficients(mu_ref, kappa_ref)
 # transport_coefficients = LowPressureGasTransportCoefficients( mu_0, kappa_0, T_0, S_mu, S_kappa)
 # transport_coefficients = HighPressureTransportCoefficients(molecular_weight, acentric_factor, critical_temperature, critical_molar_volume, NASA_coefficients, dipole_moment,association_factor)
-transport_coefficients = CoolPropTransportCoefficients(substance)
+# transport_coefficients = CoolPropTransportCoefficients(substance)
 ##############################################################################################
 
 # x_pseudoboiling, y_pseudoboiling = np.loadtxt('pseudoboiling_line.txt', delimiter=',', skiprows=1, unpack=True)
