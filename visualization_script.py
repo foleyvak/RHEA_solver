@@ -21,8 +21,8 @@ from rhea_thermodynamics_transport_coefficients import CoolPropTransportCoeffici
 ###################### DATA IMPORT SETTINGS ##########################
 output_iter     = 12000  # Select imported data iteration
 
-num_grid_x      = 100  # Number of internal grid points in the x-direction
-num_grid_y      = 150  # Number of internal grid points in the y-direction
+num_grid_x      = 70  # Number of internal grid points in the x-direction
+num_grid_y      = 50  # Number of internal grid points in the y-direction
 num_grid_z      = 1  # Number of internal grid points in the z-direction
 
 name_file_out   = 'output_data_'  # Name of output data [-]

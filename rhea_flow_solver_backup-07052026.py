@@ -68,7 +68,7 @@ output_iter     = 100  # Output data every given number of iterations
 ######################################################################
 
 ######################## INITIAL CONDITIONS ##########################
-u_inlet         = 50.0  # Subsonic inlet velocity in the x-direction [m/s]
+u_inlet         = 10.0  # Subsonic inlet velocity in the x-direction [m/s]
 v_inlet         = 0.0  # Subsonic inlet velocity in the y-direction [m/s]
 w_inlet         = 0.0  # Subsonic inlet velocity in the z-direction [m/s]
 T_ref           = 400.0  # Subsonic inlet temperature [K]
@@ -100,15 +100,15 @@ A_z = 0.0  # Stretching factor in z-direction
 ######################################################################
 
 ######################### SOLVER SETTINGS ##########################
-num_grid_x      = 300  # Number of internal grid points in the x-direction
-num_grid_y      = 200  # Number of internal grid points in the y-direction
+num_grid_x      = 70  # Number of internal grid points in the x-direction
+num_grid_y      = 50  # Number of internal grid points in the y-direction
 num_grid_z      = 1  # Number of internal grid points in the z-direction
 
-CFL             = 0.01  # CFL coefficient
+CFL             = 0.1  # CFL coefficient
 initial_time    = 0.0 # Initial time [s]
 final_time      = 1.0 # Final time [s]
 
-max_num_time_iter   = 100000  # Maximum number of time iterations
+max_num_time_iter   = 100  # Maximum number of time iterations
 max_subr_iter       = 100  # Maximum number of iterations for subsonic inlet subroutine
 
 transport_pressure_scheme           = False  # Select transporting pressure instead of total energy
@@ -164,13 +164,15 @@ xc = x2 - R2*math.sin(theta)
 xexp = Rexp*math.sin(alpha)
 
 # Coordinates origin
-x_0 = xc # - L_c
+# x_0 = xc # - L_c
+x_0 = -2.5
 y_0 = 0.0  # Domain origin in y-direction [m]
 z_0 = 0.0  # Domain origin in z-direction [m]
 
 # Geometry size
 L = 1.0  # Cavity size [m]
-L_x = abs(xc) # + L_N # + L_c
+# L_x = abs(xc) # + L_N # + L_c
+L_x = 5.0
 L_z = 0.01 * L  # Size of domain in z-direction
 
 ##### THERMODYNAMICS AND TRANSPORT MODELS #####
@@ -616,8 +618,8 @@ def update_boundaries(sos, rho, rhou, rhov, rhow, rhoE, u, v, w, P, T, grid):
             # P_g = P_in  # Neumann - Zero gradient not normal to the surface
             # T_g = T_in  # Neumann - Zero gradient not notmal to the surface
 
-            P_g = P[i][j-1][k] + (P[i+1][j-1][k]-P[i-1][j-1][k])/(2*delta_x)*(delta_y*L_y[i])/(n_x*grid[i][j][k][1]*drc_dx[i]-n_y)
-            T_g = T[i][j-1][k] + (T[i+1][j-1][k]-T[i-1][j-1][k])/(2*delta_x)*(delta_y*L_y[i])/(n_x*grid[i][j][k][1]*drc_dx[i]-n_y)
+            P_g = P[i][j-1][k] + (P[i+1][j-1][k]-P[i-1][j-1][k])/(2*delta_x)*(delta_y*L_y[i])/(grid[i][j][k][1]*drc_dx[i]-n_y/n_x)
+            T_g = T[i][j-1][k] + (T[i+1][j-1][k]-T[i-1][j-1][k])/(2*delta_x)*(delta_y*L_y[i])/(grid[i][j][k][1]*drc_dx[i]-n_y/n_x)
 
             # Specific internal energy and density
             rho_g = -1.0
@@ -630,6 +632,7 @@ def update_boundaries(sos, rho, rhou, rhov, rhow, rhoE, u, v, w, P, T, grid):
             rhov[i][j][k] = rho_g * v_g
             rhow[i][j][k] = rho_g * w_g
             rhoE[i][j][k] = rho_g * E_g
+
 
     # Back boundary points
     k = 0
@@ -951,12 +954,13 @@ def spatial_discretization(grid):
                 grid[i][j][k][0] = x_0 + L_x * eta_x + A_x * (0.5 * L_x - L_x * eta_x) * (1.0 - eta_x) * eta_x
 
                 # Calculate contour
-                if grid[i][j][k][0] <= 0:
-                    L_y_var = nz_cont.convergent_segment(grid[i][j][k][0], rt, rc, R1_rt, R2_R1, theta)
+                # if grid[i][j][k][0] <= 0:
+                #     L_y_var = nz_cont.convergent_segment(grid[i][j][k][0], rt, rc, R1_rt, R2_R1, theta)
                 # else:
                 #     L_y_var = nz_cont.conical_nozzle(grid[i][j][k][0], rt, Rexp_rt, alpha)
                 
                 # L_y_var = 1.0 # Uncomment to generate a straight pipe
+                L_y_var = - (math.e**(grid[i][j][k][0])-math.e**(-grid[i][j][k][0]))/(math.e**(grid[i][j][k][0])+math.e**(-grid[i][j][k][0])) + 2.0
 
                 # Unevenly-spaced (stretched) cell centroids
                 grid[i][j][k][0] = x_0 + L_x * eta_x + A_x * (0.5 * L_x - L_x * eta_x) * (1.0 - eta_x) * eta_x
@@ -2092,7 +2096,11 @@ generate_computationalDomain(physical_plane, computational_plane)
 #################################################################
 
 ### Differentiate physicial contour
-drc_dx = drc_dz_segments(drc_dx, physical_plane, R1, R2, Rexp, theta, alpha, x1, x2, xc, xexp) # (ADDED)
+# drc_dx = drc_dz_segments(drc_dx, physical_plane, R1, R2, Rexp, theta, alpha, x1, x2, xc, xexp) # (ADDED)
+j = 0; k = 1
+for i in range(0,num_grid_x+2):
+    drc_dx[i] = - 4.0 /(math.e**(computational_plane[i][j][k][0])+math.e**(-computational_plane[i][j][k][0]))**2
+
 
 ### Generate L_y vector in terms of x-distance
 L_y = np.zeros(num_grid_x+2)

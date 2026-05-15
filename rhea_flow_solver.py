@@ -74,11 +74,11 @@ w_inlet         = 0.0  # Subsonic inlet velocity in the z-direction [m/s]
 T_ref           = 400.0  # Subsonic inlet temperature [K]
 P_ref           = 200.0e5  # Subsonic inlet pressure [Pa]
 P_exit          = 100.0e5  # Subsonic outlet exit pressure [Pa]
-mu_ref          = 0.0 # Reference dynamic viscosity [Pa·s]
-kappa_ref       = 0.0 # Reference thermal conductivity [W/mK]
+# mu_ref          = 0.0 # Reference dynamic viscosity [Pa·s]
+# kappa_ref       = 0.0 # Reference thermal conductivity [W/mK]
 
-# mu_ref = 2.0e-5
-# kappa_ref = 0.025
+mu_ref = 2.0e-5
+kappa_ref = 0.025
 ######################################################################
 
 ###################### GEOMETRY CONFIGURATION ########################
@@ -205,7 +205,6 @@ physical_plane = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_s
 computational_plane = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_sptl_dim]) # 3-D positions of the computational plane grid
 drc_dx = np.zeros([num_grid_x + 2])
 drc_dx_dx = np.zeros([num_grid_x + 2])
-normalVector = np.zeros([num_grid_x+2, 2])
 
 ### Primitive, conserved and thermodynamic variables ... two positions added for boundary points
 rho_field = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2])  # 3-D field of rhof
@@ -271,8 +270,8 @@ H_ref = E_ref + P_ref/rho_ref
 ### Initialize u, v, w, P and T variables
 def initialize_uvwPT(u, v, w, P, T, grid):
     # sos_init = thermodynamics.calculateSoundSpeed(P_ref,T_ref,rho_ref)
-    P_init = np.linspace(P_ref,P_exit,num_grid_x+2)
-    T_init = np.linspace(T_ref,0.85*T_ref,num_grid_x+2)
+    # P_init = np.linspace(P_ref,P_exit,num_grid_x+2)
+    # T_init = np.linspace(T_ref,0.85*T_ref,num_grid_x+2)
     # u_init = np.linspace(u_inlet,u_inlet-5.0,num_grid_x+2)
     # All points
     for i in range(0, num_grid_x + 2):
@@ -286,7 +285,7 @@ def initialize_uvwPT(u, v, w, P, T, grid):
 
                 rc = 0.5 * (grid[i][-1][k][1] + grid[i][-2][k][1])
 
-                u[i][j][k] = - (u_inlet/(rc)**2)*grid[i][j][k][1]**2 + u_inlet
+                u[i][j][k] = - (u_inlet/(rc)**2)*grid[i][j][k][1]**2 + u_inlet   # Parabolic velocity profile in the y-direction
                 v[i][j][k] = v_inlet
                 w[i][j][k] = w_inlet
                 P[i][j][k] = P_ref
@@ -412,6 +411,7 @@ def update_boundaries(sos, rho, rhou, rhov, rhow, rhoE, u, v, w, P, T, grid):
             # P_g = (P_ref - wg_in * P_in) / wg_g
             # T_g = thermodynamics.calculateTemperatureFromPressureDensity(P_g, rho_g) 
 
+            ### Option 3: Test
             # P_g = P_ref
             # T_g = T_ref
             # e_g = -1.0; rho_g = -1.0
@@ -598,15 +598,15 @@ def update_boundaries(sos, rho, rhou, rhov, rhow, rhoE, u, v, w, P, T, grid):
             rhoE[i][j][k] = rho_g * E_g
 
     # North boundary points
-    j = num_grid_y + 1
+    j = num_grid_y + 1   # Ghost cell index
     for i in range(1, num_grid_x + 1): # Original line: (for i in range(1, num_grid_x + 1):)
         for k in range(1, num_grid_z + 1): # Original line: (for k in range(1, num_grid_z + 1):)
-            nu_i = 0.5 * (grid[i][-1][k][1] + grid[i][-2][k][1])
-            wg_g = 1.0 - (grid[i][j][k][1] - (y_0 + nu_i)) / (grid[i][j][k][1] - grid[i][j - 1][k][1])
-            wg_in = 1.0 - ((y_0 + nu_i) - grid[i][j - 1][k][1]) / (grid[i][j][k][1] - grid[i][j - 1][k][1])
+            eta_i = 0.5 * (grid[i][-1][k][1] + grid[i][-2][k][1])
+            wg_g = 1.0 - (grid[i][j][k][1] - (y_0 + eta_i)) / (grid[i][j][k][1] - grid[i][j - 1][k][1])
+            wg_in = 1.0 - ((y_0 + eta_i) - grid[i][j - 1][k][1]) / (grid[i][j][k][1] - grid[i][j - 1][k][1])
             delta_x = 0.5 * (grid[i + 1][j][k][0] - grid[i - 1][j][k][0])
             delta_y = (grid[i][j][k][1] - grid[i][j-1][k][1])
-            P_in = P[i][j - 1][k]
+            P_in = P[i][j - 1][k]   # Pressure in the interior cell
             T_in = T[i][j - 1][k]
             u_in = rhou[i][j - 1][k] / rho[i][j - 1][k]
             v_in = rhov[i][j - 1][k] / rho[i][j - 1][k]
@@ -628,8 +628,8 @@ def update_boundaries(sos, rho, rhou, rhov, rhow, rhoE, u, v, w, P, T, grid):
             # P_g = P_in  # Neumann - Zero gradient not normal to the surface
             # T_g = T_in  # Neumann - Zero gradient not notmal to the surface
 
-            P_g = P[i][j-1][k] + (P[i+1][j-1][k]-P[i-1][j-1][k])/(2*delta_x)*(delta_y*L_y[i])/(n_x*grid[i][j][k][1]*drc_dx[i]-n_y)
-            T_g = T[i][j-1][k] + (T[i+1][j-1][k]-T[i-1][j-1][k])/(2*delta_x)*(delta_y*L_y[i])/(n_x*grid[i][j][k][1]*drc_dx[i]-n_y)
+            P_g = P[i][j-1][k] + (P[i+1][j-1][k]-P[i-1][j-1][k])/(2*delta_x)*(delta_y*L_y[i])/(grid[i][j][k][1]*drc_dx[i]-n_y/n_x)
+            T_g = T[i][j-1][k] + (T[i+1][j-1][k]-T[i-1][j-1][k])/(2*delta_x)*(delta_y*L_y[i])/(grid[i][j][k][1]*drc_dx[i]-n_y/n_x)
 
             # Specific internal energy and density
             rho_g = -1.0
@@ -2307,10 +2307,10 @@ plt.show()
 
 ### Differentiate physicial contour
 # drc_dx = drc_dz_segments(drc_dx, physical_plane, R1, R2, Rexp, theta, alpha, x1, x2, xc, xexp) # (ADDED)
-j = 0; k = 0
+j = 0; k = 1
 for i in range(0,num_grid_x+2):
-    drc_dx += - 4.0 /(math.e**(computational_plane[i][j][k][0])+math.e**(-computational_plane[i][j][k][0]))**2
-    drc_dx_dx += 8.0 * (math.e**(computational_plane[i][j][k][0])-math.e**(-computational_plane[i][j][k][0]))/(math.e**(computational_plane[i][j][k][0])+math.e**(-computational_plane[i][j][k][0]))**3
+    drc_dx[i] = - 4.0 /(math.e**(computational_plane[i][j][k][0])+math.e**(-computational_plane[i][j][k][0]))**2
+    drc_dx_dx[i] = 8.0 * (math.e**(computational_plane[i][j][k][0])-math.e**(-computational_plane[i][j][k][0]))/(math.e**(computational_plane[i][j][k][0])+math.e**(-computational_plane[i][j][k][0]))**3
 # drc_dx_dx = drc_dz_dz_segments(drc_dx_dx, physical_plane, R1, R2, Rexp, theta, alpha, x1, x2, xc, xexp) # (ADDED)
 
 ### Generate L_y vector in terms of x-distance
