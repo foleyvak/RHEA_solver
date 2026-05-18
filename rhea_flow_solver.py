@@ -625,11 +625,11 @@ def update_boundaries(sos, rho, rhou, rhov, rhow, rhoE, u, v, w, P, T, grid):
             v_g = (0.0 - wg_in * v_in) / wg_g # Dirichlet
             w_g = (0.0 - wg_in * w_in) / wg_g  # Dirichlet
 
-            # P_g = P_in  # Neumann - Zero gradient not normal to the surface
-            # T_g = T_in  # Neumann - Zero gradient not notmal to the surface
+            P_g = P_in  # Neumann - Zero gradient not normal to the surface
+            T_g = T_in  # Neumann - Zero gradient not notmal to the surface
 
-            P_g = P[i][j-1][k] + (P[i+1][j-1][k]-P[i-1][j-1][k])/(2*delta_x)*(delta_y*L_y[i])/(grid[i][j][k][1]*drc_dx[i]-n_y/(n_x+epsilon))
-            T_g = T[i][j-1][k] + (T[i+1][j-1][k]-T[i-1][j-1][k])/(2*delta_x)*(delta_y*L_y[i])/(grid[i][j][k][1]*drc_dx[i]-n_y/(n_x+epsilon))
+            # P_g = P[i][j-1][k] + (P[i+1][j-1][k]-P[i-1][j-1][k])/(2*delta_x)*(delta_y*L_y[i])/(grid[i][j][k][1]*drc_dx[i]-n_y/(n_x+epsilon))
+            # T_g = T[i][j-1][k] + (T[i+1][j-1][k]-T[i-1][j-1][k])/(2*delta_x)*(delta_y*L_y[i])/(grid[i][j][k][1]*drc_dx[i]-n_y/(n_x+epsilon))
 
             # Specific internal energy and density
             rho_g = -1.0
@@ -1701,8 +1701,8 @@ def inviscid_fluxes(rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v, 
                 t1_eta_y = - n_eta_x
                 t1_eta_z = 0.0
                 t2_eta_x = n_eta_x * n_eta_z
-                t2_eta_y = n_eta_z*n_eta_y
-                t2_eta_z = - n_eta_y**2 - n_eta_x**2
+                t2_eta_y = n_eta_y*n_zeta_z
+                t2_eta_z = - n_eta_x**2 - n_eta_y**2
                 module_t1_eta = np.sqrt(t1_eta_x**2+t1_eta_y**2+t1_eta_z**2)
                 module_t2_eta = np.sqrt(t2_eta_x**2+t2_eta_y**2+t2_eta_z**2)
                 t1_eta_x /= module_t1_eta
@@ -1734,34 +1734,34 @@ def inviscid_fluxes(rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v, 
                 P_rhouvw_L = P_L - P_thermo
                 P_rhouvw_R = P_R - P_thermo  # P_Thermo = 0.0 when ACM is deactivated
                 
-                u_eta_L = u_L * n_eta_x + v_L * n_eta_y + w_L * n_eta_z
-                u_eta_R = u_R * n_eta_x + v_R * n_eta_y + w_R * n_eta_z
-                v_eta_L = u_L * t1_eta_x + v_L * t1_eta_y + w_L * t1_eta_z
-                v_eta_R = u_R * t1_eta_x + v_R * t1_eta_y + w_R * t1_eta_z
-                w_eta_L = u_L * t2_eta_x + v_L * t2_eta_y + w_L * t2_eta_z
-                w_eta_R = u_R * t2_eta_x + v_R * t2_eta_y + w_R * t2_eta_z
+                V_n_eta_L_p = u_L * n_eta_x + v_L * n_eta_y + w_L * n_eta_z
+                V_n_eta_R_p = u_R * n_eta_x + v_R * n_eta_y + w_R * n_eta_z
+                V_t1_eta_L_p = -(u_L * t1_eta_x + v_L * t1_eta_y + w_L * t1_eta_z)   # Invert the sign of t1 to follow the direction of the flow
+                V_t1_eta_R_p = -(u_R * t1_eta_x + v_R * t1_eta_y + w_R * t1_eta_z)   # Invert the sign of t1 to follow the direction of the flow
+                V_t2_eta_L_p = u_L * t2_eta_x + v_L * t2_eta_y + w_L * t2_eta_z
+                V_t2_eta_R_p = u_R * t2_eta_x + v_R * t2_eta_y + w_R * t2_eta_z
 
                 # In the y direction, the velocity input for v_L, v_R, ... have been changed as the normal velocity components are already obtained
 
                 # rho
                 var_type = 0
-                rho_F_p_y = HLLC_flux(rho_L, rho_R, u_eta_L, u_eta_R, v_eta_L, v_eta_R, w_eta_L, w_eta_R, E_L, E_R, s_L, s_R, P_L, P_R, T_L, T_R,
+                rho_F_p_y = HLLC_flux(rho_L, rho_R, V_n_eta_L_p, V_n_eta_R_p, V_t1_eta_L_p, V_t1_eta_R_p, V_t2_eta_L_p, V_t2_eta_R_p, E_L, E_R, s_L, s_R, P_L, P_R, T_L, T_R,
                                      a_L, a_R, var_type)
                 # rhou
                 var_type = 1
-                rho_n_F_p_y = HLLC_flux(rho_L, rho_R, u_eta_L, u_eta_R, v_eta_L, v_eta_R, w_eta_L, w_eta_R, E_L, E_R, s_L, s_R, P_rhouvw_L,
+                rho_n_F_p_y = HLLC_flux(rho_L, rho_R, V_n_eta_L_p, V_n_eta_R_p, V_t1_eta_L_p, V_t1_eta_R_p, V_t2_eta_L_p, V_t2_eta_R_p, E_L, E_R, s_L, s_R, P_rhouvw_L,
                                       P_rhouvw_R, T_L, T_R, a_L, a_R, var_type)
                 # rhov
                 var_type = 2
-                rho_t1_F_p_y = HLLC_flux(rho_L, rho_R, u_eta_L, u_eta_R, v_eta_L, v_eta_R, w_eta_L, w_eta_R, E_L, E_R, s_L, s_R, P_rhouvw_L,
+                rho_t1_F_p_y = HLLC_flux(rho_L, rho_R, V_n_eta_L_p, V_n_eta_R_p, V_t1_eta_L_p, V_t1_eta_R_p, V_t2_eta_L_p, V_t2_eta_R_p, E_L, E_R, s_L, s_R, P_rhouvw_L,
                                       P_rhouvw_R, T_L, T_R, a_L, a_R, var_type)
                 # rhow
                 var_type = 3
-                rho_t2_F_p_y = HLLC_flux(rho_L, rho_R, u_eta_L, u_eta_R, v_eta_L, v_eta_R, w_eta_L, w_eta_R, E_L, E_R, s_L, s_R, P_rhouvw_L,
+                rho_t2_F_p_y = HLLC_flux(rho_L, rho_R, V_n_eta_L_p, V_n_eta_R_p, V_t1_eta_L_p, V_t1_eta_R_p, V_t2_eta_L_p, V_t2_eta_R_p, E_L, E_R, s_L, s_R, P_rhouvw_L,
                                       P_rhouvw_R, T_L, T_R, a_L, a_R, var_type)
                 # rhoE
                 var_type = 4
-                rhoE_F_p_y = HLLC_flux(rho_L, rho_R, u_eta_L, u_eta_R, v_eta_L, v_eta_R, w_eta_L, w_eta_R, E_L, E_R, s_L, s_R, P_L, P_R, T_L,
+                rhoE_F_p_y = HLLC_flux(rho_L, rho_R, V_n_eta_L_p, V_n_eta_R_p, V_t1_eta_L_p, V_t1_eta_R_p, V_t2_eta_L_p, V_t2_eta_R_p, E_L, E_R, s_L, s_R, P_L, P_R, T_L,
                                       T_R, a_L, a_R, var_type)
                 
                 rhou_F_p_y = rho_n_F_p_y * n_eta_x + rho_t1_F_p_y * t1_eta_x + rho_t2_F_p_y * t2_eta_x
@@ -1792,32 +1792,32 @@ def inviscid_fluxes(rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v, 
                 P_rhouvw_L = P_L - P_thermo
                 P_rhouvw_R = P_R - P_thermo  # P_Thermo = 0.0 when ACM is deactivated
 
-                u_eta_L = u_L * n_eta_x + v_L * n_eta_y + w_L * n_eta_z
-                u_eta_R = u_R * n_eta_x + v_R * n_eta_y + w_R * n_eta_z
-                v_eta_L = u_L * t1_eta_x + v_L * t1_eta_y + w_L * t1_eta_z
-                v_eta_R = u_R * t1_eta_x + v_R * t1_eta_y + w_R * t1_eta_z
-                w_eta_L = u_L * t2_eta_x + v_L * t2_eta_y + w_L * t2_eta_z
-                w_eta_R = u_R * t2_eta_x + v_R * t2_eta_y + w_R * t2_eta_z
+                V_n_eta_L_n = u_L * n_eta_x + v_L * n_eta_y + w_L * n_eta_z
+                V_n_eta_R_n = u_R * n_eta_x + v_R * n_eta_y + w_R * n_eta_z
+                V_t1_eta_L_n = -(u_L * t1_eta_x + v_L * t1_eta_y + w_L * t1_eta_z)   # Invert the sign of t1 to follow the direction of the flow
+                V_t1_eta_R_n = -(u_R * t1_eta_x + v_R * t1_eta_y + w_R * t1_eta_z)   # Invert the sign of t1 to follow the direction of the flow
+                V_t2_eta_L_n = u_L * t2_eta_x + v_L * t2_eta_y + w_L * t2_eta_z
+                V_t2_eta_R_n = u_R * t2_eta_x + v_R * t2_eta_y + w_R * t2_eta_z
 
                 # rho
                 var_type = 0
-                rho_F_m_y = HLLC_flux(rho_L, rho_R, u_eta_L, u_eta_R, v_eta_L, v_eta_R, w_eta_L, w_eta_R, E_L, E_R, s_L, s_R, P_L, P_R, T_L, T_R,
+                rho_F_m_y = HLLC_flux(rho_L, rho_R, V_n_eta_L_n, V_n_eta_R_n, V_t1_eta_L_n, V_t1_eta_R_n, V_t2_eta_L_n, V_t2_eta_R_n, E_L, E_R, s_L, s_R, P_L, P_R, T_L, T_R,
                                      a_L, a_R, var_type)
                 # rhou
                 var_type = 1
-                rho_n_F_m_y = HLLC_flux(rho_L, rho_R, u_eta_L, u_eta_R, v_eta_L, v_eta_R, w_eta_L, w_eta_R, E_L, E_R, s_L, s_R, P_rhouvw_L,
+                rho_n_F_m_y = HLLC_flux(rho_L, rho_R, V_n_eta_L_n, V_n_eta_R_n, V_t1_eta_L_n, V_t1_eta_R_n, V_t2_eta_L_n, V_t2_eta_R_n, E_L, E_R, s_L, s_R, P_rhouvw_L,
                                       P_rhouvw_R, T_L, T_R, a_L, a_R, var_type)
                 # rhov
                 var_type = 2
-                rho_t1_F_m_y = HLLC_flux(rho_L, rho_R, u_eta_L, u_eta_R, v_eta_L, v_eta_R, w_eta_L, w_eta_R, E_L, E_R, s_L, s_R, P_rhouvw_L,
+                rho_t1_F_m_y = HLLC_flux(rho_L, rho_R, V_n_eta_L_n, V_n_eta_R_n, V_t1_eta_L_n, V_t1_eta_R_n, V_t2_eta_L_n, V_t2_eta_R_n, E_L, E_R, s_L, s_R, P_rhouvw_L,
                                       P_rhouvw_R, T_L, T_R, a_L, a_R, var_type)
                 # rhow
                 var_type = 3
-                rho_t2_F_m_y = HLLC_flux(rho_L, rho_R, u_eta_L, u_eta_R, v_eta_L, v_eta_R, w_eta_L, w_eta_R, E_L, E_R, s_L, s_R, P_rhouvw_L,
+                rho_t2_F_m_y = HLLC_flux(rho_L, rho_R, V_n_eta_L_n, V_n_eta_R_n, V_t1_eta_L_n, V_t1_eta_R_n, V_t2_eta_L_n, V_t2_eta_R_n, E_L, E_R, s_L, s_R, P_rhouvw_L,
                                       P_rhouvw_R, T_L, T_R, a_L, a_R, var_type)
                 # rhoE
                 var_type = 4
-                rhoE_F_m_y = HLLC_flux(rho_L, rho_R, u_eta_L, u_eta_R, v_eta_L, v_eta_R, w_eta_L, w_eta_R, E_L, E_R, s_L, s_R, P_L, P_R, T_L,
+                rhoE_F_m_y = HLLC_flux(rho_L, rho_R, V_n_eta_L_n, V_n_eta_R_n, V_t1_eta_L_n, V_t1_eta_R_n, V_t2_eta_L_n, V_t2_eta_R_n, E_L, E_R, s_L, s_R, P_L, P_R, T_L,
                                       T_R, a_L, a_R, var_type)
                 
                 rhou_F_m_y = rho_n_F_m_y * n_eta_x + rho_t1_F_m_y * t1_eta_x + rho_t2_F_m_y * t2_eta_x
@@ -1825,12 +1825,12 @@ def inviscid_fluxes(rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v, 
                 rhow_F_m_y = rho_n_F_m_y * n_eta_z + rho_t1_F_m_y * t1_eta_z + rho_t2_F_m_y * t2_eta_z
 
                 ## z-direction k+1/2
-                t1_zeta_x = - n_zeta_z
-                t1_zeta_y = 0.0
-                t1_zeta_z = n_zeta_x
-                t2_zeta_x = n_zeta_x*n_zeta_y
-                t2_zeta_y = - n_zeta_z**2 - n_zeta_x**2
-                t2_zeta_z = n_zeta_y*n_zeta_z
+                t1_zeta_x = 0.0
+                t1_zeta_y = n_zeta_z
+                t1_zeta_z = - n_zeta_y
+                t2_zeta_x = - n_zeta_y**2  - n_zeta_z**2
+                t2_zeta_y =  n_zeta_x*n_zeta_y
+                t2_zeta_z = n_zeta_x*n_zeta_z
                 module_t1_zeta = np.sqrt(t1_zeta_x**2+t1_zeta_y**2+t1_zeta_z**2)
                 module_t2_zeta = np.sqrt(t2_zeta_x**2+t2_zeta_y**2+t2_zeta_z**2)
                 t1_zeta_x /= module_t1_zeta
@@ -1862,32 +1862,32 @@ def inviscid_fluxes(rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v, 
                 P_rhouvw_L = P_L - P_thermo
                 P_rhouvw_R = P_R - P_thermo  # P_Thermo = 0.0 when ACM is deactivated
 
-                u_zeta_L = u_L * n_zeta_x + v_L * n_zeta_y + w_L * n_zeta_z
-                u_zeta_R = u_R * n_zeta_x + v_R * n_zeta_y + w_R * n_zeta_z
-                v_zeta_L = u_L * t1_zeta_x + v_L * t1_zeta_y + w_L * t1_zeta_z
-                v_zeta_R = u_R * t1_zeta_x + v_R * t1_zeta_y + w_R * t1_zeta_z
-                w_zeta_L = u_L * t2_zeta_x + v_L * t2_zeta_y + w_L * t2_zeta_z
-                w_zeta_R = u_R * t2_zeta_x + v_R * t2_zeta_y + w_R * t2_zeta_z
+                V_n_zeta_L_p = u_L * n_zeta_x + v_L * n_zeta_y + w_L * n_zeta_z
+                V_n_zeta_R_p = u_R * n_zeta_x + v_R * n_zeta_y + w_R * n_zeta_z
+                V_t1_zeta_L_p = u_L * t1_zeta_x + v_L * t1_zeta_y + w_L * t1_zeta_z
+                V_t1_zeta_R_p = u_R * t1_zeta_x + v_R * t1_zeta_y + w_R * t1_zeta_z
+                V_t2_zeta_L_p = -(u_L * t2_zeta_x + v_L * t2_zeta_y + w_L * t2_zeta_z)   # Invert the sign of t2 to follow the direction of the flow
+                V_t2_zeta_R_p = -(u_R * t2_zeta_x + v_R * t2_zeta_y + w_R * t2_zeta_z)   # Invert the sign of t2 to follow the direction of the flow
 
                 # rho
                 var_type = 0
-                rho_F_p_z = HLLC_flux(rho_L, rho_R, u_zeta_L, u_zeta_R, v_zeta_L, v_zeta_R, w_zeta_L, w_zeta_R, E_L, E_R, s_L, s_R, P_L, P_R, T_L, T_R,
+                rho_F_p_z = HLLC_flux(rho_L, rho_R, V_n_zeta_L_p, V_n_zeta_R_p, V_t1_zeta_L_p, V_t1_zeta_R_p, V_t2_zeta_L_p, V_t2_zeta_R_p, E_L, E_R, s_L, s_R, P_L, P_R, T_L, T_R,
                                      a_L, a_R, var_type)
                 # rhou
                 var_type = 1
-                rho_n_F_p_z = HLLC_flux(rho_L, rho_R, u_zeta_L, u_zeta_R, v_zeta_L, v_zeta_R, w_zeta_L, w_zeta_R, E_L, E_R, s_L, s_R, P_rhouvw_L,
+                rho_n_F_p_z = HLLC_flux(rho_L, rho_R, V_n_zeta_L_p, V_n_zeta_R_p, V_t1_zeta_L_p, V_t1_zeta_R_p, V_t2_zeta_L_p, V_t2_zeta_R_p, E_L, E_R, s_L, s_R, P_rhouvw_L,
                                       P_rhouvw_R, T_L, T_R, a_L, a_R, var_type)
                 # rhov
                 var_type = 2
-                rho_t1_F_p_z = HLLC_flux(rho_L, rho_R, u_zeta_L, u_zeta_R, v_zeta_L, v_zeta_R, w_zeta_L, w_zeta_R, E_L, E_R, s_L, s_R, P_rhouvw_L,
+                rho_t1_F_p_z = HLLC_flux(rho_L, rho_R, V_n_zeta_L_p, V_n_zeta_R_p, V_t1_zeta_L_p, V_t1_zeta_R_p, V_t2_zeta_L_p, V_t2_zeta_R_p, E_L, E_R, s_L, s_R, P_rhouvw_L,
                                       P_rhouvw_R, T_L, T_R, a_L, a_R, var_type)
                 # rhow
                 var_type = 3
-                rho_t2_F_p_z = HLLC_flux(rho_L, rho_R, u_zeta_L, u_zeta_R, v_zeta_L, v_zeta_R, w_zeta_L, w_zeta_R, E_L, E_R, s_L, s_R, P_rhouvw_L,
+                rho_t2_F_p_z = HLLC_flux(rho_L, rho_R, V_n_zeta_L_p, V_n_zeta_R_p, V_t1_zeta_L_p, V_t1_zeta_R_p, V_t2_zeta_L_p, V_t2_zeta_R_p, E_L, E_R, s_L, s_R, P_rhouvw_L,
                                       P_rhouvw_R, T_L, T_R, a_L, a_R, var_type)
                 # rhoE
                 var_type = 4
-                rhoE_F_p_z = HLLC_flux(rho_L, rho_R, u_zeta_L, u_zeta_R, v_zeta_L, v_zeta_R, w_zeta_L, w_zeta_R, E_L, E_R, s_L, s_R, P_L, P_R, T_L,
+                rhoE_F_p_z = HLLC_flux(rho_L, rho_R, V_n_zeta_L_p, V_n_zeta_R_p, V_t1_zeta_L_p, V_t1_zeta_R_p, V_t2_zeta_L_p, V_t2_zeta_R_p, E_L, E_R, s_L, s_R, P_L, P_R, T_L,
                                       T_R, a_L, a_R, var_type)
                 
                 rhou_F_p_z = rho_n_F_p_z * n_zeta_x + rho_t1_F_p_z * t1_zeta_x + rho_t2_F_p_z * t2_zeta_x
@@ -1917,32 +1917,32 @@ def inviscid_fluxes(rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v, 
                 a_R = sos[i][j][index_R]
                 P_rhouvw_L = P_L - P_thermo
                 P_rhouvw_R = P_R - P_thermo  # P_Thermo = 0.0 when ACM is deactivated
-                u_zeta_L = u_L * n_zeta_x + v_L * n_zeta_y + w_L * n_zeta_z
-                u_zeta_R = u_R * n_zeta_x + v_R * n_zeta_y + w_R * n_zeta_z
-                v_zeta_L = u_L * t1_zeta_x + v_L * t1_zeta_y + w_L * t1_zeta_z
-                v_zeta_R = u_R * t1_zeta_x + v_R * t1_zeta_y + w_R * t1_zeta_z
-                w_zeta_L = u_L * t2_zeta_x + v_L * t2_zeta_y + w_L * t2_zeta_z
-                w_zeta_R = u_R * t2_zeta_x + v_R * t2_zeta_y + w_R * t2_zeta_z
+                V_n_zeta_L_n = u_L * n_zeta_x + v_L * n_zeta_y + w_L * n_zeta_z
+                V_n_zeta_R_n = u_R * n_zeta_x + v_R * n_zeta_y + w_R * n_zeta_z
+                V_t1_zeta_L_n = u_L * t1_zeta_x + v_L * t1_zeta_y + w_L * t1_zeta_z
+                V_t1_zeta_R_n = u_R * t1_zeta_x + v_R * t1_zeta_y + w_R * t1_zeta_z
+                V_t2_zeta_L_n = -(u_L * t2_zeta_x + v_L * t2_zeta_y + w_L * t2_zeta_z)   # Invert the sign of t2 to follow the direction of the flow
+                V_t2_zeta_R_n = -(u_R * t2_zeta_x + v_R * t2_zeta_y + w_R * t2_zeta_z)   # Invert the sign of t2 to follow the direction of the flow
 
                 # rho
                 var_type = 0
-                rho_F_m_z = HLLC_flux(rho_L, rho_R, u_zeta_L, u_zeta_R, v_zeta_L, v_zeta_R, w_zeta_L, w_zeta_R, E_L, E_R, s_L, s_R, P_L, P_R, T_L, T_R,
+                rho_F_m_z = HLLC_flux(rho_L, rho_R, V_n_zeta_L_n, V_n_zeta_R_n, V_t1_zeta_L_n, V_t1_zeta_R_n, V_t2_zeta_L_n, V_t2_zeta_R_n, E_L, E_R, s_L, s_R, P_L, P_R, T_L, T_R,
                                      a_L, a_R, var_type)
                 # rhou
                 var_type = 1
-                rho_n_F_m_z = HLLC_flux(rho_L, rho_R, u_zeta_L, u_zeta_R, v_zeta_L, v_zeta_R, w_zeta_L, w_zeta_R, E_L, E_R, s_L, s_R, P_rhouvw_L,
+                rho_n_F_m_z = HLLC_flux(rho_L, rho_R, V_n_zeta_L_n, V_n_zeta_R_n, V_t1_zeta_L_n, V_t1_zeta_R_n, V_t2_zeta_L_n, V_t2_zeta_R_n, E_L, E_R, s_L, s_R, P_rhouvw_L,
                                       P_rhouvw_R, T_L, T_R, a_L, a_R, var_type)
                 # rhov
                 var_type = 2
-                rho_t1_F_m_z = HLLC_flux(rho_L, rho_R, u_zeta_L, u_zeta_R, v_zeta_L, v_zeta_R, w_zeta_L, w_zeta_R, E_L, E_R, s_L, s_R, P_rhouvw_L,
+                rho_t1_F_m_z = HLLC_flux(rho_L, rho_R, V_n_zeta_L_n, V_n_zeta_R_n, V_t1_zeta_L_n, V_t1_zeta_R_n, V_t2_zeta_L_n, V_t2_zeta_R_n, E_L, E_R, s_L, s_R, P_rhouvw_L,
                                       P_rhouvw_R, T_L, T_R, a_L, a_R, var_type)
                 # rhow
                 var_type = 3
-                rho_t2_F_m_z = HLLC_flux(rho_L, rho_R, u_zeta_L, u_zeta_R, v_zeta_L, v_zeta_R, w_zeta_L, w_zeta_R, E_L, E_R, s_L, s_R, P_rhouvw_L,
+                rho_t2_F_m_z = HLLC_flux(rho_L, rho_R, V_n_zeta_L_n, V_n_zeta_R_n, V_t1_zeta_L_n, V_t1_zeta_R_n, V_t2_zeta_L_n, V_t2_zeta_R_n, E_L, E_R, s_L, s_R, P_rhouvw_L,
                                       P_rhouvw_R, T_L, T_R, a_L, a_R, var_type)
                 # rhoE
                 var_type = 4
-                rhoE_F_m_z = HLLC_flux(rho_L, rho_R, u_zeta_L, u_zeta_R, v_zeta_L, v_zeta_R, w_zeta_L, w_zeta_R, E_L, E_R, s_L, s_R, P_L, P_R, T_L,
+                rhoE_F_m_z = HLLC_flux(rho_L, rho_R, V_n_zeta_L_n, V_n_zeta_R_n, V_t1_zeta_L_n, V_t1_zeta_R_n, V_t2_zeta_L_n, V_t2_zeta_R_n, E_L, E_R, s_L, s_R, P_L, P_R, T_L,
                                       T_R, a_L, a_R, var_type)
                                 
                 rhou_F_m_z = rho_n_F_m_z * n_zeta_x + rho_t1_F_m_z * t1_zeta_x + rho_t2_F_m_z * t2_zeta_x

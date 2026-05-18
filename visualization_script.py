@@ -19,13 +19,13 @@ import nozzlegeometry as nz_cont
 ########## SET PARAMETERS ############
 
 ###################### DATA IMPORT SETTINGS ##########################
-output_iter     = 100000  # Select imported data iteration
+output_iter     = 200  # Select imported data iteration
 
 num_grid_x      = 70  # Number of internal grid points in the x-direction
 num_grid_y      = 50  # Number of internal grid points in the y-direction
 num_grid_z      = 1  # Number of internal grid points in the z-direction
 
-name_file_out   = 'output_data/output_data_2026_05_15/output_data_'  # Name of output data [-]
+name_file_out   = 'output_data/output_data_'  # Name of output data [-]
 filename = name_file_out + str(output_iter) + '.csv'
 ######################################################################
 
@@ -348,7 +348,7 @@ surf2 = ax2.scatter(physical_plane[1:num_grid_x,1:num_grid_y,1,0],
 ax2.plot(contour_x[1:num_grid_x], contour_y[1:num_grid_x], linewidth=2.5, color='black')
 
 cbar2 = fig.colorbar(surf2, ax=ax2, format='%.4f')
-cbar2.set_label('Temperature [K]')
+cbar2.set_label('Axial velocity [m/s]')
 ax2.set_ylim(0, None)
 ax2.set_xlabel('Axis distance [m]')
 ax2.set_ylabel('Radial distance [m]')
