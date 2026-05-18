@@ -19,13 +19,13 @@ import nozzlegeometry as nz_cont
 ########## SET PARAMETERS ############
 
 ###################### DATA IMPORT SETTINGS ##########################
-output_iter     = 100  # Select imported data iteration
+output_iter     = 100000  # Select imported data iteration
 
 num_grid_x      = 70  # Number of internal grid points in the x-direction
 num_grid_y      = 50  # Number of internal grid points in the y-direction
 num_grid_z      = 1  # Number of internal grid points in the z-direction
 
-name_file_out   = 'output_data/output_data_'  # Name of output data [-]
+name_file_out   = 'output_data/output_data_2026_05_15/output_data_'  # Name of output data [-]
 filename = name_file_out + str(output_iter) + '.csv'
 ######################################################################
 
@@ -319,7 +319,7 @@ plt.scatter(physical_plane[1:num_grid_x,1:num_grid_y,1,0], physical_plane[1:num_
 plt.colorbar()
 plt.show()
 
-exit()
+# exit()
 
 print('! Generating subplots')
 fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2,2)
@@ -381,7 +381,7 @@ plt.show()
 png_filename = f'plot_iter_{output_iter}.png'
 
 # Save figure
-plt.savefig(png_filename, dpi=600, bbox_inches='tight')
+# plt.savefig(png_filename, dpi=600, bbox_inches='tight')
 
-plt.close(fig)
+# plt.close(fig)
 
