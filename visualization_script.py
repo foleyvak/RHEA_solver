@@ -19,7 +19,7 @@ import nozzlegeometry as nz_cont
 ########## SET PARAMETERS ############
 
 ###################### DATA IMPORT SETTINGS ##########################
-output_iter     = 400  # Select imported data iteration
+output_iter     = 64500  # Select imported data iteration
 
 num_grid_x      = 50  # Number of internal grid points in the x-direction
 num_grid_y      = 30  # Number of internal grid points in the y-direction
