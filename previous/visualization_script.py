@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
 import math
-import nozzlegeometry as nz_cont
+import nozzlegeometry_1905 as nz_cont
 
 # from rhea_thermodynamics_transport_coefficients import BaseThermodynamicModel
 # from rhea_thermodynamics_transport_coefficients import IdealGasModel
@@ -19,13 +19,13 @@ import nozzlegeometry as nz_cont
 ########## SET PARAMETERS ############
 
 ###################### DATA IMPORT SETTINGS ##########################
-output_iter     = 64500  # Select imported data iteration
+output_iter     = 9200  # Select imported data iteration
 
 num_grid_x      = 50  # Number of internal grid points in the x-direction
 num_grid_y      = 30  # Number of internal grid points in the y-direction
 num_grid_z      = 1  # Number of internal grid points in the z-direction
 
-name_file_out   = 'output_data/output_data_symmetric_nozzle/output_data_'  # Name of output data [-]
+name_file_out   = 'output_data/output_data_'  # Name of output data [-]
 filename = name_file_out + str(output_iter) + '.csv'
 ######################################################################
 
@@ -193,10 +193,12 @@ x2 = x1 - (r2 - r1) / math.tan(theta)
 xc = x2 - R2*math.sin(theta)
 xexp = Rexp*math.sin(alpha)
 
-# L_x = abs(xc) + L_c # + L_N
-L_x = 10.0
+L_x = abs(xc) + L_N
+# L_x = 5.0
 L_z = 0.01
-x_0 = -5.0
+x_0 = xc
+# x_0 = xc - L_c
+# x_0 = -2.5
 
 
 def spatial_discretization(grid):
@@ -212,27 +214,10 @@ def spatial_discretization(grid):
                 # Unevenly-spaced (stretched) cell centroids
                 grid[i][j][k][0] = x_0 + L_x * eta_x + A_x * (0.5 * L_x - L_x * eta_x) * (1.0 - eta_x) * eta_x
 
-                # Calculate contour
-                # if grid[i][j][k][0] <= 0.0:
-                #     L_y_var = nz_cont.convergent_segment(grid[i][j][k][0], rt, rc, R1_rt, R2_R1, theta)
-                # else:
-                #     L_y_var = nz_cont.conical_nozzle(grid[i][j][k][0], rt, Rexp_rt, alpha)
-                
+                # Calculate contour: top-wall radius of the four-zone nozzle at this x.
+                # The transform stays eta = y/L_y(x); only the contour itself changed.
                 x_val = grid[i][j][k][0]
-                left_center = -2.0   
-                right_center = 2.0
-                arg_edge = k * 2.5
-                height_at_edge = - (math.e**(-arg_edge) - math.e**(arg_edge)) / (math.e**(-arg_edge) + math.e**(arg_edge)) + 2.0
-                if x_val < (left_center - 2.5):
-                    L_y_var = height_at_edge                    
-                elif (left_center - 2.5) <= x_val <= 0:
-                    arg = k * (x_val - left_center)
-                    L_y_var = - (math.e**arg - math.e**(-arg)) / (math.e**arg + math.e**(-arg)) + 2.0
-                elif 0 <= x_val <= (right_center + 2.5):
-                    arg = k * (x_val - right_center)
-                    L_y_var = (math.e**arg - math.e**(-arg)) / (math.e**arg + math.e**(-arg)) + 2.0
-                else:
-                    L_y_var = height_at_edge
+                L_y_var = nz_cont.nozzle_top_contour(x_val, rt, rc, R1_rt, R2_R1, theta, Rexp_rt, alpha)
                 # L_y_var = 1.0 # Uncomment to generate a straight pipe
 
                 # Unevenly-spaced (stretched) cell centroids
@@ -258,9 +243,10 @@ def spatial_discretization(grid):
                 if (grid[i][j][k][2] > (z_0 + L_z)):
                     eta_z = (num_grid_z - 0.5) / num_grid_z
                     grid[i][j][k][2] = z_0 + 2.0 * L_z - (L_z * eta_z + A_z * (0.5 * L_z - L_z * eta_z) * (1.0 - eta_z) * eta_z)
-
-
+    # print( grid )
+                    
 spatial_discretization(physical_plane)
+# physical_plane /= 100.0
 
 # Reshape 3D vectors into 3D arrays
 x   = np.reshape(x, (num_grid_x+2, num_grid_y+2, num_grid_z+2))
@@ -324,10 +310,10 @@ contour_y = physical_plane[1:num_grid_x,-2,1,1] # 0.5 * ( physical_plane[1:num_g
 #             else:
 #                 state_2d[i][j] = 5                                                      # SUBCRITICAL GAS
 
-plt.figure()
-plt.scatter(physical_plane[1:num_grid_x,1:num_grid_y,1,0], physical_plane[1:num_grid_x,1:num_grid_y,1,1], c=P_2d[1:num_grid_x,1:num_grid_y]/1e5, cmap='viridis', s=2)
-plt.colorbar()
-plt.show()
+# plt.figure()
+# plt.scatter(physical_plane[1:num_grid_x,1:num_grid_y,1,0], physical_plane[1:num_grid_x,1:num_grid_y,1,1], c=P_2d[1:num_grid_x,1:num_grid_y]/1e5, cmap='viridis', s=2)
+# plt.colorbar()
+# plt.show()
 
 # exit()
 
@@ -342,7 +328,7 @@ surf1 = ax1.scatter(physical_plane[1:num_grid_x,1:num_grid_y,1,0],
                        physical_plane[1:num_grid_x,1:num_grid_y,1,1], 
                        c=P_2d[1:num_grid_x,1:num_grid_y]/1e5, 
                        cmap='viridis', s=2)
-ax1.plot(contour_x[1:num_grid_x], contour_y[1:num_grid_x], linewidth=2.5, color='black')
+ax1.plot(contour_x[0:num_grid_x+1], contour_y[0:num_grid_x+1], linewidth=2.5, color='black')
 
 cbar1 = fig.colorbar(surf1, ax=ax1, format='%.4f')
 cbar1.set_label('Pressure [bar]')
@@ -353,12 +339,12 @@ ax1.set_ylabel('Radial distance [m]')
 # --- Top right corner - Surface (Temperature) ---
 surf2 = ax2.scatter(physical_plane[1:num_grid_x,1:num_grid_y,1,0], 
                        physical_plane[1:num_grid_x,1:num_grid_y,1,1], 
-                       c=u_2d[1:num_grid_x,1:num_grid_y], 
+                       c=T_2d[1:num_grid_x,1:num_grid_y], 
                        cmap='viridis', s=2)
-ax2.plot(contour_x[1:num_grid_x], contour_y[1:num_grid_x], linewidth=2.5, color='black')
+ax2.plot(contour_x[0:num_grid_x+1], contour_y[0:num_grid_x+1], linewidth=2.5, color='black')
 
 cbar2 = fig.colorbar(surf2, ax=ax2, format='%.4f')
-cbar2.set_label('Axial velocity [m/s]')
+cbar2.set_label('Temperature [K]')
 ax2.set_ylim(0, None)
 ax2.set_xlabel('Axis distance [m]')
 ax2.set_ylabel('Radial distance [m]')

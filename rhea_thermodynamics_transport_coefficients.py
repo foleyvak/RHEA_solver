@@ -2,7 +2,7 @@ import numpy as np
 import copy
 from sympy import var, solve
 from scipy.optimize import fsolve
-import CoolProp.CoolProp as CP
+
 
 class BaseThermodynamicModel:
 
@@ -144,7 +144,7 @@ class IdealGasModel(BaseThermodynamicModel):
     c_v = self.R_specific/(self.gamma - 1.0)
 
     # Specific entropy 
-    s = c_v*np.log( P/( rho**self.gamma ) )
+    s = c_v*np.log( P/( rho**self.gamma ) );
 
     return s
 
@@ -729,11 +729,11 @@ class PengRobinsonModel(BaseThermodynamicModel):
       print("One root is 0. Now divide through by x and use the utility for a SECOND degree quadratic to solve the resulting equation for the other two roots. No further action taken.")
       return None, None, None                                                   # To define a null number
 
-    b /= a                                                                      # normalize all coeficients value of the cubic equation                                                                            
-    c /= a                                                                      # normalize all coeficients value of the cubic equation 
-    d /= a                                                                      # normalize all coeficients value of the cubic equation 
+    b /= a                                                                      # normalize all coefficients value of the cubic equation                                                                            
+    c /= a                                                                      # normalize all coefficients value of the cubic equation 
+    d /= a                                                                      # normalize all coefficients value of the cubic equation 
 
-    disc, q, r, dum1, s, t, term1, r13 = 0, 0, 0, 0, 0, 0, 0, 0                 #intermediate parameters of the roots
+    disc, q, r, dum1, s, t, term1, r13 = 0, 0, 0, 0, 0, 0, 0, 0                 # intermediate parameters of the roots
     q = (3.0*c - (b*b))/9.0
     r = -(27.0*d) + b*(9.0*c - 2.0*(b*b))
     r /= 54.0
@@ -994,7 +994,7 @@ class LowPressureGasTransportCoefficients(BaseTransportCoefficients):           
 ################################################################################
 
 
-class HighPressureTransportCoeficients(BaseTransportCoefficients):              ### High-pressure transport coefficients
+class HighPressureTransportCoefficients(BaseTransportCoefficients):              ### High-pressure transport coefficients
 
   ### Atributes (Variables that don't change with temperature)
   molecular_weight                = -1.0 
