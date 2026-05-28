@@ -127,8 +127,8 @@ kappa_value   = 0.0*1.0e-2			                        # Thermal conductivity of t
 initial_time  = 0.0   			                        # Initial time [s]
 final_time    = 10.0      		                        # Final time [s]
 name_file_out = 'output_data'          	                # Name of output data [-]
-use_restart   = False          	               		    # Use restart [-]
-name_restart  = 'restart_data.csv'          	        # Name of restart data [-]
+use_restart   = True          	               		    # Use restart [-]
+name_restart  = 'output_data_50.csv'          	        # Name of restart data [-]
 
 ### Thermodynamics & transport properties model
 thermodynamics = IdealGasModel(R_specific, gamma)
@@ -150,7 +150,7 @@ A_y               = 0.0                                 # Stretching factor in y
 A_z               = 0.0                                 # Stretching factor in z-direction
 CFL               = 0.3 		                        # CFL coefficient
 max_num_time_iter = 1e6			                        # Maximum number of time iterations
-output_iter       = 100			                        # Output data every given number of iterations
+output_iter       = 10			                        # Output data every given number of iterations
 transport_pressure_scheme = False	                    # Select transporting pressure instead of total energy
 artificial_compressibility_method = False               # Activate artificial compressibility method
 epsilon_acm       = 0.01 		                        # Relative error of artificial compressibility method ... it has to be small
@@ -181,7 +181,13 @@ L_y = np.ones( [ num_grid_x + 2] ) * L                                          
 xi = np.zeros( [ num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_sptl_dim ] )
 eta = np.zeros( [ num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_sptl_dim ] )
 zeta = np.zeros( [ num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_sptl_dim ] )
+x_metric = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_sptl_dim]) # x-metric tensor
+y_metric = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_sptl_dim]) # y-metric tensor
+z_metric = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_sptl_dim]) # z-metric tensor
 det_Jacobian = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2]) # Jacobian determinant
+xi   = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_sptl_dim]) # Computational coordinates xi
+eta  = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_sptl_dim]) # Computational coordinates eta
+zeta = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_sptl_dim]) # Computational coordinates zeta
 n_xi    = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_sptl_dim]) # Normal vector in xi direction
 n_eta   = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_sptl_dim]) # Normal vector in eta direction
 n_zeta  = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_sptl_dim]) # Normal vector in zeta direction
@@ -436,12 +442,18 @@ def update_boundaries( rho, rhou, rhov, rhow, rhoE, u, v, w, P, T, sos, grid ):
             dQ_4_dx_in = L_4_lambda_4_in
             dQ_5_dx_in = 0.5*( L_5_lambda_5_in + L_1_lambda_1_in )
             rho_g = rho_in - Delta_g*dQ_1_dx_in
+            #rho_g = rho_in
             u_g   = u_in   - Delta_g*dQ_2_dx_in
+            #u_g   = u_in
             v_g   = v_in   - Delta_g*dQ_3_dx_in
+            #v_g   = v_in
             w_g   = w_in   - Delta_g*dQ_4_dx_in
+            #w_g   = w_in
             P_g   = P_in   - Delta_g*dQ_5_dx_in
+            #P_g   = P_in
             T_g   = T[i][j][k]
             T_g   = thermodynamics.calculateTemperatureFromPressureDensityWithInitialGuess( T_g, P_g, rho_g )
+            #T_g   = T_in
             # Specific internal energy and density
             rho_g = -1.0; e_g = -1.0
             rho_g, e_g = thermodynamics.calculateDensityInternalEnergyFromPressureTemperature(rho_g, e_g, P_g, T_g)
@@ -850,19 +862,19 @@ def spatial_discretization( grid , drc_dx):
                 grid[i][j][k][1] /= L_y[i]                 # coordinate transformation to computational space (xi, eta, zeta) -- y is normalized by local L_y. Change if needed.
 
                 
-    ############## GRID VISUALIZATION ##############
-    fig, (ax1, ax2) = plt.subplots( 1, 2, figsize=( 12, 6 ) )
-    ax1.scatter(physical_grid[:,:,1,0], physical_grid[:,:,1,1], s=2, c='blue', marker='o')
-    ax2.scatter(grid[:,:,1,0], grid[:,:,1,1], s=2, c='red', marker='o')
-    ax1.set_title('Physical Grid')
-    ax1.set_xlabel('x [m]')
-    ax1.set_ylabel('y [m]')
-    ax2.set_title('Computational Grid')
-    ax2.set_xlabel('xi [m]')
-    ax2.set_ylabel('eta')
-    plt.show()
-    ################################################
-    #print( grid )
+    # ############## GRID VISUALIZATION ##############
+    # fig, (ax1, ax2) = plt.subplots( 1, 2, figsize=( 12, 6 ) )
+    # ax1.scatter(physical_grid[:,:,1,0], physical_grid[:,:,1,1], s=2, c='blue', marker='o')
+    # ax2.scatter(grid[:,:,1,0], grid[:,:,1,1], s=2, c='red', marker='o')
+    # ax1.set_title('Physical Grid')
+    # ax1.set_xlabel('x [m]')
+    # ax1.set_ylabel('y [m]')
+    # ax2.set_title('Computational Grid')
+    # ax2.set_xlabel('xi [m]')
+    # ax2.set_ylabel('eta')
+    # plt.show()
+    # ################################################
+    # #print( grid )
 
     
     for i in range( 0, num_grid_x + 2 ):
@@ -876,55 +888,69 @@ def spatial_discretization( grid , drc_dx):
                     drc_dx[i] = ( L_y[i+1] - L_y[i-1] )/( grid[i+1][j][k][0] - grid[i-1][j][k][0] ) # Central difference
 
                 if i == 0:
-                    xi[i][j][k][0]   = (grid[i+1][j][k][0] - grid[i][j][k][0])/( physical_grid[i+1][j][k][0] - physical_grid[i][j][k][0] ) # Forward difference
-                    eta[i][j][k][0]  = (grid[i+1][j][k][1] - grid[i][j][k][1])/( physical_grid[i+1][j][k][0] - physical_grid[i][j][k][0] ) # Forward difference
-                    zeta[i][j][k][0] = (grid[i+1][j][k][2] - grid[i][j][k][2])/( physical_grid[i+1][j][k][0] - physical_grid[i][j][k][0] ) # Forward difference
-                    # print(grid[i][j][k][1], grid[i+1][j][k][1])
-                    # print( 'forward: xi = ' + str(xi[i][j][k][0]) + ', eta = ' + str(eta[i][j][k][0]) + ', zeta = ' + str(zeta[i][j][k][0]) )
+                    x_metric[i][j][k][0] = (physical_grid[i+1][j][k][0] - physical_grid[i][j][k][0])/( grid[i+1][j][k][0] - grid[i][j][k][0] ) # Forward difference
+                    y_metric[i][j][k][0] = (physical_grid[i+1][j][k][1] - physical_grid[i][j][k][1])/( grid[i+1][j][k][0] - grid[i][j][k][0] ) # Forward difference
+                    z_metric[i][j][k][0] = (physical_grid[i+1][j][k][2] - physical_grid[i][j][k][2])/( grid[i+1][j][k][0] - grid[i][j][k][0] ) # Forward difference
+                    #print(grid[i][j][k][1], grid[i+1][j][k][1])
+                    #print( 'forward: xi = ' + str(xi[i][j][k][0]) + ', eta = ' + str(eta[i][j][k][0]) + ', zeta = ' + str(zeta[i][j][k][0]) )
                 elif i == num_grid_x + 1:
-                    xi[i][j][k][0]   = (grid[i][j][k][0] - grid[i-1][j][k][0])/( physical_grid[i][j][k][0] - physical_grid[i-1][j][k][0] ) # Backward difference
-                    eta[i][j][k][0]  = (grid[i][j][k][1] - grid[i-1][j][k][1])/( physical_grid[i][j][k][0] - physical_grid[i-1][j][k][0] ) # Backward difference
-                    zeta[i][j][k][0] = (grid[i][j][k][2] - grid[i-1][j][k][2])/( physical_grid[i][j][k][0] - physical_grid[i-1][j][k][0] ) # Backward difference
-                    # print( 'backward: xi = ' + str(xi[i][j][k][0]) + ', eta = ' + str(eta[i][j][k][0]) + ', zeta = ' + str(zeta[i][j][k][0]) )
+                    x_metric[i][j][k][0] = (physical_grid[i][j][k][0] - physical_grid[i-1][j][k][0])/( grid[i][j][k][0] - grid[i-1][j][k][0] ) # Backward difference
+                    y_metric[i][j][k][0] = (physical_grid[i][j][k][1] - physical_grid[i-1][j][k][1])/( grid[i][j][k][0] - grid[i-1][j][k][0] ) # Backward difference
+                    z_metric[i][j][k][0] = (physical_grid[i][j][k][2] - physical_grid[i-1][j][k][2])/( grid[i][j][k][0] - grid[i-1][j][k][0] ) # Backward difference
+                    #print( 'backward: xi = ' + str(xi[i][j][k][0]) + ', eta = ' + str(eta[i][j][k][0]) + ', zeta = ' + str(zeta[i][j][k][0]) )
                 else:
-                    xi[i][j][k][0]   = (grid[i+1][j][k][0] - grid[i-1][j][k][0])/( physical_grid[i+1][j][k][0] - physical_grid[i-1][j][k][0] ) # Central difference
-                    eta[i][j][k][0]  = (grid[i+1][j][k][1] - grid[i-1][j][k][1])/( physical_grid[i+1][j][k][0] - physical_grid[i-1][j][k][0] ) # Central difference
-                    zeta[i][j][k][0] = (grid[i+1][j][k][2] - grid[i-1][j][k][2])/( physical_grid[i+1][j][k][0] - physical_grid[i-1][j][k][0] ) # Central difference
-                    # print( 'central:' + str(i) + ': xi = ' + str(xi[i][j][k][0]) + ', eta = ' + str(eta[i][j][k][0]) + ', zeta = ' + str(zeta[i][j][k][0]) )
+                    x_metric[i][j][k][0] = (physical_grid[i+1][j][k][0]-physical_grid[i-1][j][k][0])/( grid[i+1][j][k][0] - grid[i-1][j][k][0] ) # Central difference
+                    y_metric[i][j][k][0] = (physical_grid[i+1][j][k][1]-physical_grid[i-1][j][k][1])/( grid[i+1][j][k][0] - grid[i-1][j][k][0] ) # Central difference
+                    z_metric[i][j][k][0] = (physical_grid[i+1][j][k][2]-physical_grid[i-1][j][k][2])/( grid[i+1][j][k][0] - grid[i-1][j][k][0] ) # Central difference
+                    #print( 'central:' + str(i) + ': xi = ' + str(xi[i][j][k][0]) + ', eta = ' + str(eta[i][j][k][0]) + ', zeta = ' + str(zeta[i][j][k][0]) )
                 
                 if j == 0:
-                    xi[i][j][k][1]   = (grid[i][j+1][k][0] - grid[i][j][k][0])/( physical_grid[i][j+1][k][1] - physical_grid[i][j][k][1] ) # Forward difference
-                    eta[i][j][k][1]  = (grid[i][j+1][k][1] - grid[i][j][k][1])/( physical_grid[i][j+1][k][1] - physical_grid[i][j][k][1] ) # Forward difference
-                    zeta[i][j][k][1] = (grid[i][j+1][k][2] - grid[i][j][k][2])/( physical_grid[i][j+1][k][1] - physical_grid[i][j][k][1] ) # Forward difference
+                    x_metric[i][j][k][1] = (physical_grid[i][j+1][k][0] - physical_grid[i][j][k][0])/( grid[i][j+1][k][1] - grid[i][j][k][1] ) # Forward difference
+                    y_metric[i][j][k][1] = (physical_grid[i][j+1][k][1] - physical_grid[i][j][k][1])/( grid[i][j+1][k][1] - grid[i][j][k][1] ) # Forward difference
+                    z_metric[i][j][k][1] = (physical_grid[i][j+1][k][2] - physical_grid[i][j][k][2])/( grid[i][j+1][k][1] - grid[i][j][k][1] ) # Forward difference
                     # print( 'forward: xi = ' + str(xi[i][j][k][1]) + ', eta = ' + str(eta[i][j][k][1]) + ', zeta = ' + str(zeta[i][j][k][1]) )
                 elif j == num_grid_y + 1:
-                    xi[i][j][k][1]   = (grid[i][j][k][0] - grid[i][j-1][k][0])/( physical_grid[i][j][k][1] - physical_grid[i][j-1][k][1] ) # Backward difference
-                    eta[i][j][k][1]  = (grid[i][j][k][1] - grid[i][j-1][k][1])/( physical_grid[i][j][k][1] - physical_grid[i][j-1][k][1] ) # Backward difference
-                    zeta[i][j][k][1] = (grid[i][j][k][2] - grid[i][j-1][k][2])/( physical_grid[i][j][k][1] - physical_grid[i][j-1][k][1] ) # Backward difference
+                    x_metric[i][j][k][1] = (physical_grid[i][j][k][0] - physical_grid[i][j-1][k][0])/( grid[i][j][k][1] - grid[i][j-1][k][1] ) # Backward difference
+                    y_metric[i][j][k][1] = (physical_grid[i][j][k][1] - physical_grid[i][j-1][k][1])/( grid[i][j][k][1] - grid[i][j-1][k][1] ) # Backward difference
+                    z_metric[i][j][k][1] = (physical_grid[i][j][k][2] - physical_grid[i][j-1][k][2])/( grid[i][j][k][1] - grid[i][j-1][k][1] ) # Backward difference
                     # print( 'backward: xi = ' + str(xi[i][j][k][1]) + ', eta = ' + str(eta[i][j][k][1]) + ', zeta = ' + str(zeta[i][j][k][1]) )
                 else:
-                    xi[i][j][k][1]   = (grid[i][j+1][k][0] - grid[i][j-1][k][0])/( physical_grid[i][j+1][k][1] - physical_grid[i][j-1][k][1] ) # Central difference
-                    eta[i][j][k][1]  = (grid[i][j+1][k][1] - grid[i][j-1][k][1])/( physical_grid[i][j+1][k][1] - physical_grid[i][j-1][k][1] ) # Central difference
-                    zeta[i][j][k][1] = (grid[i][j+1][k][2] - grid[i][j-1][k][2])/( physical_grid[i][j+1][k][1] - physical_grid[i][j-1][k][1] ) # Central difference
+                    x_metric[i][j][k][1] = (physical_grid[i][j+1][k][0] - physical_grid[i][j-1][k][0])/( grid[i][j+1][k][1] - grid[i][j-1][k][1] ) # Central difference
+                    y_metric[i][j][k][1] = (physical_grid[i][j+1][k][1] - physical_grid[i][j-1][k][1])/( grid[i][j+1][k][1] - grid[i][j-1][k][1] ) # Central difference
+                    z_metric[i][j][k][1] = (physical_grid[i][j+1][k][2] - physical_grid[i][j-1][k][2])/( grid[i][j+1][k][1] - grid[i][j-1][k][1] ) # Central difference
                     # print( 'centred:' + str(j) + ': xi = ' + str(xi[i][j][k][1]) + ', eta = ' + str(eta[i][j][k][1]) + ', zeta = ' + str(zeta[i][j][k][1]) )
 
                 if k == 0:
-                    xi[i][j][k][2]   = (grid[i][j][k+1][0] - grid[i][j][k][0])/( physical_grid[i][j][k+1][2] - physical_grid[i][j][k][2] )  # Forward difference
-                    eta[i][j][k][2]  = (grid[i][j][k+1][1] - grid[i][j][k][1])/( physical_grid[i][j][k+1][2] - physical_grid[i][j][k][2] )  # Forward difference
-                    zeta[i][j][k][2] = (grid[i][j][k+1][2] - grid[i][j][k][2])/( physical_grid[i][j][k+1][2] - physical_grid[i][j][k][2] )  # Forward difference
-                    # print( 'forward: xi = ' + str(xi[i][j][k][2]) + ', eta = ' + str(eta[i][j][k][2]) + ', zeta = ' + str(zeta[i][j][k][2]) )
+                    x_metric[i][j][k][2] = (physical_grid[i][j][k+1][0] - physical_grid[i][j][k][0])/( grid[i][j][k+1][2] - grid[i][j][k][2] ) # Forward difference
+                    y_metric[i][j][k][2] = (physical_grid[i][j][k+1][1] - physical_grid[i][j][k][1])/( grid[i][j][k+1][2] - grid[i][j][k][2] ) # Forward difference
+                    z_metric[i][j][k][2] = (physical_grid[i][j][k+1][2] - physical_grid[i][j][k][2])/( grid[i][j][k+1][2] - grid[i][j][k][2] ) # Forward difference
+                    #print( 'forward: xi = ' + str(xi[i][j][k][2]) + ', eta = ' + str(eta[i][j][k][2]) + ', zeta = ' + str(zeta[i][j][k][2]) )
                 elif k == num_grid_z + 1:
-                    xi[i][j][k][2]   = (grid[i][j][k][0] - grid[i][j][k-1][0])/( physical_grid[i][j][k][2] - physical_grid[i][j][k-1][2] ) # Backward difference
-                    eta[i][j][k][2]  = (grid[i][j][k][1] - grid[i][j][k-1][1])/( physical_grid[i][j][k][2] - physical_grid[i][j][k-1][2] ) # Backward difference
-                    zeta[i][j][k][2] = (grid[i][j][k][2] - grid[i][j][k-1][2])/( physical_grid[i][j][k][2] - physical_grid[i][j][k-1][2] ) # Backward difference
-                    # print( 'backward: xi = ' + str(xi[i][j][k][2]) + ', eta = ' + str(eta[i][j][k][2]) + ', zeta = ' + str(zeta[i][j][k][2]) )
+                    x_metric[i][j][k][2] = (physical_grid[i][j][k][0] - physical_grid[i][j][k-1][0])/( grid[i][j][k][2] - grid[i][j][k-1][2] ) # Backward difference
+                    y_metric[i][j][k][2] = (physical_grid[i][j][k][1] - physical_grid[i][j][k-1][1])/( grid[i][j][k][2] - grid[i][j][k-1][2] ) # Backward difference
+                    z_metric[i][j][k][2] = (physical_grid[i][j][k][2] - physical_grid[i][j][k-1][2])/( grid[i][j][k][2] - grid[i][j][k-1][2] ) # Backward difference
+                    #print( 'backward: xi = ' + str(xi[i][j][k][2]) + ', eta = ' + str(eta[i][j][k][2]) + ', zeta = ' + str(zeta[i][j][k][2]) )
                 else:
-                    xi[i][j][k][2]   = (grid[i][j][k+1][0] - grid[i][j][k-1][0])/( physical_grid[i][j][k+1][2] - physical_grid[i][j][k-1][2] ) # Central difference
-                    eta[i][j][k][2]  = (grid[i][j][k+1][1] - grid[i][j][k-1][1])/( physical_grid[i][j][k+1][2] - physical_grid[i][j][k-1][2] ) # Central difference
-                    zeta[i][j][k][2] = (grid[i][j][k+1][2] - grid[i][j][k-1][2])/( physical_grid[i][j][k+1][2] - physical_grid[i][j][k-1][2] ) # Central difference
-                    # print( 'centred:' + str(k) + ': xi = ' + str(xi[i][j][k][2]) + ', eta = ' + str(eta[i][j][k][2]) + ', zeta = ' + str(zeta[i][j][k][2]) )
-            
-                det_Jacobian[i][j][k] = xi[i][j][k][0]*( eta[i][j][k][1]*zeta[i][j][k][2] - eta[i][j][k][2]*zeta[i][j][k][1] ) - xi[i][j][k][1]*( eta[i][j][k][0]*zeta[i][j][k][2] - eta[i][j][k][2]*zeta[i][j][k][0] ) + xi[i][j][k][2]*( eta[i][j][k][0]*zeta[i][j][k][1] - eta[i][j][k][1]*zeta[i][j][k][0] ) # Calculate Jacobian of coordinate transformation to computational space (xi, eta, zeta) using the formula: det_Jacobian = xi_x*( eta_y*zeta_z - eta_z*zeta_y ) - xi_y*( eta_x*zeta_z - eta_z*zeta_x ) + xi_z*( eta_x*zeta_y - eta_y*zeta_x )
+                    x_metric[i][j][k][2] = (physical_grid[i][j][k+1][0] - physical_grid[i][j][k-1][0])/( grid[i][j][k+1][2] - grid[i][j][k-1][2] ) # Central difference
+                    y_metric[i][j][k][2] = (physical_grid[i][j][k+1][1] - physical_grid[i][j][k-1][1])/( grid[i][j][k+1][2] - grid[i][j][k-1][2] ) # Central difference
+                    z_metric[i][j][k][2] = (physical_grid[i][j][k+1][2] - physical_grid[i][j][k-1][2])/( grid[i][j][k+1][2] - grid[i][j][k-1][2] ) # Central difference
+                    #print( 'centred:' + str(k) + ': xi = ' + str(xi[i][j][k][2]) + ', eta = ' + str(eta[i][j][k][2]) + ', zeta = ' + str(zeta[i][j][k][2]) )
+
+                det_Jacobian[i][j][k] = x_metric[i][j][k][0]*y_metric[i][j][k][1]*z_metric[i][j][k][2] + x_metric[i][j][k][1]*y_metric[i][j][k][2]*z_metric[i][j][k][0] + x_metric[i][j][k][2]*y_metric[i][j][k][0]*z_metric[i][j][k][1] - x_metric[i][j][k][2]*y_metric[i][j][k][1]*z_metric[i][j][k][0] - x_metric[i][j][k][1]*y_metric[i][j][k][0]*z_metric[i][j][k][2] - x_metric[i][j][k][0]*y_metric[i][j][k][2]*z_metric[i][j][k][1] # Calculate Jacobian of coordinate transformation to computational space (xi, eta, zeta)
+                # print('|J_xyz| = ' + str(det_Jacobian[i][j][k]) + ' at i = ' + str(i) + ', j = ' + str(j) + ', k = ' + str(k) )
+
+                xi[i][j][k][0]   = (y_metric[i][j][k][1]*z_metric[i][j][k][2] - y_metric[i][j][k][2]*z_metric[i][j][k][1]) / det_Jacobian[i][j][k] # Gradient of xi in x direction
+                xi[i][j][k][1]   = (x_metric[i][j][k][2]*z_metric[i][j][k][1] - x_metric[i][j][k][1]*z_metric[i][j][k][2]) / det_Jacobian[i][j][k] # Gradient of xi in y direction
+                xi[i][j][k][2]   = (x_metric[i][j][k][1]*y_metric[i][j][k][2] - x_metric[i][j][k][2]*y_metric[i][j][k][1]) / det_Jacobian[i][j][k] # Gradient of xi in z direction
+                eta[i][j][k][0]  = (y_metric[i][j][k][2]*z_metric[i][j][k][0] - y_metric[i][j][k][0]*z_metric[i][j][k][2]) / det_Jacobian[i][j][k] # Gradient of eta in x direction
+                eta[i][j][k][1]  = (x_metric[i][j][k][0]*z_metric[i][j][k][2] - x_metric[i][j][k][2]*z_metric[i][j][k][0]) / det_Jacobian[i][j][k] # Gradient of eta in y direction
+                eta[i][j][k][2]  = (x_metric[i][j][k][2]*y_metric[i][j][k][0] - x_metric[i][j][k][0]*y_metric[i][j][k][2]) / det_Jacobian[i][j][k] # Gradient of eta in z direction
+                zeta[i][j][k][0] = (y_metric[i][j][k][0]*z_metric[i][j][k][1] - y_metric[i][j][k][1]*z_metric[i][j][k][0]) / det_Jacobian[i][j][k] # Gradient of zeta in x direction
+                zeta[i][j][k][1] = (x_metric[i][j][k][1]*z_metric[i][j][k][0] - x_metric[i][j][k][0]*z_metric[i][j][k][1]) / det_Jacobian[i][j][k] # Gradient of zeta in y direction
+                zeta[i][j][k][2] = (x_metric[i][j][k][0]*y_metric[i][j][k][1] - x_metric[i][j][k][1]*y_metric[i][j][k][0]) / det_Jacobian[i][j][k] # Gradient of zeta in z direction
+
+                det_Jacobian[i][j][k] = xi[i][j][k][0]*( eta[i][j][k][1]*zeta[i][j][k][2] - eta[i][j][k][2]*zeta[i][j][k][1] ) - xi[i][j][k][1]*( eta[i][j][k][0]*zeta[i][j][k][2] - eta[i][j][k][2]*zeta[i][j][k][0] ) + xi[i][j][k][2]*( eta[i][j][k][0]*zeta[i][j][k][1] - eta[i][j][k][1]*zeta[i][j][k][0] )
+                # print('|J_xietazeta| = ' + str(det_Jacobian[i][j][k]) + ' at i = ' + str(i) + ', j = ' + str(j) + ', k = ' + str(k) )
 
                 module_grad_xi   = np.sqrt( xi[i][j][k][0]*xi[i][j][k][0] + xi[i][j][k][1]*xi[i][j][k][1] + xi[i][j][k][2]*xi[i][j][k][2] )
                 module_grad_eta  = np.sqrt( eta[i][j][k][0]*eta[i][j][k][0] + eta[i][j][k][1]*eta[i][j][k][1] + eta[i][j][k][2]*eta[i][j][k][2] )
@@ -1006,8 +1032,7 @@ def spatial_discretization( grid , drc_dx):
                 # print(t1_zeta[i][j][k][0], t1_zeta[i][j][k][1], t1_zeta[i][j][k][2])
                 # print(t2_zeta[i][j][k][0], t2_zeta[i][j][k][1], t2_zeta[i][j][k][2])
                 # print( '-----------------------------' )
-
-                
+        # print(eta[i][j][k][0], eta[i][j][k][1], eta[i][j][k][2], '-eta/L_y drc_dx = ' + str(-grid[i][j][k][1]/L_y[i]*drc_dx[i]) ) 
 
 ### Initialize thermodynamic variables
 def initialize_thermodynamics( rho, E, s, u, v, w, P, T ):
@@ -1501,6 +1526,7 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 V_t1_xi_R_p = u_R * t1_xi[index_R][j][k][0] + v_R * t1_xi[index_R][j][k][1] + w_R * t1_xi[index_R][j][k][2]
                 V_t2_xi_L_p = u_L * t2_xi[index_L][j][k][0] + v_L * t2_xi[index_L][j][k][1] + w_L * t2_xi[index_L][j][k][2]
                 V_t2_xi_R_p = u_R * t2_xi[index_R][j][k][0] + v_R * t2_xi[index_R][j][k][1] + w_R * t2_xi[index_R][j][k][2]
+
                 # rho
                 var_type = 0
                 rho_F_p_x = ECKEP_flux(rho_L, rho_R, V_n_xi_L_p, V_n_xi_R_p, V_t1_xi_L_p, V_t1_xi_R_p, V_t2_xi_L_p, V_t2_xi_R_p, E_L, E_R, s_L, s_R, P_L, P_R, T_L, T_R, a_L, a_R, var_type)
@@ -1516,10 +1542,10 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 # rhoE
                 var_type = 4
                 rhoE_F_p_x = ECKEP_flux(rho_L, rho_R, V_n_xi_L_p, V_n_xi_R_p, V_t1_xi_L_p, V_t1_xi_R_p, V_t2_xi_L_p, V_t2_xi_R_p, E_L, E_R, s_L, s_R, P_L, P_R, T_L, T_R, a_L, a_R, var_type)
+
                 rhou_F_p_x = (rho_n_F_p_x * n_xi_x_p + rho_t1_F_p_x * t1_xi_x_p + rho_t2_F_p_x * t2_xi_x_p)
                 rhov_F_p_x = (rho_n_F_p_x * n_xi_y_p + rho_t1_F_p_x * t1_xi_y_p + rho_t2_F_p_x * t2_xi_y_p)
                 rhow_F_p_x = (rho_n_F_p_x * n_xi_z_p + rho_t1_F_p_x * t1_xi_z_p + rho_t2_F_p_x * t2_xi_z_p) 
-
 
                 ## x-direction i-1/2
                 index_L = i - 1;              index_R = i
@@ -1550,6 +1576,7 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 V_t1_xi_R_m = u_R * t1_xi[index_R][j][k][0] + v_R * t1_xi[index_R][j][k][1] + w_R * t1_xi[index_R][j][k][2]
                 V_t2_xi_L_m = u_L * t2_xi[index_L][j][k][0] + v_L * t2_xi[index_L][j][k][1] + w_L * t2_xi[index_L][j][k][2]
                 V_t2_xi_R_m = u_R * t2_xi[index_R][j][k][0] + v_R * t2_xi[index_R][j][k][1] + w_R * t2_xi[index_R][j][k][2]
+
                 # rho
                 var_type = 0
                 rho_F_m_x = ECKEP_flux(rho_L, rho_R, V_n_xi_L_m, V_n_xi_R_m, V_t1_xi_L_m, V_t1_xi_R_m, V_t2_xi_L_m, V_t2_xi_R_m, E_L, E_R, s_L, s_R, P_L, P_R, T_L, T_R, a_L, a_R, var_type)
@@ -1565,10 +1592,10 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 # rhoE
                 var_type = 4
                 rhoE_F_m_x = ECKEP_flux(rho_L, rho_R, V_n_xi_L_m, V_n_xi_R_m, V_t1_xi_L_m, V_t1_xi_R_m, V_t2_xi_L_m, V_t2_xi_R_m, E_L, E_R, s_L, s_R, P_L, P_R, T_L, T_R, a_L, a_R, var_type)
+
                 rhou_F_m_x = (rho_n_F_m_x * n_xi_x_m + rho_t1_F_m_x * t1_xi_x_m + rho_t2_F_m_x * t2_xi_x_m)
                 rhov_F_m_x = (rho_n_F_m_x * n_xi_y_m + rho_t1_F_m_x * t1_xi_y_m + rho_t2_F_m_x * t2_xi_y_m)
                 rhow_F_m_x = (rho_n_F_m_x * n_xi_z_m + rho_t1_F_m_x * t1_xi_z_m + rho_t2_F_m_x * t2_xi_z_m)
-
 
                 ## y-direction j+1/2
                 index_L = j;                  index_R = j + 1
@@ -1599,14 +1626,15 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 V_t1_eta_R_p = u_R * t1_eta[i][index_R][k][0] + v_R * t1_eta[i][index_R][k][1] + w_R * t1_eta[i][index_R][k][2]
                 V_t2_eta_L_p = u_L * t2_eta[i][index_L][k][0] + v_L * t2_eta[i][index_L][k][1] + w_L * t2_eta[i][index_L][k][2]
                 V_t2_eta_R_p = u_R * t2_eta[i][index_R][k][0] + v_R * t2_eta[i][index_R][k][1] + w_R * t2_eta[i][index_R][k][2]
+
                 # rho
                 var_type = 0
                 rho_F_p_y = ECKEP_flux(rho_L, rho_R, V_n_eta_L_p, V_n_eta_R_p, V_t1_eta_L_p, V_t1_eta_R_p, V_t2_eta_L_p, V_t2_eta_R_p, E_L, E_R, s_L, s_R, P_L, P_R, T_L, T_R, a_L, a_R, var_type)
                 # rhou
-                var_type = 2
+                var_type = 1
                 rho_n_F_p_y = ECKEP_flux(rho_L, rho_R, V_n_eta_L_p, V_n_eta_R_p, V_t1_eta_L_p, V_t1_eta_R_p, V_t2_eta_L_p, V_t2_eta_R_p, E_L, E_R, s_L, s_R, P_rhouvw_L, P_rhouvw_R, T_L, T_R, a_L, a_R, var_type)
                 # rhov
-                var_type = 1
+                var_type = 2
                 rho_t1_F_p_y = ECKEP_flux(rho_L, rho_R, V_n_eta_L_p, V_n_eta_R_p, V_t1_eta_L_p, V_t1_eta_R_p, V_t2_eta_L_p, V_t2_eta_R_p, E_L, E_R, s_L, s_R, P_rhouvw_L, P_rhouvw_R, T_L, T_R, a_L, a_R, var_type)
                 # rhow
                 var_type = 3
@@ -1614,10 +1642,10 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 # rhoE
                 var_type = 4
                 rhoE_F_p_y = ECKEP_flux(rho_L, rho_R, V_n_eta_L_p, V_n_eta_R_p, V_t1_eta_L_p, V_t1_eta_R_p, V_t2_eta_L_p, V_t2_eta_R_p, E_L, E_R, s_L, s_R, P_L, P_R, T_L, T_R, a_L, a_R, var_type)
+
                 rhou_F_p_y = (rho_n_F_p_y * n_eta_x_p + rho_t1_F_p_y * t1_eta_x_p + rho_t2_F_p_y * t2_eta_x_p)
                 rhov_F_p_y = (rho_n_F_p_y * n_eta_y_p + rho_t1_F_p_y * t1_eta_y_p + rho_t2_F_p_y * t2_eta_y_p)
                 rhow_F_p_y = (rho_n_F_p_y * n_eta_z_p + rho_t1_F_p_y * t1_eta_z_p + rho_t2_F_p_y * t2_eta_z_p)
-
 
                 ## y-direction j-1/2
                 index_L = j - 1;              index_R = j
@@ -1648,13 +1676,14 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 V_t1_eta_R_m = u_R * t1_eta[i][index_R][k][0] + v_R * t1_eta[i][index_R][k][1] + w_R * t1_eta[i][index_R][k][2]
                 V_t2_eta_L_m = u_L * t2_eta[i][index_L][k][0] + v_L * t2_eta[i][index_L][k][1] + w_L * t2_eta[i][index_L][k][2]
                 V_t2_eta_R_m = u_R * t2_eta[i][index_R][k][0] + v_R * t2_eta[i][index_R][k][1] + w_R * t2_eta[i][index_R][k][2]
+
                 var_type = 0
                 rho_F_m_y = ECKEP_flux(rho_L, rho_R, V_n_eta_L_m, V_n_eta_R_m, V_t1_eta_L_m, V_t1_eta_R_m, V_t2_eta_L_m, V_t2_eta_R_m, E_L, E_R, s_L, s_R, P_L, P_R, T_L, T_R, a_L, a_R, var_type)
                 # rhou
-                var_type = 2
+                var_type = 1
                 rho_n_F_m_y = ECKEP_flux(rho_L, rho_R, V_n_eta_L_m, V_n_eta_R_m, V_t1_eta_L_m, V_t1_eta_R_m, V_t2_eta_L_m, V_t2_eta_R_m, E_L, E_R, s_L, s_R, P_rhouvw_L, P_rhouvw_R, T_L, T_R, a_L, a_R, var_type)
                 # rhov
-                var_type = 1
+                var_type = 2
                 rho_t1_F_m_y = ECKEP_flux(rho_L, rho_R, V_n_eta_L_m, V_n_eta_R_m, V_t1_eta_L_m, V_t1_eta_R_m, V_t2_eta_L_m, V_t2_eta_R_m, E_L, E_R, s_L, s_R, P_rhouvw_L, P_rhouvw_R, T_L, T_R, a_L, a_R, var_type)
                 # rhow
                 var_type = 3
@@ -1662,10 +1691,10 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 # rhoE
                 var_type = 4
                 rhoE_F_m_y = ECKEP_flux(rho_L, rho_R, V_n_eta_L_m, V_n_eta_R_m, V_t1_eta_L_m, V_t1_eta_R_m, V_t2_eta_L_m, V_t2_eta_R_m, E_L, E_R, s_L, s_R, P_L, P_R, T_L, T_R, a_L, a_R, var_type)
+
                 rhou_F_m_y = (rho_n_F_m_y * n_eta_x_m + rho_t1_F_m_y * t1_eta_x_m + rho_t2_F_m_y * t2_eta_x_m)
                 rhov_F_m_y = (rho_n_F_m_y * n_eta_y_m + rho_t1_F_m_y * t1_eta_y_m + rho_t2_F_m_y * t2_eta_y_m)
                 rhow_F_m_y = (rho_n_F_m_y * n_eta_z_m + rho_t1_F_m_y * t1_eta_z_m + rho_t2_F_m_y * t2_eta_z_m)
-
 
                 ## z-direction k+1/2              
                 index_L = k;                  index_R = k + 1
@@ -1696,25 +1725,26 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 V_t1_zeta_R_p = u_R * t1_zeta[i][j][index_R][0] + v_R * t1_zeta[i][j][index_R][1] + w_R * t1_zeta[i][j][index_R][2]
                 V_t2_zeta_L_p = u_L * t2_zeta[i][j][index_L][0] + v_L * t2_zeta[i][j][index_L][1] + w_L * t2_zeta[i][j][index_L][2]
                 V_t2_zeta_R_p = u_R * t2_zeta[i][j][index_R][0] + v_R * t2_zeta[i][j][index_R][1] + w_R * t2_zeta[i][j][index_R][2]
+
                 # rho
                 var_type = 0
                 rho_F_p_z = ECKEP_flux(rho_L, rho_R, V_n_zeta_L_p, V_n_zeta_R_p, V_t1_zeta_L_p, V_t1_zeta_R_p, V_t2_zeta_L_p, V_t2_zeta_R_p, E_L, E_R, s_L, s_R, P_L, P_R, T_L, T_R, a_L, a_R, var_type)
                 # rhou
-                var_type = 3
+                var_type = 1
                 rho_n_F_p_z = ECKEP_flux(rho_L, rho_R, V_n_zeta_L_p, V_n_zeta_R_p, V_t1_zeta_L_p, V_t1_zeta_R_p, V_t2_zeta_L_p, V_t2_zeta_R_p, E_L, E_R, s_L, s_R, P_rhouvw_L, P_rhouvw_R, T_L, T_R, a_L, a_R, var_type)
                 # rhov
                 var_type = 2
                 rho_t1_F_p_z = ECKEP_flux(rho_L, rho_R, V_n_zeta_L_p, V_n_zeta_R_p, V_t1_zeta_L_p, V_t1_zeta_R_p, V_t2_zeta_L_p, V_t2_zeta_R_p, E_L, E_R, s_L, s_R, P_rhouvw_L, P_rhouvw_R, T_L, T_R, a_L, a_R, var_type)
                 # rhow
-                var_type = 1
+                var_type = 3
                 rho_t2_F_p_z = ECKEP_flux(rho_L, rho_R, V_n_zeta_L_p, V_n_zeta_R_p, V_t1_zeta_L_p, V_t1_zeta_R_p, V_t2_zeta_L_p, V_t2_zeta_R_p, E_L, E_R, s_L, s_R, P_rhouvw_L, P_rhouvw_R, T_L, T_R, a_L, a_R, var_type)
                 # rhoE
                 var_type = 4
                 rhoE_F_p_z = ECKEP_flux(rho_L, rho_R, V_n_zeta_L_p, V_n_zeta_R_p, V_t1_zeta_L_p, V_t1_zeta_R_p, V_t2_zeta_L_p, V_t2_zeta_R_p, E_L, E_R, s_L, s_R, P_L, P_R, T_L, T_R, a_L, a_R, var_type)
+
                 rhou_F_p_z = (rho_n_F_p_z * n_zeta_x_p + rho_t1_F_p_z * t1_zeta_x_p + rho_t2_F_p_z * t2_zeta_x_p)
                 rhov_F_p_z = (rho_n_F_p_z * n_zeta_y_p + rho_t1_F_p_z * t1_zeta_y_p + rho_t2_F_p_z * t2_zeta_y_p)
                 rhow_F_p_z = (rho_n_F_p_z * n_zeta_z_p + rho_t1_F_p_z * t1_zeta_z_p + rho_t2_F_p_z * t2_zeta_z_p)
-
 
                 ## z-direction k-1/2
                 index_L = k - 1;              index_R = k
@@ -1745,25 +1775,26 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 V_t1_zeta_R_m = u_R * t1_zeta[i][j][index_R][0] + v_R * t1_zeta[i][j][index_R][1] + w_R * t1_zeta[i][j][index_R][2]
                 V_t2_zeta_L_m = u_L * t2_zeta[i][j][index_L][0] + v_L * t2_zeta[i][j][index_L][1] + w_L * t2_zeta[i][j][index_L][2]
                 V_t2_zeta_R_m = u_R * t2_zeta[i][j][index_R][0] + v_R * t2_zeta[i][j][index_R][1] + w_R * t2_zeta[i][j][index_R][2]
+
                 # rho
                 var_type = 0
                 rho_F_m_z = ECKEP_flux(rho_L, rho_R, V_n_zeta_L_m, V_n_zeta_R_m, V_t1_zeta_L_m, V_t1_zeta_R_m, V_t2_zeta_L_m, V_t2_zeta_R_m, E_L, E_R, s_L, s_R, P_L, P_R, T_L, T_R, a_L, a_R, var_type)
                 # rhou
-                var_type = 3
+                var_type = 1
                 rho_n_F_m_z = ECKEP_flux(rho_L, rho_R, V_n_zeta_L_m, V_n_zeta_R_m, V_t1_zeta_L_m, V_t1_zeta_R_m, V_t2_zeta_L_m, V_t2_zeta_R_m, E_L, E_R, s_L, s_R, P_rhouvw_L, P_rhouvw_R, T_L, T_R, a_L, a_R, var_type)
                 # rhov
                 var_type = 2
                 rho_t1_F_m_z = ECKEP_flux(rho_L, rho_R, V_n_zeta_L_m, V_n_zeta_R_m, V_t1_zeta_L_m, V_t1_zeta_R_m, V_t2_zeta_L_m, V_t2_zeta_R_m, E_L, E_R, s_L, s_R, P_rhouvw_L, P_rhouvw_R, T_L, T_R, a_L, a_R, var_type)
                 # rhow
-                var_type = 1
+                var_type = 3
                 rho_t2_F_m_z = ECKEP_flux(rho_L, rho_R, V_n_zeta_L_m, V_n_zeta_R_m, V_t1_zeta_L_m, V_t1_zeta_R_m, V_t2_zeta_L_m, V_t2_zeta_R_m, E_L, E_R, s_L, s_R, P_rhouvw_L, P_rhouvw_R, T_L, T_R, a_L, a_R, var_type)
                 # rhoE
                 var_type = 4
                 rhoE_F_m_z = ECKEP_flux(rho_L, rho_R, V_n_zeta_L_m, V_n_zeta_R_m, V_t1_zeta_L_m, V_t1_zeta_R_m, V_t2_zeta_L_m, V_t2_zeta_R_m, E_L, E_R, s_L, s_R, P_L, P_R, T_L, T_R, a_L, a_R, var_type)
+
                 rhou_F_m_z = (rho_n_F_m_z * n_zeta_x_m + rho_t1_F_m_z * t1_zeta_x_m + rho_t2_F_m_z * t2_zeta_x_m)
                 rhov_F_m_z = (rho_n_F_m_z * n_zeta_y_m + rho_t1_F_m_z * t1_zeta_y_m + rho_t2_F_m_z * t2_zeta_y_m)
                 rhow_F_m_z = (rho_n_F_m_z * n_zeta_z_m + rho_t1_F_m_z * t1_zeta_z_m + rho_t2_F_m_z * t2_zeta_z_m)
-
 
                 ### Strong conservative form of the Navier-Stokes equations
                 ## Fluxes x-direction
@@ -1806,21 +1837,21 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 rhoE_conH_m_z = 0.5 * ((zeta[i][j][k][0]/det_Jacobian[i][j][k] + (zeta[i][j][k+1][0])/det_Jacobian[i][j][k+1])*rhoE_F_m_x + (zeta[i][j][k][1]/det_Jacobian[i][j][k] + zeta[i][j][k+1][1]/det_Jacobian[i][j][k+1])*rhoE_F_m_y + (zeta[i][j][k][2]/det_Jacobian[i][j][k] + zeta[i][j][k+1][2]/det_Jacobian[i][j][k+1])*rhoE_F_m_z)
                 
                 ## Fluxes x-direction 
-                rho_inv[i][j][k] = (1.0 / delta_x) * (rho_conF_p_x - rho_conF_m_x)
+                rho_inv[i][j][k]  = (1.0 / delta_x) * (rho_conF_p_x - rho_conF_m_x)
                 rhou_inv[i][j][k] = (1.0 / delta_x) * (rhou_conF_p_x - rhou_conF_m_x)
                 rhov_inv[i][j][k] = (1.0 / delta_x) * (rhov_conF_p_x - rhov_conF_m_x)
                 rhow_inv[i][j][k] = (1.0 / delta_x) * (rhow_conF_p_x - rhow_conF_m_x)
                 rhoE_inv[i][j][k] = (1.0 / delta_x) * (rhoE_conF_p_x - rhoE_conF_m_x)
 
                 ## Fluxes y-direction 
-                rho_inv[i][j][k] += (1.0 / delta_y) * (rho_conG_p_y - rho_conG_m_y)
+                rho_inv[i][j][k]  += (1.0 / delta_y) * (rho_conG_p_y - rho_conG_m_y)
                 rhou_inv[i][j][k] += (1.0 / delta_y) * (rhou_conG_p_y - rhou_conG_m_y)
                 rhov_inv[i][j][k] += (1.0 / delta_y) * (rhov_conG_p_y - rhov_conG_m_y)
                 rhow_inv[i][j][k] += (1.0 / delta_y) * (rhow_conG_p_y - rhow_conG_m_y)
                 rhoE_inv[i][j][k] += (1.0 / delta_y) * (rhoE_conG_p_y - rhoE_conG_m_y)
 
                 ## Fluxes z-direction
-                rho_inv[i][j][k] += (1.0 / delta_z) * (rho_conH_p_z - rho_conH_m_z)
+                rho_inv[i][j][k]  += (1.0 / delta_z) * (rho_conH_p_z - rho_conH_m_z)
                 rhou_inv[i][j][k] += (1.0 / delta_z) * (rhou_conH_p_z - rhou_conH_m_z)
                 rhov_inv[i][j][k] += (1.0 / delta_z) * (rhov_conH_p_z - rhov_conH_m_z)
                 rhow_inv[i][j][k] += (1.0 / delta_z) * (rhow_conH_p_z - rhow_conH_m_z)
