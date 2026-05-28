@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
 import math
-import geometry_function as geometry
 
 # from rhea_thermodynamics_transport_coefficients import BaseThermodynamicModel
 # from rhea_thermodynamics_transport_coefficients import IdealGasModel
@@ -19,11 +18,11 @@ import geometry_function as geometry
 ########## SET PARAMETERS ############
 
 ###################### DATA IMPORT SETTINGS ##########################
-output_iter     = 259  # Select imported data iteration
+output_iter     = 200  # Select imported data iteration
 
 num_grid_x      = 32  # Number of internal grid points in the x-direction
-num_grid_y      = 16  # Number of internal grid points in the y-direction
-num_grid_z      = 1  # Number of internal grid points in the z-direction
+num_grid_y      = 16   # Number of internal grid points in the y-direction
+num_grid_z      = 1    # Number of internal grid points in the z-direction
 
 name_file_out   = 'output_data_'  # Name of output data [-]
 filename = name_file_out + str(output_iter) + '.csv'
@@ -77,6 +76,73 @@ S_kappa                 = 1800.0  # Sutherland's thermal conductivity constant [
 dipole_moment           = 0.0  # Dipole moment [D]
 association_factor      = 0.0  # Association factor [-]
 #############################################################################################
+
+#############################################################################################
+x_0 = 0.0
+y_0 = 0.0
+z_0 = 0.0
+
+L = 1.0
+L_y = np.ones(num_grid_x+2) * L
+L_y_0 = 1.0 * L
+L_y_f = 0.5 * L
+
+L_x = 2.0
+L_y_var = 1.0
+L_z = 0.01
+
+A_x = 0.0
+A_y = 0.0
+A_z = 0.0
+#############################################################################################
+
+def spatial_discretization( grid):
+    physical_grid = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_sptl_dim]) # Physical grid (x, y, z)
+    # All points
+    for i in range( 0, num_grid_x + 2 ):    
+        for j in range( 0, num_grid_y + 2 ):    
+            for k in range( 0, num_grid_z + 2 ):
+                # Evenly-spaced (dummy variable) cell centroids
+                eta_x = ( i - 0.5 )/num_grid_x
+                eta_y = ( j - 0.5 )/num_grid_y
+                eta_z = ( k - 0.5 )/num_grid_z
+                # Unevenly-spaced (stretched) cell centroids
+                grid[i][j][k][0] = x_0 + L_x*eta_x + A_x*( 0.5*L_x - L_x*eta_x )*( 1.0 - eta_x )*eta_x
+
+                ### Define geometry contour
+                # Ramp
+                L_y[i] = L_y_0 + (L_y_f-L_y_0)/L_x*grid[i][j][k][0] # Example geometry -- a linearly expanding duct
+                
+                # # Hyperbolic tangent
+                # # 1. Extract the current X coordinate for readability
+                # x_coord = grid[i][j][k][0]
+                # # 2. Define a scaling/sharpness parameter (s)
+                # # s = 3.0 is a good default where the transition finishes right at the boundaries.
+                # s = 3.5 
+                # # 3. The tanh geometry transformation
+                # L_y[i] = L_y_0 + (L_y_f - L_y_0) * 0.5 * (1.0 + np.tanh(s * (2.0 * x_coord / L_x - 1.0)))
+
+                grid[i][j][k][1] = y_0 + L_y[i]*eta_y + A_y*( 0.5*L_y[i] - L_y[i]*eta_y )*( 1.0 - eta_y )*eta_y
+                grid[i][j][k][2] = z_0 + L_z*eta_z + A_z*( 0.5*L_z - L_z*eta_z )*( 1.0 - eta_z )*eta_z
+                # Adjust (symmetric) boundary cell centroids
+                if( grid[i][j][k][0] < x_0 ):
+                    eta_x = ( 1.0 - 0.5 )/num_grid_x
+                    grid[i][j][k][0] = x_0 - ( L_x*eta_x + A_x*( 0.5*L_x - L_x*eta_x )*( 1.0 - eta_x )*eta_x )
+                if( grid[i][j][k][0] > ( x_0 + L_x ) ):
+                    eta_x = ( num_grid_x - 0.5 )/num_grid_x
+                    grid[i][j][k][0] = x_0 + 2.0*L_x - ( L_x*eta_x + A_x*( 0.5*L_x - L_x*eta_x )*( 1.0 - eta_x )*eta_x )
+                if( grid[i][j][k][1] < y_0 ):
+                    eta_y = ( 1.0 - 0.5 )/num_grid_y
+                    grid[i][j][k][1] = y_0 - ( L_y[i]*eta_y + A_y*( 0.5*L_y[i] - L_y[i]*eta_y )*( 1.0 - eta_y )*eta_y )
+                if( grid[i][j][k][1] > ( y_0 + L_y[i] ) ):
+                    eta_y = ( num_grid_y - 0.5 )/num_grid_y
+                    grid[i][j][k][1] = y_0 + 2.0*L_y[i] - ( L_y[i]*eta_y + A_y*( 0.5*L_y[i] - L_y[i]*eta_y )*( 1.0 - eta_y )*eta_y )
+                if( grid[i][j][k][2] < z_0 ):
+                    eta_z = ( 1.0 - 0.5 )/num_grid_z
+                    grid[i][j][k][2] = z_0 - ( L_z*eta_z + A_z*( 0.5*L_z - L_z*eta_z )*( 1.0 - eta_z )*eta_z )
+                if( grid[i][j][k][2] > ( z_0 + L_z ) ):
+                    eta_z = ( num_grid_z - 0.5 )/num_grid_z
+                    grid[i][j][k][2] = z_0 + 2.0*L_z - ( L_z*eta_z + A_z*( 0.5*L_z - L_z*eta_z )*( 1.0 - eta_z )*eta_z )
 
 
 #################### SELECT THERMODYNAMIC AND TRANSPORT COEFFICIENTS MODEL ##################
@@ -176,9 +242,6 @@ physical_plane = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_s
 computational_plane = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_sptl_dim]) # 3-D positions of the computational plane grid
 drc_dx = np.zeros([num_grid_x + 2])
 
-y_0 = 0.0  # Domain origin in y-direction [m]
-z_0 = 0.0  # Domain origin in z-direction [m]
-
 R1 = rt * R1_rt
 R2 = R1 * R2_R1
 Rexp = rt * Rexp_rt
@@ -192,15 +255,8 @@ r2 = rc + R2 * ( math.cos(theta) - 1 )
 x2 = x1 - (r2 - r1) / math.tan(theta)
 xc = x2 - R2*math.sin(theta)
 xexp = Rexp*math.sin(alpha)
-
-L_x = 2.0
-# L_x = 5.0
-L_z = 0.01
-x_0 = 0.0
-# x_0 = xc - L_c
-# x_0 = -2.5
                     
-physical_plane = geometry.spatial_discretization(physical_plane)
+spatial_discretization(physical_plane)
 # physical_plane /= 100.0
 
 # Reshape 3D vectors into 3D arrays
