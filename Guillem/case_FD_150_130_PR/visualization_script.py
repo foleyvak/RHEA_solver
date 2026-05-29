@@ -16,7 +16,7 @@ import nozzlegeometry as nz_cont
 
 
 # ----- Data import settings -------------------------------------------------------
-output_iter   = 69000
+output_iter   = 6000
 name_file_out = 'output_data_'
 filename      = name_file_out + str(output_iter) + '.csv'
 

@@ -18,9 +18,9 @@ import math
 ########## SET PARAMETERS ############
 
 ###################### DATA IMPORT SETTINGS ##########################
-output_iter     = 40  # Select imported data iteration
+output_iter     = 5500  # Select imported data iteration
 
-num_grid_x      = 32   # Number of internal grid points in the x-direction
+num_grid_x      = 32  # Number of internal grid points in the x-direction
 num_grid_y      = 16   # Number of internal grid points in the y-direction
 num_grid_z      = 1    # Number of internal grid points in the z-direction
 
@@ -96,60 +96,49 @@ A_y = 0.0
 A_z = 0.0
 #############################################################################################
 
-def spatial_discretization( grid):
-    physical_grid = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_sptl_dim]) # Physical grid (x, y, z)
+def spatial_discretization(grid):
     # All points
-    for i in range( 0, num_grid_x + 2 ):    
-        for j in range( 0, num_grid_y + 2 ):    
-            for k in range( 0, num_grid_z + 2 ):
+    for i in range(0, num_grid_x + 2):
+        for j in range(0, num_grid_y + 2):
+            for k in range(0, num_grid_z + 2):
                 # Evenly-spaced (dummy variable) cell centroids
-                eta_x = ( i - 0.5 )/num_grid_x
-                eta_y = ( j - 0.5 )/num_grid_y
-                eta_z = ( k - 0.5 )/num_grid_z
+                eta_x = (i - 0.5) / num_grid_x
+                eta_y = (j - 0.5) / num_grid_y
+                eta_z = (k - 0.5) / num_grid_z
+
                 # Unevenly-spaced (stretched) cell centroids
-                grid[i][j][k][0] = x_0 + L_x*eta_x + A_x*( 0.5*L_x - L_x*eta_x )*( 1.0 - eta_x )*eta_x
+                grid[i][j][k][0] = x_0 + L_x * eta_x + A_x * (0.5 * L_x - L_x * eta_x) * (1.0 - eta_x) * eta_x
 
-                ### Define geometry contour
-                # # Channel   
-                # L_y[i] = L_y_0
+                # Calculate contour: top-wall radius of the four-zone nozzle at this x.
+                # The transform stays eta = y/L_y(x); only the contour itself changed.
+                x_val = grid[i][j][k][0]
+                L_y_var = nz_cont.nozzle_top_contour(x_val, rt, rc, R1_rt, R2_R1, theta, Rexp_rt, alpha)
+                # L_y_var = 1.0 # Uncomment to generate a straight pipe
 
-                # # Parabolic
-                # L_y[i] = L_y_0 + (grid[i][j][k][0]-L_x/2)*(grid[i][j][k][0]-L_x/2)
-
-                # Ramp
-                L_y[i] = L_y_0 + (L_y_f-L_y_0)/L_x*grid[i][j][k][0] # Example geometry -- a linearly expanding duct
-                
-                # # Hyperbolic tangent
-                # # 1. Extract the current X coordinate for readability
-                # x_coord = grid[i][j][k][0]
-                # # 2. Define a scaling/sharpness parameter (s)
-                # # s = 3.0 is a good default where the transition finishes right at the boundaries.
-                # s = 3.5 
-                # # 3. The tanh geometry transformation
-                # L_y[i] = L_y_0 + (L_y_f - L_y_0) * 0.5 * (1.0 + np.tanh(s * (2.0 * x_coord / L_x - 1.0)))
-
-                grid[i][j][k][1] = y_0 + L_y[i]*eta_y + A_y*( 0.5*L_y[i] - L_y[i]*eta_y )*( 1.0 - eta_y )*eta_y
-                grid[i][j][k][2] = z_0 + L_z*eta_z + A_z*( 0.5*L_z - L_z*eta_z )*( 1.0 - eta_z )*eta_z
+                # Unevenly-spaced (stretched) cell centroids
+                grid[i][j][k][0] = x_0 + L_x * eta_x + A_x * (0.5 * L_x - L_x * eta_x) * (1.0 - eta_x) * eta_x
+                grid[i][j][k][1] = y_0 + L_y_var * eta_y + A_y * (0.5 * L_y_var - L_y_var * eta_y) * (1.0 - eta_y) * eta_y
+                grid[i][j][k][2] = z_0 + L_z * eta_z + A_z * (0.5 * L_z - L_z * eta_z) * (1.0 - eta_z) * eta_z
                 # Adjust (symmetric) boundary cell centroids
-                if( grid[i][j][k][0] < x_0 ):
-                    eta_x = ( 1.0 - 0.5 )/num_grid_x
-                    grid[i][j][k][0] = x_0 - ( L_x*eta_x + A_x*( 0.5*L_x - L_x*eta_x )*( 1.0 - eta_x )*eta_x )
-                if( grid[i][j][k][0] > ( x_0 + L_x ) ):
-                    eta_x = ( num_grid_x - 0.5 )/num_grid_x
-                    grid[i][j][k][0] = x_0 + 2.0*L_x - ( L_x*eta_x + A_x*( 0.5*L_x - L_x*eta_x )*( 1.0 - eta_x )*eta_x )
-                if( grid[i][j][k][1] < y_0 ):
-                    eta_y = ( 1.0 - 0.5 )/num_grid_y
-                    grid[i][j][k][1] = y_0 - ( L_y[i]*eta_y + A_y*( 0.5*L_y[i] - L_y[i]*eta_y )*( 1.0 - eta_y )*eta_y )
-                if( grid[i][j][k][1] > ( y_0 + L_y[i] ) ):
-                    eta_y = ( num_grid_y - 0.5 )/num_grid_y
-                    grid[i][j][k][1] = y_0 + 2.0*L_y[i] - ( L_y[i]*eta_y + A_y*( 0.5*L_y[i] - L_y[i]*eta_y )*( 1.0 - eta_y )*eta_y )
-                if( grid[i][j][k][2] < z_0 ):
-                    eta_z = ( 1.0 - 0.5 )/num_grid_z
-                    grid[i][j][k][2] = z_0 - ( L_z*eta_z + A_z*( 0.5*L_z - L_z*eta_z )*( 1.0 - eta_z )*eta_z )
-                if( grid[i][j][k][2] > ( z_0 + L_z ) ):
-                    eta_z = ( num_grid_z - 0.5 )/num_grid_z
-                    grid[i][j][k][2] = z_0 + 2.0*L_z - ( L_z*eta_z + A_z*( 0.5*L_z - L_z*eta_z )*( 1.0 - eta_z )*eta_z )
-
+                if (grid[i][j][k][0] < x_0):
+                    eta_x = (1.0 - 0.5) / num_grid_x
+                    grid[i][j][k][0] = x_0 - (L_x * eta_x + A_x * (0.5 * L_x - L_x * eta_x) * (1.0 - eta_x) * eta_x)
+                if (grid[i][j][k][0] > (x_0 + L_x)):
+                    eta_x = (num_grid_x - 0.5) / num_grid_x
+                    grid[i][j][k][0] = x_0 + 2.0 * L_x - (L_x * eta_x + A_x * (0.5 * L_x - L_x * eta_x) * (1.0 - eta_x) * eta_x)
+                if (grid[i][j][k][1] < y_0):
+                    eta_y = (1.0 - 0.5) / num_grid_y
+                    grid[i][j][k][1] = y_0 - (L_y_var * eta_y + A_y * (0.5 * L_y_var - L_y_var * eta_y) * (1.0 - eta_y) * eta_y)
+                if (grid[i][j][k][1] > (y_0 + L_y_var)):
+                    eta_y = (num_grid_y - 0.5) / num_grid_y
+                    grid[i][j][k][1] = y_0 + 2.0 * L_y_var - (L_y_var * eta_y + A_y * (0.5 * L_y_var - L_y_var * eta_y) * (1.0 - eta_y) * eta_y)
+                if (grid[i][j][k][2] < z_0):
+                    eta_z = (1.0 - 0.5) / num_grid_z
+                    grid[i][j][k][2] = z_0 - (L_z * eta_z + A_z * (0.5 * L_z - L_z * eta_z) * (1.0 - eta_z) * eta_z)
+                if (grid[i][j][k][2] > (z_0 + L_z)):
+                    eta_z = (num_grid_z - 0.5) / num_grid_z
+                    grid[i][j][k][2] = z_0 + 2.0 * L_z - (L_z * eta_z + A_z * (0.5 * L_z - L_z * eta_z) * (1.0 - eta_z) * eta_z)
+    # print( grid )
 
 #################### SELECT THERMODYNAMIC AND TRANSPORT COEFFICIENTS MODEL ##################
 # thermodynamics = IdealGasModel(R_specific, gamma)
@@ -369,7 +358,7 @@ ax2.set_ylabel('Radial distance [m]')
 # --- Bottom left corner - Scatter (Mach) ---
 surf3 = ax3.pcolormesh(physical_plane[1:num_grid_x,1:num_grid_y,1,0], 
                        physical_plane[1:num_grid_x,1:num_grid_y,1,1], 
-                       v_2d[1:num_grid_x,1:num_grid_y], 
+                       u_2d[1:num_grid_x,1:num_grid_y], 
                        cmap='viridis', shading='gouraud')
 ax3.plot(contour_x[1:num_grid_x], contour_y[1:num_grid_x], linewidth=2.5, color='black')
 ax3.set_ylim(0, None)

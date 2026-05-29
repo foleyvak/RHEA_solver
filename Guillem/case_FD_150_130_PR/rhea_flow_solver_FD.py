@@ -1589,7 +1589,7 @@ def HES_flux(rho_L, rho_R, u_L, u_R, v_L, v_R, w_L, w_R, E_L, E_R, s_L, s_R, P_L
 
 
 ### Calculate inviscid fluxes
-# @njit
+@njit
 def inviscid_fluxes(rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v, w, E, s, P, P_thermo, T, sos, grid):
     # Unsplit method for Euler equations:
     # E. F. Toro.
