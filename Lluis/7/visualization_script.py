@@ -18,7 +18,7 @@ import math
 ########## SET PARAMETERS ############
 
 ###################### DATA IMPORT SETTINGS ##########################
-output_iter     = 400  # Select imported data iteration
+output_iter     = 45800  # Select imported data iteration
 
 num_grid_x      = 32           # Number of internal grid points in the x-direction
 num_grid_y      = 16            # Number of internal grid points in the y-direction
@@ -124,8 +124,8 @@ def spatial_discretization( grid):
                 # # Channel   
                 # L_y[i] = L_y_0
 
-                # Parabolic
-                L_y[i] = L_y_0 + (grid[i][j][k][0]-L_x/2)*(grid[i][j][k][0]-L_x/2)
+                # # Parabolic
+                # L_y[i] = L_y_0 + (grid[i][j][k][0]-L_x/2)*(grid[i][j][k][0]-L_x/2)
 
                 # # Periodic
                 # if ( grid[i][j][k][0] < L_x/2.0 + 0.7*Rc and grid[i][j][k][0] > L_x/2.0 - 0.7*Rc ):
@@ -153,14 +153,14 @@ def spatial_discretization( grid):
                 # # Ramp
                 # L_y[i] = L_y_0 + (L_y_f-L_y_0)/L_x*grid[i][j][k][0] # Example geometry -- a linearly expanding duct
                 
-                # # Hyperbolic tangent
-                # # 1. Extract the current X coordinate for readability
-                # x_coord = grid[i][j][k][0]
-                # # 2. Define a scaling/sharpness parameter (s)
-                # # s = 3.0 is a good default where the transition finishes right at the boundaries.
-                # s = 3.5 
-                # # 3. The tanh geometry transformation
-                # L_y[i] = L_y_0 + (L_y_f - L_y_0) * 0.5 * (1.0 + np.tanh(s * (2.0 * x_coord / L_x - 1.0)))
+                # Hyperbolic tangent
+                # 1. Extract the current X coordinate for readability
+                x_coord = grid[i][j][k][0]
+                # 2. Define a scaling/sharpness parameter (s)
+                # s = 3.0 is a good default where the transition finishes right at the boundaries.
+                s = 3.5 
+                # 3. The tanh geometry transformation
+                L_y[i] = L_y_0 + (L_y_f - L_y_0) * 0.5 * (1.0 + np.tanh(s * (2.0 * x_coord / L_x - 1.0)))
 
                 grid[i][j][k][1] = y_0 + L_y[i]*eta_y + A_y*( 0.5*L_y[i] - L_y[i]*eta_y )*( 1.0 - eta_y )*eta_y
                 grid[i][j][k][2] = z_0 + L_z*eta_z + A_z*( 0.5*L_z - L_z*eta_z )*( 1.0 - eta_z )*eta_z
