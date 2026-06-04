@@ -1970,86 +1970,87 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 rhov_F_m_z = (rho_n_F_m_z * n_zeta[i][j][k][1] + rho_t1_F_m_z * t1_zeta[i][j][k][1] + rho_t2_F_m_z * t2_zeta[i][j][k][1])  
                 rhow_F_m_z = (rho_n_F_m_z * n_zeta[i][j][k][2] + rho_t1_F_m_z * t1_zeta[i][j][k][2] + rho_t2_F_m_z * t2_zeta[i][j][k][2])  
 
-                ### Strong conservative form of the Navier-Stokes equations
-                ## Fluxes x-direction
-                rho_conF_p_x  = 0.5 * ((xi[i][j][k][0]/det_Jacobian[i][j][k] + (xi[i+1][j][k][0])/det_Jacobian[i+1][j][k])* rho_F_p_x + (xi[i][j][k][1]/det_Jacobian[i][j][k] + xi[i+1][j][k][1]/det_Jacobian[i+1][j][k])* rho_F_p_y + (xi[i][j][k][2]/det_Jacobian[i][j][k] + xi[i+1][j][k][2]/det_Jacobian[i+1][j][k])* rho_F_p_z)  
-                rhou_conF_p_x = 0.5 * ((xi[i][j][k][0]/det_Jacobian[i][j][k] + (xi[i+1][j][k][0])/det_Jacobian[i+1][j][k])*rhou_F_p_x + (xi[i][j][k][1]/det_Jacobian[i][j][k] + xi[i+1][j][k][1]/det_Jacobian[i+1][j][k])*rhou_F_p_y + (xi[i][j][k][2]/det_Jacobian[i][j][k] + xi[i+1][j][k][2]/det_Jacobian[i+1][j][k])*rhou_F_p_z) 
-                rhov_conF_p_x = 0.5 * ((xi[i][j][k][0]/det_Jacobian[i][j][k] + (xi[i+1][j][k][0])/det_Jacobian[i+1][j][k])*rhov_F_p_x + (xi[i][j][k][1]/det_Jacobian[i][j][k] + xi[i+1][j][k][1]/det_Jacobian[i+1][j][k])*rhov_F_p_y + (xi[i][j][k][2]/det_Jacobian[i][j][k] + xi[i+1][j][k][2]/det_Jacobian[i+1][j][k])*rhov_F_p_z) 
-                rhow_conF_p_x = 0.5 * ((xi[i][j][k][0]/det_Jacobian[i][j][k] + (xi[i+1][j][k][0])/det_Jacobian[i+1][j][k])*rhow_F_p_x + (xi[i][j][k][1]/det_Jacobian[i][j][k] + xi[i+1][j][k][1]/det_Jacobian[i+1][j][k])*rhow_F_p_y + (xi[i][j][k][2]/det_Jacobian[i][j][k] + xi[i+1][j][k][2]/det_Jacobian[i+1][j][k])*rhow_F_p_z) 
-                rhoE_conF_p_x = 0.5 * ((xi[i][j][k][0]/det_Jacobian[i][j][k] + (xi[i+1][j][k][0])/det_Jacobian[i+1][j][k])*rhoE_F_p_x + (xi[i][j][k][1]/det_Jacobian[i][j][k] + xi[i+1][j][k][1]/det_Jacobian[i+1][j][k])*rhoE_F_p_y + (xi[i][j][k][2]/det_Jacobian[i][j][k] + xi[i+1][j][k][2]/det_Jacobian[i+1][j][k])*rhoE_F_p_z) 
-                
-                rho_conF_m_x  = 0.5 * ((xi[i][j][k][0]/det_Jacobian[i][j][k] + (xi[i-1][j][k][0])/det_Jacobian[i-1][j][k])* rho_F_m_x + (xi[i][j][k][1]/det_Jacobian[i][j][k] + xi[i-1][j][k][1]/det_Jacobian[i-1][j][k])* rho_F_m_y + (xi[i][j][k][2]/det_Jacobian[i][j][k] + xi[i-1][j][k][2]/det_Jacobian[i-1][j][k])* rho_F_m_z)  
-                rhou_conF_m_x = 0.5 * ((xi[i][j][k][0]/det_Jacobian[i][j][k] + (xi[i-1][j][k][0])/det_Jacobian[i-1][j][k])*rhou_F_m_x + (xi[i][j][k][1]/det_Jacobian[i][j][k] + xi[i-1][j][k][1]/det_Jacobian[i-1][j][k])*rhou_F_m_y + (xi[i][j][k][2]/det_Jacobian[i][j][k] + xi[i-1][j][k][2]/det_Jacobian[i-1][j][k])*rhou_F_m_z) 
-                rhov_conF_m_x = 0.5 * ((xi[i][j][k][0]/det_Jacobian[i][j][k] + (xi[i-1][j][k][0])/det_Jacobian[i-1][j][k])*rhov_F_m_x + (xi[i][j][k][1]/det_Jacobian[i][j][k] + xi[i-1][j][k][1]/det_Jacobian[i-1][j][k])*rhov_F_m_y + (xi[i][j][k][2]/det_Jacobian[i][j][k] + xi[i-1][j][k][2]/det_Jacobian[i-1][j][k])*rhov_F_m_z) 
-                rhow_conF_m_x = 0.5 * ((xi[i][j][k][0]/det_Jacobian[i][j][k] + (xi[i-1][j][k][0])/det_Jacobian[i-1][j][k])*rhow_F_m_x + (xi[i][j][k][1]/det_Jacobian[i][j][k] + xi[i-1][j][k][1]/det_Jacobian[i-1][j][k])*rhow_F_m_y + (xi[i][j][k][2]/det_Jacobian[i][j][k] + xi[i-1][j][k][2]/det_Jacobian[i-1][j][k])*rhow_F_m_z) 
-                rhoE_conF_m_x = 0.5 * ((xi[i][j][k][0]/det_Jacobian[i][j][k] + (xi[i-1][j][k][0])/det_Jacobian[i-1][j][k])*rhoE_F_m_x + (xi[i][j][k][1]/det_Jacobian[i][j][k] + xi[i-1][j][k][1]/det_Jacobian[i-1][j][k])*rhoE_F_m_y + (xi[i][j][k][2]/det_Jacobian[i][j][k] + xi[i-1][j][k][2]/det_Jacobian[i-1][j][k])*rhoE_F_m_z) 
-                
-                ## Fluxes y-direction
-                rho_conG_p_y  = 0.5 * ((eta[i][j][k][0]/det_Jacobian[i][j][k] + (eta[i][j+1][k][0])/det_Jacobian[i][j+1][k])* rho_F_p_x + (eta[i][j][k][1]/det_Jacobian[i][j][k] + eta[i][j+1][k][1]/det_Jacobian[i][j+1][k])* rho_F_p_y + (eta[i][j][k][2]/det_Jacobian[i][j][k] + eta[i][j+1][k][2]/det_Jacobian[i][j+1][k])* rho_F_p_z)
-                rhou_conG_p_y = 0.5 * ((eta[i][j][k][0]/det_Jacobian[i][j][k] + (eta[i][j+1][k][0])/det_Jacobian[i][j+1][k])*rhou_F_p_x + (eta[i][j][k][1]/det_Jacobian[i][j][k] + eta[i][j+1][k][1]/det_Jacobian[i][j+1][k])*rhou_F_p_y + (eta[i][j][k][2]/det_Jacobian[i][j][k] + eta[i][j+1][k][2]/det_Jacobian[i][j+1][k])*rhou_F_p_z)
-                rhov_conG_p_y = 0.5 * ((eta[i][j][k][0]/det_Jacobian[i][j][k] + (eta[i][j+1][k][0])/det_Jacobian[i][j+1][k])*rhov_F_p_x + (eta[i][j][k][1]/det_Jacobian[i][j][k] + eta[i][j+1][k][1]/det_Jacobian[i][j+1][k])*rhov_F_p_y + (eta[i][j][k][2]/det_Jacobian[i][j][k] + eta[i][j+1][k][2]/det_Jacobian[i][j+1][k])*rhov_F_p_z)
-                rhow_conG_p_y = 0.5 * ((eta[i][j][k][0]/det_Jacobian[i][j][k] + (eta[i][j+1][k][0])/det_Jacobian[i][j+1][k])*rhow_F_p_x + (eta[i][j][k][1]/det_Jacobian[i][j][k] + eta[i][j+1][k][1]/det_Jacobian[i][j+1][k])*rhow_F_p_y + (eta[i][j][k][2]/det_Jacobian[i][j][k] + eta[i][j+1][k][2]/det_Jacobian[i][j+1][k])*rhow_F_p_z)
-                rhoE_conG_p_y = 0.5 * ((eta[i][j][k][0]/det_Jacobian[i][j][k] + (eta[i][j+1][k][0])/det_Jacobian[i][j+1][k])*rhoE_F_p_x + (eta[i][j][k][1]/det_Jacobian[i][j][k] + eta[i][j+1][k][1]/det_Jacobian[i][j+1][k])*rhoE_F_p_y + (eta[i][j][k][2]/det_Jacobian[i][j][k] + eta[i][j+1][k][2]/det_Jacobian[i][j+1][k])*rhoE_F_p_z)
-
-                rho_conG_m_y  = 0.5 * ((eta[i][j][k][0]/det_Jacobian[i][j][k] + (eta[i][j-1][k][0])/det_Jacobian[i][j-1][k])* rho_F_m_x + (eta[i][j][k][1]/det_Jacobian[i][j][k] + eta[i][j-1][k][1]/det_Jacobian[i][j-1][k])* rho_F_m_y + (eta[i][j][k][2]/det_Jacobian[i][j][k] + eta[i][j-1][k][2]/det_Jacobian[i][j-1][k])* rho_F_m_z)
-                rhou_conG_m_y = 0.5 * ((eta[i][j][k][0]/det_Jacobian[i][j][k] + (eta[i][j-1][k][0])/det_Jacobian[i][j-1][k])*rhou_F_m_x + (eta[i][j][k][1]/det_Jacobian[i][j][k] + eta[i][j-1][k][1]/det_Jacobian[i][j-1][k])*rhou_F_m_y + (eta[i][j][k][2]/det_Jacobian[i][j][k] + eta[i][j-1][k][2]/det_Jacobian[i][j-1][k])*rhou_F_m_z)
-                rhov_conG_m_y = 0.5 * ((eta[i][j][k][0]/det_Jacobian[i][j][k] + (eta[i][j-1][k][0])/det_Jacobian[i][j-1][k])*rhov_F_m_x + (eta[i][j][k][1]/det_Jacobian[i][j][k] + eta[i][j-1][k][1]/det_Jacobian[i][j-1][k])*rhov_F_m_y + (eta[i][j][k][2]/det_Jacobian[i][j][k] + eta[i][j-1][k][2]/det_Jacobian[i][j-1][k])*rhov_F_m_z)
-                rhow_conG_m_y = 0.5 * ((eta[i][j][k][0]/det_Jacobian[i][j][k] + (eta[i][j-1][k][0])/det_Jacobian[i][j-1][k])*rhow_F_m_x + (eta[i][j][k][1]/det_Jacobian[i][j][k] + eta[i][j-1][k][1]/det_Jacobian[i][j-1][k])*rhow_F_m_y + (eta[i][j][k][2]/det_Jacobian[i][j][k] + eta[i][j-1][k][2]/det_Jacobian[i][j-1][k])*rhow_F_m_z)
-                rhoE_conG_m_y = 0.5 * ((eta[i][j][k][0]/det_Jacobian[i][j][k] + (eta[i][j-1][k][0])/det_Jacobian[i][j-1][k])*rhoE_F_m_x + (eta[i][j][k][1]/det_Jacobian[i][j][k] + eta[i][j-1][k][1]/det_Jacobian[i][j-1][k])*rhoE_F_m_y + (eta[i][j][k][2]/det_Jacobian[i][j][k] + eta[i][j-1][k][2]/det_Jacobian[i][j-1][k])*rhoE_F_m_z)
-
-                ## Fluxes z-direction
-                rho_conH_p_z  = 0.5 * ((zeta[i][j][k][0]/det_Jacobian[i][j][k] + (zeta[i][j][k+1][0])/det_Jacobian[i][j][k+1])* rho_F_p_x + (zeta[i][j][k][1]/det_Jacobian[i][j][k] + zeta[i][j][k+1][1]/det_Jacobian[i][j][k+1])* rho_F_p_y + (zeta[i][j][k][2]/det_Jacobian[i][j][k] + zeta[i][j][k+1][2]/det_Jacobian[i][j][k+1])* rho_F_p_z)
-                rhou_conH_p_z = 0.5 * ((zeta[i][j][k][0]/det_Jacobian[i][j][k] + (zeta[i][j][k+1][0])/det_Jacobian[i][j][k+1])*rhou_F_p_x + (zeta[i][j][k][1]/det_Jacobian[i][j][k] + zeta[i][j][k+1][1]/det_Jacobian[i][j][k+1])*rhou_F_p_y + (zeta[i][j][k][2]/det_Jacobian[i][j][k] + zeta[i][j][k+1][2]/det_Jacobian[i][j][k+1])*rhou_F_p_z)
-                rhov_conH_p_z = 0.5 * ((zeta[i][j][k][0]/det_Jacobian[i][j][k] + (zeta[i][j][k+1][0])/det_Jacobian[i][j][k+1])*rhov_F_p_x + (zeta[i][j][k][1]/det_Jacobian[i][j][k] + zeta[i][j][k+1][1]/det_Jacobian[i][j][k+1])*rhov_F_p_y + (zeta[i][j][k][2]/det_Jacobian[i][j][k] + zeta[i][j][k+1][2]/det_Jacobian[i][j][k+1])*rhov_F_p_z)
-                rhow_conH_p_z = 0.5 * ((zeta[i][j][k][0]/det_Jacobian[i][j][k] + (zeta[i][j][k+1][0])/det_Jacobian[i][j][k+1])*rhow_F_p_x + (zeta[i][j][k][1]/det_Jacobian[i][j][k] + zeta[i][j][k+1][1]/det_Jacobian[i][j][k+1])*rhow_F_p_y + (zeta[i][j][k][2]/det_Jacobian[i][j][k] + zeta[i][j][k+1][2]/det_Jacobian[i][j][k+1])*rhow_F_p_z)
-                rhoE_conH_p_z = 0.5 * ((zeta[i][j][k][0]/det_Jacobian[i][j][k] + (zeta[i][j][k+1][0])/det_Jacobian[i][j][k+1])*rhoE_F_p_x + (zeta[i][j][k][1]/det_Jacobian[i][j][k] + zeta[i][j][k+1][1]/det_Jacobian[i][j][k+1])*rhoE_F_p_y + (zeta[i][j][k][2]/det_Jacobian[i][j][k] + zeta[i][j][k+1][2]/det_Jacobian[i][j][k+1])*rhoE_F_p_z)
-
-                rho_conH_m_z  = 0.5 * ((zeta[i][j][k][0]/det_Jacobian[i][j][k] + (zeta[i][j][k-1][0])/det_Jacobian[i][j][k-1])* rho_F_m_x + (zeta[i][j][k][1]/det_Jacobian[i][j][k] + zeta[i][j][k-1][1]/det_Jacobian[i][j][k-1])* rho_F_m_y + (zeta[i][j][k][2]/det_Jacobian[i][j][k] + zeta[i][j][k-1][2]/det_Jacobian[i][j][k-1])* rho_F_m_z)
-                rhou_conH_m_z = 0.5 * ((zeta[i][j][k][0]/det_Jacobian[i][j][k] + (zeta[i][j][k-1][0])/det_Jacobian[i][j][k-1])*rhou_F_m_x + (zeta[i][j][k][1]/det_Jacobian[i][j][k] + zeta[i][j][k-1][1]/det_Jacobian[i][j][k-1])*rhou_F_m_y + (zeta[i][j][k][2]/det_Jacobian[i][j][k] + zeta[i][j][k-1][2]/det_Jacobian[i][j][k-1])*rhou_F_m_z)
-                rhov_conH_m_z = 0.5 * ((zeta[i][j][k][0]/det_Jacobian[i][j][k] + (zeta[i][j][k-1][0])/det_Jacobian[i][j][k-1])*rhov_F_m_x + (zeta[i][j][k][1]/det_Jacobian[i][j][k] + zeta[i][j][k-1][1]/det_Jacobian[i][j][k-1])*rhov_F_m_y + (zeta[i][j][k][2]/det_Jacobian[i][j][k] + zeta[i][j][k-1][2]/det_Jacobian[i][j][k-1])*rhov_F_m_z)
-                rhow_conH_m_z = 0.5 * ((zeta[i][j][k][0]/det_Jacobian[i][j][k] + (zeta[i][j][k-1][0])/det_Jacobian[i][j][k-1])*rhow_F_m_x + (zeta[i][j][k][1]/det_Jacobian[i][j][k] + zeta[i][j][k-1][1]/det_Jacobian[i][j][k-1])*rhow_F_m_y + (zeta[i][j][k][2]/det_Jacobian[i][j][k] + zeta[i][j][k-1][2]/det_Jacobian[i][j][k-1])*rhow_F_m_z)
-                rhoE_conH_m_z = 0.5 * ((zeta[i][j][k][0]/det_Jacobian[i][j][k] + (zeta[i][j][k-1][0])/det_Jacobian[i][j][k-1])*rhoE_F_m_x + (zeta[i][j][k][1]/det_Jacobian[i][j][k] + zeta[i][j][k-1][1]/det_Jacobian[i][j][k-1])*rhoE_F_m_y + (zeta[i][j][k][2]/det_Jacobian[i][j][k] + zeta[i][j][k-1][2]/det_Jacobian[i][j][k-1])*rhoE_F_m_z)
-
-
                 # ### Strong conservative form of the Navier-Stokes equations
                 # ## Fluxes x-direction
-                # rho_conF_p_x  = (module_grad_xi_p/det_J_mean_xi_p) *  rho_F_p_x
-                # rhou_conF_p_x = (module_grad_xi_p/det_J_mean_xi_p) * rhou_F_p_x
-                # rhov_conF_p_x = (module_grad_xi_p/det_J_mean_xi_p) * rhov_F_p_x
-                # rhow_conF_p_x = (module_grad_xi_p/det_J_mean_xi_p) * rhow_F_p_x
-                # rhoE_conF_p_x = (module_grad_xi_p/det_J_mean_xi_p) * rhoE_F_p_x
-
-                # rho_conF_m_x  = (module_grad_xi_m/det_J_mean_xi_m) *  rho_F_m_x
-                # rhou_conF_m_x = (module_grad_xi_m/det_J_mean_xi_m) * rhou_F_m_x
-                # rhov_conF_m_x = (module_grad_xi_m/det_J_mean_xi_m) * rhov_F_m_x
-                # rhow_conF_m_x = (module_grad_xi_m/det_J_mean_xi_m) * rhow_F_m_x
-                # rhoE_conF_m_x = (module_grad_xi_m/det_J_mean_xi_m) * rhoE_F_m_x
-
+                # rho_conF_p_x  = 0.5 * ((xi[i][j][k][0]/det_Jacobian[i][j][k] + (xi[i+1][j][k][0])/det_Jacobian[i+1][j][k])* rho_F_p_x + (xi[i][j][k][1]/det_Jacobian[i][j][k] + xi[i+1][j][k][1]/det_Jacobian[i+1][j][k])* rho_F_p_y + (xi[i][j][k][2]/det_Jacobian[i][j][k] + xi[i+1][j][k][2]/det_Jacobian[i+1][j][k])* rho_F_p_z)  
+                # rhou_conF_p_x = 0.5 * ((xi[i][j][k][0]/det_Jacobian[i][j][k] + (xi[i+1][j][k][0])/det_Jacobian[i+1][j][k])*rhou_F_p_x + (xi[i][j][k][1]/det_Jacobian[i][j][k] + xi[i+1][j][k][1]/det_Jacobian[i+1][j][k])*rhou_F_p_y + (xi[i][j][k][2]/det_Jacobian[i][j][k] + xi[i+1][j][k][2]/det_Jacobian[i+1][j][k])*rhou_F_p_z) 
+                # rhov_conF_p_x = 0.5 * ((xi[i][j][k][0]/det_Jacobian[i][j][k] + (xi[i+1][j][k][0])/det_Jacobian[i+1][j][k])*rhov_F_p_x + (xi[i][j][k][1]/det_Jacobian[i][j][k] + xi[i+1][j][k][1]/det_Jacobian[i+1][j][k])*rhov_F_p_y + (xi[i][j][k][2]/det_Jacobian[i][j][k] + xi[i+1][j][k][2]/det_Jacobian[i+1][j][k])*rhov_F_p_z) 
+                # rhow_conF_p_x = 0.5 * ((xi[i][j][k][0]/det_Jacobian[i][j][k] + (xi[i+1][j][k][0])/det_Jacobian[i+1][j][k])*rhow_F_p_x + (xi[i][j][k][1]/det_Jacobian[i][j][k] + xi[i+1][j][k][1]/det_Jacobian[i+1][j][k])*rhow_F_p_y + (xi[i][j][k][2]/det_Jacobian[i][j][k] + xi[i+1][j][k][2]/det_Jacobian[i+1][j][k])*rhow_F_p_z) 
+                # rhoE_conF_p_x = 0.5 * ((xi[i][j][k][0]/det_Jacobian[i][j][k] + (xi[i+1][j][k][0])/det_Jacobian[i+1][j][k])*rhoE_F_p_x + (xi[i][j][k][1]/det_Jacobian[i][j][k] + xi[i+1][j][k][1]/det_Jacobian[i+1][j][k])*rhoE_F_p_y + (xi[i][j][k][2]/det_Jacobian[i][j][k] + xi[i+1][j][k][2]/det_Jacobian[i+1][j][k])*rhoE_F_p_z) 
+                
+                # rho_conF_m_x  = 0.5 * ((xi[i][j][k][0]/det_Jacobian[i][j][k] + (xi[i-1][j][k][0])/det_Jacobian[i-1][j][k])* rho_F_m_x + (xi[i][j][k][1]/det_Jacobian[i][j][k] + xi[i-1][j][k][1]/det_Jacobian[i-1][j][k])* rho_F_m_y + (xi[i][j][k][2]/det_Jacobian[i][j][k] + xi[i-1][j][k][2]/det_Jacobian[i-1][j][k])* rho_F_m_z)  
+                # rhou_conF_m_x = 0.5 * ((xi[i][j][k][0]/det_Jacobian[i][j][k] + (xi[i-1][j][k][0])/det_Jacobian[i-1][j][k])*rhou_F_m_x + (xi[i][j][k][1]/det_Jacobian[i][j][k] + xi[i-1][j][k][1]/det_Jacobian[i-1][j][k])*rhou_F_m_y + (xi[i][j][k][2]/det_Jacobian[i][j][k] + xi[i-1][j][k][2]/det_Jacobian[i-1][j][k])*rhou_F_m_z) 
+                # rhov_conF_m_x = 0.5 * ((xi[i][j][k][0]/det_Jacobian[i][j][k] + (xi[i-1][j][k][0])/det_Jacobian[i-1][j][k])*rhov_F_m_x + (xi[i][j][k][1]/det_Jacobian[i][j][k] + xi[i-1][j][k][1]/det_Jacobian[i-1][j][k])*rhov_F_m_y + (xi[i][j][k][2]/det_Jacobian[i][j][k] + xi[i-1][j][k][2]/det_Jacobian[i-1][j][k])*rhov_F_m_z) 
+                # rhow_conF_m_x = 0.5 * ((xi[i][j][k][0]/det_Jacobian[i][j][k] + (xi[i-1][j][k][0])/det_Jacobian[i-1][j][k])*rhow_F_m_x + (xi[i][j][k][1]/det_Jacobian[i][j][k] + xi[i-1][j][k][1]/det_Jacobian[i-1][j][k])*rhow_F_m_y + (xi[i][j][k][2]/det_Jacobian[i][j][k] + xi[i-1][j][k][2]/det_Jacobian[i-1][j][k])*rhow_F_m_z) 
+                # rhoE_conF_m_x = 0.5 * ((xi[i][j][k][0]/det_Jacobian[i][j][k] + (xi[i-1][j][k][0])/det_Jacobian[i-1][j][k])*rhoE_F_m_x + (xi[i][j][k][1]/det_Jacobian[i][j][k] + xi[i-1][j][k][1]/det_Jacobian[i-1][j][k])*rhoE_F_m_y + (xi[i][j][k][2]/det_Jacobian[i][j][k] + xi[i-1][j][k][2]/det_Jacobian[i-1][j][k])*rhoE_F_m_z) 
+                
                 # ## Fluxes y-direction
-                # rho_conG_p_y  = (module_grad_eta_p/det_J_mean_eta_p) *  rho_F_p_y
-                # rhou_conG_p_y = (module_grad_eta_p/det_J_mean_eta_p) * rhou_F_p_y
-                # rhov_conG_p_y = (module_grad_eta_p/det_J_mean_eta_p) * rhov_F_p_y
-                # rhow_conG_p_y = (module_grad_eta_p/det_J_mean_eta_p) * rhow_F_p_y
-                # rhoE_conG_p_y = (module_grad_eta_p/det_J_mean_eta_p) * rhoE_F_p_y
+                # rho_conG_p_y  = 0.5 * ((eta[i][j][k][0]/det_Jacobian[i][j][k] + (eta[i][j+1][k][0])/det_Jacobian[i][j+1][k])* rho_F_p_x + (eta[i][j][k][1]/det_Jacobian[i][j][k] + eta[i][j+1][k][1]/det_Jacobian[i][j+1][k])* rho_F_p_y + (eta[i][j][k][2]/det_Jacobian[i][j][k] + eta[i][j+1][k][2]/det_Jacobian[i][j+1][k])* rho_F_p_z)
+                # rhou_conG_p_y = 0.5 * ((eta[i][j][k][0]/det_Jacobian[i][j][k] + (eta[i][j+1][k][0])/det_Jacobian[i][j+1][k])*rhou_F_p_x + (eta[i][j][k][1]/det_Jacobian[i][j][k] + eta[i][j+1][k][1]/det_Jacobian[i][j+1][k])*rhou_F_p_y + (eta[i][j][k][2]/det_Jacobian[i][j][k] + eta[i][j+1][k][2]/det_Jacobian[i][j+1][k])*rhou_F_p_z)
+                # rhov_conG_p_y = 0.5 * ((eta[i][j][k][0]/det_Jacobian[i][j][k] + (eta[i][j+1][k][0])/det_Jacobian[i][j+1][k])*rhov_F_p_x + (eta[i][j][k][1]/det_Jacobian[i][j][k] + eta[i][j+1][k][1]/det_Jacobian[i][j+1][k])*rhov_F_p_y + (eta[i][j][k][2]/det_Jacobian[i][j][k] + eta[i][j+1][k][2]/det_Jacobian[i][j+1][k])*rhov_F_p_z)
+                # rhow_conG_p_y = 0.5 * ((eta[i][j][k][0]/det_Jacobian[i][j][k] + (eta[i][j+1][k][0])/det_Jacobian[i][j+1][k])*rhow_F_p_x + (eta[i][j][k][1]/det_Jacobian[i][j][k] + eta[i][j+1][k][1]/det_Jacobian[i][j+1][k])*rhow_F_p_y + (eta[i][j][k][2]/det_Jacobian[i][j][k] + eta[i][j+1][k][2]/det_Jacobian[i][j+1][k])*rhow_F_p_z)
+                # rhoE_conG_p_y = 0.5 * ((eta[i][j][k][0]/det_Jacobian[i][j][k] + (eta[i][j+1][k][0])/det_Jacobian[i][j+1][k])*rhoE_F_p_x + (eta[i][j][k][1]/det_Jacobian[i][j][k] + eta[i][j+1][k][1]/det_Jacobian[i][j+1][k])*rhoE_F_p_y + (eta[i][j][k][2]/det_Jacobian[i][j][k] + eta[i][j+1][k][2]/det_Jacobian[i][j+1][k])*rhoE_F_p_z)
 
-                # rho_conG_m_y  = (module_grad_eta_m/det_J_mean_eta_m) *  rho_F_m_y
-                # rhou_conG_m_y = (module_grad_eta_m/det_J_mean_eta_m) * rhou_F_m_y
-                # rhov_conG_m_y = (module_grad_eta_m/det_J_mean_eta_m) * rhov_F_m_y
-                # rhow_conG_m_y = (module_grad_eta_m/det_J_mean_eta_m) * rhow_F_m_y
-                # rhoE_conG_m_y = (module_grad_eta_m/det_J_mean_eta_m) * rhoE_F_m_y
+                # rho_conG_m_y  = 0.5 * ((eta[i][j][k][0]/det_Jacobian[i][j][k] + (eta[i][j-1][k][0])/det_Jacobian[i][j-1][k])* rho_F_m_x + (eta[i][j][k][1]/det_Jacobian[i][j][k] + eta[i][j-1][k][1]/det_Jacobian[i][j-1][k])* rho_F_m_y + (eta[i][j][k][2]/det_Jacobian[i][j][k] + eta[i][j-1][k][2]/det_Jacobian[i][j-1][k])* rho_F_m_z)
+                # rhou_conG_m_y = 0.5 * ((eta[i][j][k][0]/det_Jacobian[i][j][k] + (eta[i][j-1][k][0])/det_Jacobian[i][j-1][k])*rhou_F_m_x + (eta[i][j][k][1]/det_Jacobian[i][j][k] + eta[i][j-1][k][1]/det_Jacobian[i][j-1][k])*rhou_F_m_y + (eta[i][j][k][2]/det_Jacobian[i][j][k] + eta[i][j-1][k][2]/det_Jacobian[i][j-1][k])*rhou_F_m_z)
+                # rhov_conG_m_y = 0.5 * ((eta[i][j][k][0]/det_Jacobian[i][j][k] + (eta[i][j-1][k][0])/det_Jacobian[i][j-1][k])*rhov_F_m_x + (eta[i][j][k][1]/det_Jacobian[i][j][k] + eta[i][j-1][k][1]/det_Jacobian[i][j-1][k])*rhov_F_m_y + (eta[i][j][k][2]/det_Jacobian[i][j][k] + eta[i][j-1][k][2]/det_Jacobian[i][j-1][k])*rhov_F_m_z)
+                # rhow_conG_m_y = 0.5 * ((eta[i][j][k][0]/det_Jacobian[i][j][k] + (eta[i][j-1][k][0])/det_Jacobian[i][j-1][k])*rhow_F_m_x + (eta[i][j][k][1]/det_Jacobian[i][j][k] + eta[i][j-1][k][1]/det_Jacobian[i][j-1][k])*rhow_F_m_y + (eta[i][j][k][2]/det_Jacobian[i][j][k] + eta[i][j-1][k][2]/det_Jacobian[i][j-1][k])*rhow_F_m_z)
+                # rhoE_conG_m_y = 0.5 * ((eta[i][j][k][0]/det_Jacobian[i][j][k] + (eta[i][j-1][k][0])/det_Jacobian[i][j-1][k])*rhoE_F_m_x + (eta[i][j][k][1]/det_Jacobian[i][j][k] + eta[i][j-1][k][1]/det_Jacobian[i][j-1][k])*rhoE_F_m_y + (eta[i][j][k][2]/det_Jacobian[i][j][k] + eta[i][j-1][k][2]/det_Jacobian[i][j-1][k])*rhoE_F_m_z)
 
-                # ## Fluxes z-direction  
-                # rho_conH_p_z  = (module_grad_zeta_p/det_J_mean_zeta_p) *  rho_F_p_z
-                # rhou_conH_p_z = (module_grad_zeta_p/det_J_mean_zeta_p) * rhou_F_p_z
-                # rhov_conH_p_z = (module_grad_zeta_p/det_J_mean_zeta_p) * rhov_F_p_z
-                # rhow_conH_p_z = (module_grad_zeta_p/det_J_mean_zeta_p) * rhow_F_p_z
-                # rhoE_conH_p_z = (module_grad_zeta_p/det_J_mean_zeta_p) * rhoE_F_p_z
+                # ## Fluxes z-direction
+                # rho_conH_p_z  = 0.5 * ((zeta[i][j][k][0]/det_Jacobian[i][j][k] + (zeta[i][j][k+1][0])/det_Jacobian[i][j][k+1])* rho_F_p_x + (zeta[i][j][k][1]/det_Jacobian[i][j][k] + zeta[i][j][k+1][1]/det_Jacobian[i][j][k+1])* rho_F_p_y + (zeta[i][j][k][2]/det_Jacobian[i][j][k] + zeta[i][j][k+1][2]/det_Jacobian[i][j][k+1])* rho_F_p_z)
+                # rhou_conH_p_z = 0.5 * ((zeta[i][j][k][0]/det_Jacobian[i][j][k] + (zeta[i][j][k+1][0])/det_Jacobian[i][j][k+1])*rhou_F_p_x + (zeta[i][j][k][1]/det_Jacobian[i][j][k] + zeta[i][j][k+1][1]/det_Jacobian[i][j][k+1])*rhou_F_p_y + (zeta[i][j][k][2]/det_Jacobian[i][j][k] + zeta[i][j][k+1][2]/det_Jacobian[i][j][k+1])*rhou_F_p_z)
+                # rhov_conH_p_z = 0.5 * ((zeta[i][j][k][0]/det_Jacobian[i][j][k] + (zeta[i][j][k+1][0])/det_Jacobian[i][j][k+1])*rhov_F_p_x + (zeta[i][j][k][1]/det_Jacobian[i][j][k] + zeta[i][j][k+1][1]/det_Jacobian[i][j][k+1])*rhov_F_p_y + (zeta[i][j][k][2]/det_Jacobian[i][j][k] + zeta[i][j][k+1][2]/det_Jacobian[i][j][k+1])*rhov_F_p_z)
+                # rhow_conH_p_z = 0.5 * ((zeta[i][j][k][0]/det_Jacobian[i][j][k] + (zeta[i][j][k+1][0])/det_Jacobian[i][j][k+1])*rhow_F_p_x + (zeta[i][j][k][1]/det_Jacobian[i][j][k] + zeta[i][j][k+1][1]/det_Jacobian[i][j][k+1])*rhow_F_p_y + (zeta[i][j][k][2]/det_Jacobian[i][j][k] + zeta[i][j][k+1][2]/det_Jacobian[i][j][k+1])*rhow_F_p_z)
+                # rhoE_conH_p_z = 0.5 * ((zeta[i][j][k][0]/det_Jacobian[i][j][k] + (zeta[i][j][k+1][0])/det_Jacobian[i][j][k+1])*rhoE_F_p_x + (zeta[i][j][k][1]/det_Jacobian[i][j][k] + zeta[i][j][k+1][1]/det_Jacobian[i][j][k+1])*rhoE_F_p_y + (zeta[i][j][k][2]/det_Jacobian[i][j][k] + zeta[i][j][k+1][2]/det_Jacobian[i][j][k+1])*rhoE_F_p_z)
 
-                # rho_conH_m_z  = (module_grad_zeta_m/det_J_mean_zeta_m) *  rho_F_m_z
-                # rhou_conH_m_z = (module_grad_zeta_m/det_J_mean_zeta_m) * rhou_F_m_z
-                # rhov_conH_m_z = (module_grad_zeta_m/det_J_mean_zeta_m) * rhov_F_m_z
-                # rhow_conH_m_z = (module_grad_zeta_m/det_J_mean_zeta_m) * rhow_F_m_z
-                # rhoE_conH_m_z = (module_grad_zeta_m/det_J_mean_zeta_m) * rhoE_F_m_z
+                # rho_conH_m_z  = 0.5 * ((zeta[i][j][k][0]/det_Jacobian[i][j][k] + (zeta[i][j][k-1][0])/det_Jacobian[i][j][k-1])* rho_F_m_x + (zeta[i][j][k][1]/det_Jacobian[i][j][k] + zeta[i][j][k-1][1]/det_Jacobian[i][j][k-1])* rho_F_m_y + (zeta[i][j][k][2]/det_Jacobian[i][j][k] + zeta[i][j][k-1][2]/det_Jacobian[i][j][k-1])* rho_F_m_z)
+                # rhou_conH_m_z = 0.5 * ((zeta[i][j][k][0]/det_Jacobian[i][j][k] + (zeta[i][j][k-1][0])/det_Jacobian[i][j][k-1])*rhou_F_m_x + (zeta[i][j][k][1]/det_Jacobian[i][j][k] + zeta[i][j][k-1][1]/det_Jacobian[i][j][k-1])*rhou_F_m_y + (zeta[i][j][k][2]/det_Jacobian[i][j][k] + zeta[i][j][k-1][2]/det_Jacobian[i][j][k-1])*rhou_F_m_z)
+                # rhov_conH_m_z = 0.5 * ((zeta[i][j][k][0]/det_Jacobian[i][j][k] + (zeta[i][j][k-1][0])/det_Jacobian[i][j][k-1])*rhov_F_m_x + (zeta[i][j][k][1]/det_Jacobian[i][j][k] + zeta[i][j][k-1][1]/det_Jacobian[i][j][k-1])*rhov_F_m_y + (zeta[i][j][k][2]/det_Jacobian[i][j][k] + zeta[i][j][k-1][2]/det_Jacobian[i][j][k-1])*rhov_F_m_z)
+                # rhow_conH_m_z = 0.5 * ((zeta[i][j][k][0]/det_Jacobian[i][j][k] + (zeta[i][j][k-1][0])/det_Jacobian[i][j][k-1])*rhow_F_m_x + (zeta[i][j][k][1]/det_Jacobian[i][j][k] + zeta[i][j][k-1][1]/det_Jacobian[i][j][k-1])*rhow_F_m_y + (zeta[i][j][k][2]/det_Jacobian[i][j][k] + zeta[i][j][k-1][2]/det_Jacobian[i][j][k-1])*rhow_F_m_z)
+                # rhoE_conH_m_z = 0.5 * ((zeta[i][j][k][0]/det_Jacobian[i][j][k] + (zeta[i][j][k-1][0])/det_Jacobian[i][j][k-1])*rhoE_F_m_x + (zeta[i][j][k][1]/det_Jacobian[i][j][k] + zeta[i][j][k-1][1]/det_Jacobian[i][j][k-1])*rhoE_F_m_y + (zeta[i][j][k][2]/det_Jacobian[i][j][k] + zeta[i][j][k-1][2]/det_Jacobian[i][j][k-1])*rhoE_F_m_z)
+
+
+                ### Strong conservative form of the Navier-Stokes equations
+                module_grad_xi   = np.sqrt(  xi[i][j][k][0]**2 +   xi[i][j][k][1]**2 +   xi[i][j][k][2]**2)
+                module_grad_eta  = np.sqrt( eta[i][j][k][0]**2 +  eta[i][j][k][1]**2 +  eta[i][j][k][2]**2)
+                module_grad_zeta = np.sqrt(zeta[i][j][k][0]**2 + zeta[i][j][k][1]**2 + zeta[i][j][k][2]**2)
+
+                ## Fluxes x-direction
+                rho_conF_p_x  = (module_grad_xi/det_Jacobian[i][j][k]) *  rho_F_p_x
+                rhou_conF_p_x = (module_grad_xi/det_Jacobian[i][j][k]) * rhou_F_p_x
+                rhov_conF_p_x = (module_grad_xi/det_Jacobian[i][j][k]) * rhov_F_p_x
+                rhow_conF_p_x = (module_grad_xi/det_Jacobian[i][j][k]) * rhow_F_p_x
+                rhoE_conF_p_x = (module_grad_xi/det_Jacobian[i][j][k]) * rhoE_F_p_x
+                rho_conF_m_x  = (module_grad_xi/det_Jacobian[i][j][k]) *  rho_F_m_x
+                rhou_conF_m_x = (module_grad_xi/det_Jacobian[i][j][k]) * rhou_F_m_x
+                rhov_conF_m_x = (module_grad_xi/det_Jacobian[i][j][k]) * rhov_F_m_x
+                rhow_conF_m_x = (module_grad_xi/det_Jacobian[i][j][k]) * rhow_F_m_x
+                rhoE_conF_m_x = (module_grad_xi/det_Jacobian[i][j][k]) * rhoE_F_m_x
+
+                ## Fluxes y-direction
+                rho_conG_p_y  = (module_grad_eta/det_Jacobian[i][j][k]) *  rho_F_p_y
+                rhou_conG_p_y = (module_grad_eta/det_Jacobian[i][j][k]) * rhou_F_p_y
+                rhov_conG_p_y = (module_grad_eta/det_Jacobian[i][j][k]) * rhov_F_p_y
+                rhow_conG_p_y = (module_grad_eta/det_Jacobian[i][j][k]) * rhow_F_p_y
+                rhoE_conG_p_y = (module_grad_eta/det_Jacobian[i][j][k]) * rhoE_F_p_y
+                rho_conG_m_y  = (module_grad_eta/det_Jacobian[i][j][k]) *  rho_F_m_y
+                rhou_conG_m_y = (module_grad_eta/det_Jacobian[i][j][k]) * rhou_F_m_y
+                rhov_conG_m_y = (module_grad_eta/det_Jacobian[i][j][k]) * rhov_F_m_y
+                rhow_conG_m_y = (module_grad_eta/det_Jacobian[i][j][k]) * rhow_F_m_y
+                rhoE_conG_m_y = (module_grad_eta/det_Jacobian[i][j][k]) * rhoE_F_m_y
+
+                ## Fluxes z-direction  
+                rho_conH_p_z  = (module_grad_zeta/det_Jacobian[i][j][k]) *  rho_F_p_z
+                rhou_conH_p_z = (module_grad_zeta/det_Jacobian[i][j][k]) * rhou_F_p_z
+                rhov_conH_p_z = (module_grad_zeta/det_Jacobian[i][j][k]) * rhov_F_p_z
+                rhow_conH_p_z = (module_grad_zeta/det_Jacobian[i][j][k]) * rhow_F_p_z
+                rhoE_conH_p_z = (module_grad_zeta/det_Jacobian[i][j][k]) * rhoE_F_p_z
+                rho_conH_m_z  = (module_grad_zeta/det_Jacobian[i][j][k]) *  rho_F_m_z
+                rhou_conH_m_z = (module_grad_zeta/det_Jacobian[i][j][k]) * rhou_F_m_z
+                rhov_conH_m_z = (module_grad_zeta/det_Jacobian[i][j][k]) * rhov_F_m_z
+                rhow_conH_m_z = (module_grad_zeta/det_Jacobian[i][j][k]) * rhow_F_m_z
+                rhoE_conH_m_z = (module_grad_zeta/det_Jacobian[i][j][k]) * rhoE_F_m_z
 
 
 
