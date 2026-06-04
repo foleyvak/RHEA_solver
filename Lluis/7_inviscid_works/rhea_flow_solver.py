@@ -128,8 +128,8 @@ kappa_value   = 0.0*1.0e-2			                        # Thermal conductivity of t
 initial_time  = 0.0   			                        # Initial time [s]
 final_time    = 10.0      		                        # Final time [s]
 name_file_out = 'output_data'          	                # Name of output data [-]
-use_restart   = False          	               		    # Use restart [-]
-name_restart  = 'output_data_61800.csv'          	        # Name of restart data [-]
+use_restart   = True          	               		    # Use restart [-]
+name_restart  = 'output_data_90000.csv'          	        # Name of restart data [-]
 
 ### Thermodynamics & transport properties model
 thermodynamics = IdealGasModel(R_specific, gamma)
@@ -2374,6 +2374,7 @@ def sum_fluxes_source_terms( rho_tot, rhou_tot, rhov_tot, rhow_tot, rhoE_tot, P_
                 rhow_tot[i][j][k][rk_iter] = ( -det_Jacobian[i][j][k] * rhow_inv[i][j][k] + rhow_vis[i][j][k] + f_rhow[i][j][k])
                 rhoE_tot[i][j][k][rk_iter] = ( -det_Jacobian[i][j][k] * rhoE_inv[i][j][k] + rhoE_vis[i][j][k] + f_rhoE[i][j][k])
                 P_tot[i][j][k][rk_iter]    = ( -det_Jacobian[i][j][k] * P_inv_flux        + P_vis_flux        + f_rhoE[i][j][k])
+                print('rhou_tot{i}{7}{1} =' , rhou_tot[i][7][1][rk_iter])
 
 
 
