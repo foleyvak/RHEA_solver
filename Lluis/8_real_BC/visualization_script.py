@@ -18,26 +18,14 @@ import math
 ########## SET PARAMETERS ############
 
 ###################### DATA IMPORT SETTINGS ##########################
-output_iter     = 16000  # Select imported data iteration
-num_grid_x      = 32           # Number of internal grid points in the x-direction
-num_grid_y      = 16            # Number of internal grid points in the y-direction
-num_grid_z      = 1             # Number of internal grid points in the z-direction
+output_iter     = 2100  # Select imported data iteration
+num_grid_x      = 128            # Number of internal grid points in the x-direction
+num_grid_y      = 128            # Number of internal grid points in the y-direction
+num_grid_z      = 1              # Number of internal grid points in the z-direction
 
 name_file_out   = 'output_data_'  # Name of output data [-]
 filename = name_file_out + str(output_iter) + '.csv'
 ######################################################################
-
-###################### GEOMETRY CONFIGURATION ########################
-rt              = 1.0e-3  # Throat radius [m]
-rc              = 2.5e-3  # Chamber radius [m]
-R1_rt           = 3.0  # Convergent-throat arc ratio as (R1/rt)
-R2_R1           = 5.0  # Chamber-convergent arc ratio as (R2/R1)
-Rexp_rt         = 2.0  # Expansion arc ratio as (Rexp/rt)
-theta           = 15.0  # Convergent segment inclination angle [deg]
-alpha           = 5.0  # Conical nozzle half-angle [deg]
-L_N             = 30e-3  # Conical section length [m]
-L_c             = 3e-3 # Chamber section length [m]
-
 # Stretching factors: x = L*eta + A*( 0.5*L - L*eta )*( 1.0 - eta )*eta, with eta = ( l - 0.5 )/num_grid
 # A < 0: stretching at ends; A = 0: uniform; A > 0: stretching at center
 A_x = 0.0  # Stretching factor in x-direction
@@ -77,36 +65,53 @@ association_factor      = 0.0  # Association factor [-]
 #############################################################################################
 
 #############################################################################################
-x_0 = 0.0
-y_0 = 0.0
-z_0 = 0.0
-
-
-
-
-
-L_y_var = 1.0
-
-
+### Problem parameters
 x_0           = 0.0                                     # Domain origin in x-direction [m]
 y_0           = 0.0                                     # Domain origin in y-direction [m]
 z_0           = 0.0                                     # Domain origin in z-direction [m]
 L             = 1.0					                    # Cavity size [m]
 L_x           = 2.00*L             	                    # Size of domain in x-direction
-L_y           = 1.00*L	  		                        # Size of domain in y-direction
+L_y           = np.ones(num_grid_x + 2)*L	  		                        # Size of domain in y-direction
 L_y_0         = 1.0*L_y         	                    # Initial size of domain in y-direction (for time-varying geometries)
 L_y_f         = 0.5*L_y         	                    # Final size of domain in y-direction (for time-varying geometries)
-L_z           = 0.01*L_x         	                    # Size of domain in z-direction
-Rc            = 0.25*L_x         	                    # Radius of curvature of the geometry (for curved geometries)
-L_y = np.ones(num_grid_x+2) * L
+L_z           = 0.01*L         	                        # Size of domain in z-direction
+# Rc            = 0.25*L_x         	                    # Radius of curvature of the geometry (for curved geometries)
+#Nozzle
+r_t           = 0.8e-3         	                        # Nozzle throat radius (for nozzle geometries)
+r_c           = 1.5e-3         	                        # Nozzle chamber radius (for nozzle geometries)
+R1_rt         = 10.0         	                        # Convergent-throat arc ratio as (R1/rt)
+R2_R1         = 3.0                                     # Chamber-convergent arc ratio as (R2/R1)
+Rexp_rt       = 30.0                                    # Expansion arc ratio as (Rexp/rt)
+theta         = 5.0                                     # Convergent segment inclination angle [deg]
+alpha         = 3.0                                     # Conical nozzle half-angle [deg]
+L_N           = 30e-3                                   # Conical section length [m]
+L_c           = 3e-3                                    # Chamber section length [m]
+R1 = r_t * R1_rt # Convergent-Throat arc radius
+R2 = R1 * R2_R1 # Chamber-Convergent arc radius
+Rexp = r_t * Rexp_rt # Expansion arc radius
+theta_rad = theta * math.pi / 180 # Deg -> rad
+alpha_rad = alpha * math.pi / 180 # Deg -> rad
 
+# Segment points (Fixed geometry relationships)
+x_c = L_c
+r2 = r_c - R2 * (1 - math.cos(theta_rad))
+r1 = r_t + R1 * (1 - math.cos(theta_rad))
 
-A_x = 0.0
-A_y = 0.0
-A_z = 0.0
+x2 = x_c + R2 * math.sin(theta_rad)
+# Distance between x2 and x1 must account for the change in radius (r2 to r1)
+x1 = x2 + (r2 - r1) / math.tan(theta_rad) 
+
+# Throat location is shifted by R1 * sin(theta), not just R1
+x_t = x1 + R1 * math.sin(theta_rad) 
+x_exp = x_t + Rexp * math.sin(alpha_rad)
+r_exp = r_t + Rexp * (1 - math.cos(alpha_rad))
+
+L_x = x_t + L_N
+#
+
 #############################################################################################
 
-def spatial_discretization( grid):
+def spatial_discretization( grid ):
     physical_grid = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_sptl_dim]) # Physical grid (x, y, z)
     # All points
     for i in range( 0, num_grid_x + 2 ):    
@@ -120,14 +125,15 @@ def spatial_discretization( grid):
                 grid[i][j][k][0] = x_0 + L_x*eta_x + A_x*( 0.5*L_x - L_x*eta_x )*( 1.0 - eta_x )*eta_x
 
                 ### Define geometry contour
-                # # Channel   
+
+                # Channel
                 # L_y[i] = L_y_0
 
                 # # Parabolic
                 # L_y[i] = L_y_0 + (grid[i][j][k][0]-L_x/2)*(grid[i][j][k][0]-L_x/2)
 
                 # # Periodic
-                # if ( grid[i][j][k][0] < L_x/2.0 + 0.7*Rc and grid[i][j][k][0] > L_x/2.0 - 0.7*Rc ):
+                # if ( grid[i][j][k][0] > L_x/2.0 - 0.7*Rc and grid[i][j][k][0] < L_x/2.0 + 0.7*Rc ):
                 #     L_y[i] = L_y_0 + np.sqrt( Rc**2.0 - ( L_x/2.0 - grid[i][j][k][0] )**2.0 )
                 # else:
                 #     L_y[i] = 1.35*L_y_0
@@ -148,18 +154,42 @@ def spatial_discretization( grid):
                 # else:
                 #     L_y[i] = 1.35*L_y_0               
 
-
                 # # Ramp
                 # L_y[i] = L_y_0 + (L_y_f-L_y_0)/L_x*grid[i][j][k][0] # Example geometry -- a linearly expanding duct
                 
-                # Hyperbolic tangent
-                # 1. Extract the current X coordinate for readability
-                x_coord = grid[i][j][k][0]
-                # 2. Define a scaling/sharpness parameter (s)
-                # s = 3.0 is a good default where the transition finishes right at the boundaries.
-                s = 3.5 
-                # 3. The tanh geometry transformation
-                L_y[i] = L_y_0 + (L_y_f - L_y_0) * 0.5 * (1.0 + np.tanh(s * (2.0 * x_coord / L_x - 1.0)))
+                # # Hyperbolic tangent
+                # # 1. Extract the current X coordinate for readability
+                # x_coord = grid[i][j][k][0]
+                # # 2. Define a scaling/sharpness parameter (s)
+                # # s = 3.0 is a good default where the transition finishes right at the boundaries.
+                # s = 3.5 
+                # # 3. The tanh geometry transformation
+                # L_y[i] = L_y_0 + (L_y_f - L_y_0) * 0.5 * (1.0 + np.tanh(s * (2.0 * x_coord / L_x - 1.0)))
+
+                # Convergent-Divergent nozzle
+                # Clean variable for the current x-coordinate
+                x = grid[i][j][k][0]
+                # print('x: ', x, 'x_c: ', x_c, 'x2: ', x2, 'x1: ', x1, 'x_t: ', x_t, 'x_exp: ', x_exp)
+
+                if x <= x_c:
+                    L_y[i] = r_c        
+                elif x_c < x <= x2:
+                    # Arc 2 (Centered at x_c)
+                    L_y[i] = r_c - R2 * (1 - np.sqrt(1 - ((x - x_c) / R2)**2))                    
+                elif x2 < x <= x1:
+                    # Straight convergent section
+                    L_y[i] = r1 - (x - x1) * math.tan(theta_rad)                    
+                elif x1 < x <= x_t:
+                    # Arc 1 (Centered at x_t)
+                    L_y[i] = r_t + R1 * (1 - np.sqrt(1 - ((x - x_t) / R1)**2))                    
+                elif x_t < x <= x_exp:
+                    # Expansion Arc (Centered at x_t)
+                    L_y[i] = r_t + Rexp * (1 - np.sqrt(1 - ((x - x_t) / Rexp)**2))                  
+                else:
+                    # Straight divergent section
+                    L_y[i] = r_exp + (x - x_exp) * math.tan(alpha_rad)
+
+
 
                 grid[i][j][k][1] = y_0 + L_y[i]*eta_y + A_y*( 0.5*L_y[i] - L_y[i]*eta_y )*( 1.0 - eta_y )*eta_y
                 grid[i][j][k][2] = z_0 + L_z*eta_z + A_z*( 0.5*L_z - L_z*eta_z )*( 1.0 - eta_z )*eta_z
@@ -182,6 +212,7 @@ def spatial_discretization( grid):
                 if( grid[i][j][k][2] > ( z_0 + L_z ) ):
                     eta_z = ( num_grid_z - 0.5 )/num_grid_z
                     grid[i][j][k][2] = z_0 + 2.0*L_z - ( L_z*eta_z + A_z*( 0.5*L_z - L_z*eta_z )*( 1.0 - eta_z )*eta_z )
+
 
 
 #################### SELECT THERMODYNAMIC AND TRANSPORT COEFFICIENTS MODEL ##################
@@ -281,19 +312,6 @@ physical_plane = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_s
 computational_plane = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_sptl_dim]) # 3-D positions of the computational plane grid
 drc_dx = np.zeros([num_grid_x + 2])
 
-R1 = rt * R1_rt
-R2 = R1 * R2_R1
-Rexp = rt * Rexp_rt
-
-theta = theta*math.pi/180
-alpha = alpha*math.pi/180
-
-x1 = -R1*math.sin(theta)
-r1 = rt + R1*(1-math.cos(theta))
-r2 = rc + R2 * ( math.cos(theta) - 1 )
-x2 = x1 - (r2 - r1) / math.tan(theta)
-xc = x2 - R2*math.sin(theta)
-xexp = Rexp*math.sin(alpha)
                     
 spatial_discretization(physical_plane)
 # physical_plane /= 100.0

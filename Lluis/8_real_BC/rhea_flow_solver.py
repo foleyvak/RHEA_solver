@@ -112,15 +112,47 @@ L_x           = 2.00*L             	                    # Size of domain in x-di
 L_y           = 1.00*L	  		                        # Size of domain in y-direction
 L_y_0         = 1.0*L_y         	                    # Initial size of domain in y-direction (for time-varying geometries)
 L_y_f         = 0.5*L_y         	                    # Final size of domain in y-direction (for time-varying geometries)
-L_z           = 0.01*L_x         	                    # Size of domain in z-direction
-Rc            = 0.25*L_x         	                    # Radius of curvature of the geometry (for curved geometries)
-U_inlet       = 20.0		                    		# Inlet velocity [m/s]
-rho_inlet     = 1.0					                    # Inlet density [kg/m^3]
-P_inlet       = 2.0e5                                   # Inlet pressure [Pa] 
-T_inlet       = (1.0/(rho_inlet*R_specific))*P_inlet    # Inlet temperature [K]
-P_outlet      = 1.0e5                                   # Outlet pressure [Pa] 
+L_z           = 0.01*L         	                        # Size of domain in z-direction
+# Rc            = 0.25*L_x         	                    # Radius of curvature of the geometry (for curved geometries)
+#Nozzle
+r_t           = 0.8e-3         	                        # Nozzle throat radius (for nozzle geometries)
+r_c           = 1.5e-3         	                        # Nozzle chamber radius (for nozzle geometries)
+R1_rt         = 10.0         	                        # Convergent-throat arc ratio as (R1/rt)
+R2_R1         = 3.0                                     # Chamber-convergent arc ratio as (R2/R1)
+Rexp_rt       = 30.0                                    # Expansion arc ratio as (Rexp/rt)
+theta         = 5.0                                     # Convergent segment inclination angle [deg]
+alpha         = 3.0                                     # Conical nozzle half-angle [deg]
+L_N           = 30e-3                                   # Conical section length [m]
+L_c           = 3e-3                                    # Chamber section length [m]
+R1 = r_t * R1_rt # Convergent-Throat arc radius
+R2 = R1 * R2_R1 # Chamber-Convergent arc radius
+Rexp = r_t * Rexp_rt # Expansion arc radius
+theta_rad = theta * math.pi / 180 # Deg -> rad
+alpha_rad = alpha * math.pi / 180 # Deg -> rad
+
+# Segment points (Fixed geometry relationships)
+x_c = L_c
+r2 = r_c - R2 * (1 - math.cos(theta_rad))
+r1 = r_t + R1 * (1 - math.cos(theta_rad))
+
+x2 = x_c + R2 * math.sin(theta_rad)
+# Distance between x2 and x1 must account for the change in radius (r2 to r1)
+x1 = x2 + (r2 - r1) / math.tan(theta_rad) 
+
+# Throat location is shifted by R1 * sin(theta), not just R1
+x_t = x1 + R1 * math.sin(theta_rad) 
+x_exp = x_t + Rexp * math.sin(alpha_rad)
+r_exp = r_t + Rexp * (1 - math.cos(alpha_rad))
+
+L_x = x_t + L_N
+#
+U_inlet       = 80.0		                    		# Inlet velocity [m/s]
+# rho_inlet     = 1.0					                    # Inlet density [kg/m^3]
+P_inlet       = 100.0e5                                   # Inlet pressure [Pa] 
+T_inlet       = 600                                     # Inlet temperature [K]
+P_outlet      = 10.0e5                                   # Outlet pressure [Pa] 
 U_ref         = U_inlet				                    # Reference velocity [m/s]
-rho_ref       = rho_inlet				                # Reference density [kg/m^3]
+# rho_ref       = rho_inlet				                # Reference density [kg/m^3]
 P_ref         = P_inlet				                    # Reference pressure [Pa]
 T_ref         = T_inlet				                    # Reference temperature [K]
 mu_value      = 0.0*1.0e-5                     		    # Dynamic viscosity of the fluid [Pa s]
@@ -141,8 +173,8 @@ transport_coefficients = ConstantTransportCoefficients(mu_value, kappa_value)
 #transport_coefficients = CoolPropTransportCoefficients(substance)
 
 ### Computational parameters
-num_grid_x        = 32			                        # Number of internal grid points in the x-direction
-num_grid_y        = 16			                        # Number of internal grid points in the y-direction
+num_grid_x        = 128			                        # Number of internal grid points in the x-direction
+num_grid_y        = 128			                        # Number of internal grid points in the y-direction
 num_grid_z        = 1			                        # Number of internal grid points in the z-direction
 # Stretching factors: x = L*eta + A*( 0.5*L - L*eta )*( 1.0 - eta )*eta, with eta = ( l - 0.5 )/num_grid 
 # A < 0: stretching at ends; A = 0: uniform; A > 0: stretching at center
@@ -151,7 +183,7 @@ A_y               = 0.0                                 # Stretching factor in y
 A_z               = 0.0                                 # Stretching factor in z-direction
 CFL               = 0.1 		                        # CFL coefficient
 max_num_time_iter = 1e6			                        # Maximum number of time iterations
-output_iter       = 100			                        # Output data every given number of iterations
+output_iter       = 1000		                        # Output data every given number of iterations
 transport_pressure_scheme = False	                    # Select transporting pressure instead of total energy
 artificial_compressibility_method = False               # Activate artificial compressibility method
 epsilon_acm       = 0.01 		                        # Relative error of artificial compressibility method ... it has to be small
@@ -169,7 +201,6 @@ time_iter = 0.0                                         # Initialize time_iter
 delta_t   = 0.0                                         # Initialize time step
 P_thermo  = 0.0  			                            # Initialize thermodynamic pressure for artificial compressibility method
 alpha_acm = 1.0       		                            # Initialize speedup factor of artificial compressibility method
-
 
 ########## ALLOCATE MEMORY ##########
 
@@ -339,6 +370,9 @@ def update_boundaries( rho, rhou, rhov, rhow, rhoE, u, v, w, P, T, sos, grid ):
     # Back:  Periodic
     # Front: Periodic
 
+    rho_ref = -1.0; e_ref = -1.0
+    rho_ref, e_ref = thermodynamics.calculateDensityInternalEnergyFromPressureTemperature(rho_ref, e_ref, P_ref, T_ref)
+    
     # West boundary points
     i = 0
     for j in range( 1, num_grid_y + 1 ):    
@@ -451,65 +485,73 @@ def update_boundaries( rho, rhou, rhov, rhow, rhoE, u, v, w, P, T, sos, grid ):
             rhoE[i][j][k] = rho_g*E_g
 
     # East boundary points
-    i = num_grid_x + 1    
-    for j in range( 1, num_grid_y + 1 ):    
-        for k in range( 1, num_grid_z + 1 ):    
-            wg_g  = 1.0 - ( grid[i][j][k][0] - ( x_0 + L_x ) )/( grid[i][j][k][0] - grid[i-1][j][k][0] )
-            wg_in = 1.0 - ( ( x_0 + L_x ) - grid[i-1][j][k][0] )/( grid[i][j][k][0] - grid[i-1][j][k][0] )
-            P_in  = P[i-1][j][k]    
-            T_in  = T[i-1][j][k]    
-            u_in  = rhou[i-1][j][k]/rho[i-1][j][k]
-            v_in  = rhov[i-1][j][k]/rho[i-1][j][k]
-            w_in  = rhow[i-1][j][k]/rho[i-1][j][k]
-            Delta_g  = grid[i-1][j][k][0] - grid[i][j][k][0]
-            Delta_in = grid[i-2][j][k][0] - grid[i-1][j][k][0] 
-            rho_in  = rho[i-1][j][k]
-            sos_in  = sos[i-1][j][k]
-            Ma_in  = u_in/sos_in
-            #K_in   = 0.25*sos_in*( 1.0 - Ma_in*Ma_in )/L_x
-            K_in   = 0.75*sos_in*( 1.0 - Ma_in*Ma_in )/L_x
-            #K_in   = 0.01*sos_in*( 1.0 - Ma_in*Ma_in )/L_x
-            drho_dx_in = ( rho[i-2][j][k] - rho[i-1][j][k] )/Delta_in
-            du_dx_in   = (   u[i-2][j][k] -   u[i-1][j][k] )/Delta_in
-            dv_dx_in   = (   v[i-2][j][k] -   v[i-1][j][k] )/Delta_in
-            dw_dx_in   = (   w[i-2][j][k] -   w[i-1][j][k] )/Delta_in
-            dP_dx_in   = (   P[i-2][j][k] -   P[i-1][j][k] )/Delta_in
-            lambda_1_in = u_in - sos_in
-            L_1_lambda_1_in = K_in*( P_in - P_outlet )/lambda_1_in
-            L_2_lambda_2_in = sos_in*sos_in*drho_dx_in - dP_dx_in
-            L_3_lambda_3_in = dv_dx_in
-            L_4_lambda_4_in = dw_dx_in
-            L_5_lambda_5_in = dP_dx_in + rho_in*sos_in*du_dx_in
-            dQ_1_dx_in = ( 1.0/( sos_in*sos_in ) )*( L_2_lambda_2_in + 0.5*( L_5_lambda_5_in + L_1_lambda_1_in ) )
-            dQ_2_dx_in = ( 1.0/( 2.0*rho_in*sos_in ) )*( L_5_lambda_5_in - L_1_lambda_1_in )
-            dQ_3_dx_in = L_3_lambda_3_in
-            dQ_4_dx_in = L_4_lambda_4_in
-            dQ_5_dx_in = 0.5*( L_5_lambda_5_in + L_1_lambda_1_in )
-            rho_g = rho_in - Delta_g*dQ_1_dx_in
-            #rho_g = rho_in
-            u_g   = u_in   - Delta_g*dQ_2_dx_in
-            #u_g   = u_in
-            v_g   = v_in   - Delta_g*dQ_3_dx_in
-            #v_g   = v_in
-            w_g   = w_in   - Delta_g*dQ_4_dx_in
-            #w_g   = w_in
-            # P_g   = P_in   - Delta_g*dQ_5_dx_in
-            P_g   = P_in
-            T_g   = T[i][j][k]
-            T_g   = thermodynamics.calculateTemperatureFromPressureDensityWithInitialGuess( T_g, P_g, rho_g )
-            #T_g   = T_in
-            # # Periodic
-            # u_g   = u[1][j][k]
-            # v_g   = v[1][j][k]
-            # w_g   = w[1][j][k]
-            # T_g   = T[1][j][k]
-            # P_g   = P[1][j][k]
-            # rho_g = rho[1][j][k]
+    u_axis = 0.5 * (u[-2, 0, 1] + u[-2, 1, 1])
+    v_axis = 0.5 * (v[-2, 0, 1] + v[-2, 1, 1])
+    w_axis = 0.5 * (w[-2, 0, 1] + w[-2, 1, 1])
+    sos_axis = 0.5 * (sos[-2, 0, 1] + sos[-2, 1, 1])
+    V_axis = np.sqrt(u_axis ** 2 + v_axis ** 2 + w_axis ** 2)
+
+    Ma_in = V_axis / sos_axis # Uncomment to activate outflow boundary switch
+    # Ma_in = 1.0             # Uncomment to activate supersonic outflow only
+    # Ma_in = 0.1             # Uncomment to activate subsonic outflow only
+
+    i = num_grid_x + 1   
+    if Ma_in < 1.0: 
+        for j in range( 1, num_grid_y + 1 ):    
+            for k in range( 1, num_grid_z + 1 ):
+                wg_g  = 1.0 - ( grid[i][j][k][0] - ( x_0 + L_x ) )/( grid[i][j][k][0] - grid[i-1][j][k][0] )
+                wg_in = 1.0 - ( ( x_0 + L_x ) - grid[i-1][j][k][0] )/( grid[i][j][k][0] - grid[i-1][j][k][0] )
+                P_in  = P[i-1][j][k]    
+                T_in  = T[i-1][j][k]    
+                u_in  = rhou[i-1][j][k]/rho[i-1][j][k]
+                v_in  = rhov[i-1][j][k]/rho[i-1][j][k]
+                w_in  = rhow[i-1][j][k]/rho[i-1][j][k]
+                Delta_g  = grid[i-1][j][k][0] - grid[i][j][k][0]
+                Delta_in = grid[i-2][j][k][0] - grid[i-1][j][k][0] 
+                rho_in  = rho[i-1][j][k]
+                sos_in  = sos[i-1][j][k]
+                Ma_in  = u_in/sos_in
+                #K_in   = 0.25*sos_in*( 1.0 - Ma_in*Ma_in )/L_x
+                K_in   = 0.5*sos_in*( 1.0 - Ma_in*Ma_in )/L_x
+                #K_in   = 0.01*sos_in*( 1.0 - Ma_in*Ma_in )/L_x
+                drho_dx_in = ( rho[i-2][j][k] - rho[i-1][j][k] )/Delta_in
+                du_dx_in   = (   u[i-2][j][k] -   u[i-1][j][k] )/Delta_in
+                dv_dx_in   = (   v[i-2][j][k] -   v[i-1][j][k] )/Delta_in
+                dw_dx_in   = (   w[i-2][j][k] -   w[i-1][j][k] )/Delta_in
+                dP_dx_in   = (   P[i-2][j][k] -   P[i-1][j][k] )/Delta_in
+                lambda_1_in = u_in - sos_in
+                L_1_lambda_1_in = K_in*( P_in - P_outlet )/lambda_1_in
+                L_2_lambda_2_in = sos_in*sos_in*drho_dx_in - dP_dx_in
+                L_3_lambda_3_in = dv_dx_in
+                L_4_lambda_4_in = dw_dx_in
+                L_5_lambda_5_in = dP_dx_in + rho_in*sos_in*du_dx_in
+                dQ_1_dx_in = ( 1.0/( sos_in*sos_in ) )*( L_2_lambda_2_in + 0.5*( L_5_lambda_5_in + L_1_lambda_1_in ) )
+                dQ_2_dx_in = ( 1.0/( 2.0*rho_in*sos_in ) )*( L_5_lambda_5_in - L_1_lambda_1_in )
+                dQ_3_dx_in = L_3_lambda_3_in
+                dQ_4_dx_in = L_4_lambda_4_in
+                dQ_5_dx_in = 0.5*( L_5_lambda_5_in + L_1_lambda_1_in )
+                rho_g = rho_in - Delta_g*dQ_1_dx_in
+                u_g   = u_in   - Delta_g*dQ_2_dx_in
+                v_g   = v_in   - Delta_g*dQ_3_dx_in
+                w_g   = w_in   - Delta_g*dQ_4_dx_in
+                P_g   = P_in   - Delta_g*dQ_5_dx_in
+                T_g   = T[i][j][k]
+                T_g   = thermodynamics.calculateTemperatureFromPressureDensityWithInitialGuess( T_g, P_g, rho_g )
+    else:
+        for j in range( 1, num_grid_y + 1 ):    
+            for k in range( 1, num_grid_z + 1 ):
+                # Supersonic outflow
+                u_g = u_in
+                v_g = v_in
+                w_g = w_in
+                P_g = P_in
+                T_g = T_in
+
             # Specific internal energy and density
             rho_g = -1.0; e_g = -1.0
             rho_g, e_g = thermodynamics.calculateDensityInternalEnergyFromPressureTemperature(rho_g, e_g, P_g, T_g)
-            ke_g  = 0.5*( u_g**2.0 + v_g**2.0 + w_g**2.0 )	# Specific kinetic energy
-            E_g   = e_g + ke_g					            # Specific total energy
+            ke_g  = 0.5*( u_g**2.0 + v_g**2.0 + w_g**2.0 )  # Specific kinetic energy
+            E_g   = e_g + ke_g                              # Specific total energy
             rho[i][j][k]  = rho_g
             rhou[i][j][k] = rho_g*u_g
             rhov[i][j][k] = rho_g*v_g
@@ -876,6 +918,7 @@ def spatial_discretization( grid , drc_dx):
                 grid[i][j][k][0] = x_0 + L_x*eta_x + A_x*( 0.5*L_x - L_x*eta_x )*( 1.0 - eta_x )*eta_x
 
                 ### Define geometry contour
+
                 # Channel
                 # L_y[i] = L_y_0
 
@@ -907,14 +950,39 @@ def spatial_discretization( grid , drc_dx):
                 # # Ramp
                 # L_y[i] = L_y_0 + (L_y_f-L_y_0)/L_x*grid[i][j][k][0] # Example geometry -- a linearly expanding duct
                 
-                # Hyperbolic tangent
-                # 1. Extract the current X coordinate for readability
-                x_coord = grid[i][j][k][0]
-                # 2. Define a scaling/sharpness parameter (s)
-                # s = 3.0 is a good default where the transition finishes right at the boundaries.
-                s = 3.5 
-                # 3. The tanh geometry transformation
-                L_y[i] = L_y_0 + (L_y_f - L_y_0) * 0.5 * (1.0 + np.tanh(s * (2.0 * x_coord / L_x - 1.0)))
+                # # Hyperbolic tangent
+                # # 1. Extract the current X coordinate for readability
+                # x_coord = grid[i][j][k][0]
+                # # 2. Define a scaling/sharpness parameter (s)
+                # # s = 3.0 is a good default where the transition finishes right at the boundaries.
+                # s = 3.5 
+                # # 3. The tanh geometry transformation
+                # L_y[i] = L_y_0 + (L_y_f - L_y_0) * 0.5 * (1.0 + np.tanh(s * (2.0 * x_coord / L_x - 1.0)))
+
+                # Convergent-Divergent nozzle
+                # Clean variable for the current x-coordinate
+                x = grid[i][j][k][0]
+                # print('x: ', x, 'x_c: ', x_c, 'x2: ', x2, 'x1: ', x1, 'x_t: ', x_t, 'x_exp: ', x_exp)
+
+                if x <= x_c:
+                    L_y[i] = r_c        
+                elif x_c < x <= x2:
+                    # Arc 2 (Centered at x_c)
+                    L_y[i] = r_c - R2 * (1 - np.sqrt(1 - ((x - x_c) / R2)**2))                    
+                elif x2 < x <= x1:
+                    # Straight convergent section
+                    L_y[i] = r1 - (x - x1) * math.tan(theta_rad)                    
+                elif x1 < x <= x_t:
+                    # Arc 1 (Centered at x_t)
+                    L_y[i] = r_t + R1 * (1 - np.sqrt(1 - ((x - x_t) / R1)**2))                    
+                elif x_t < x <= x_exp:
+                    # Expansion Arc (Centered at x_t)
+                    L_y[i] = r_t + Rexp * (1 - np.sqrt(1 - ((x - x_t) / Rexp)**2))                  
+                else:
+                    # Straight divergent section
+                    L_y[i] = r_exp + (x - x_exp) * math.tan(alpha_rad)
+
+
 
                 grid[i][j][k][1] = y_0 + L_y[i]*eta_y + A_y*( 0.5*L_y[i] - L_y[i]*eta_y )*( 1.0 - eta_y )*eta_y
                 grid[i][j][k][2] = z_0 + L_z*eta_z + A_z*( 0.5*L_z - L_z*eta_z )*( 1.0 - eta_z )*eta_z
@@ -972,55 +1040,42 @@ def spatial_discretization( grid , drc_dx):
                     x_metric[i][j][k][0] = (physical_grid[i+1][j][k][0] - physical_grid[i][j][k][0])/( grid[i+1][j][k][0] - grid[i][j][k][0] ) # Forward difference
                     y_metric[i][j][k][0] = (physical_grid[i+1][j][k][1] - physical_grid[i][j][k][1])/( grid[i+1][j][k][0] - grid[i][j][k][0] ) # Forward difference
                     z_metric[i][j][k][0] = (physical_grid[i+1][j][k][2] - physical_grid[i][j][k][2])/( grid[i+1][j][k][0] - grid[i][j][k][0] ) # Forward difference
-                    # print('physical_grid[i+1][j][k][1] = ' + str(physical_grid[i+1][j][k][1]) + ', physical_grid[i][j][k][1] = ' + str(physical_grid[i][j][k][1]) + ', grid[i+1][j][k][0] = ' + str(grid[i+1][j][k][0]) + ', grid[i][j][k][0] = ' + str(grid[i][j][k][0]) )
-                    # print('forward: x_metric = ' + str(x_metric[i][j][k][0]) + ', y_metric = ' + str(y_metric[i][j][k][0]) + ', z_metric = ' + str(z_metric[i][j][k][0]) )
-                    # print('drc_dx[i] = ' + str(drc_dx[i]) )
-                    # print('-------------------------------')
                 elif i == num_grid_x + 1:
                     x_metric[i][j][k][0] = (physical_grid[i][j][k][0] - physical_grid[i-1][j][k][0])/( grid[i][j][k][0] - grid[i-1][j][k][0] ) # Backward difference
                     y_metric[i][j][k][0] = (physical_grid[i][j][k][1] - physical_grid[i-1][j][k][1])/( grid[i][j][k][0] - grid[i-1][j][k][0] ) # Backward difference
                     z_metric[i][j][k][0] = (physical_grid[i][j][k][2] - physical_grid[i-1][j][k][2])/( grid[i][j][k][0] - grid[i-1][j][k][0] ) # Backward difference
-                    # print( 'backward: x_metric = ' + str(x_metric[i][j][k][0]) + ', y_metric = ' + str(y_metric[i][j][k][0]) + ', z_metric = ' + str(z_metric[i][j][k][0]) )
                 else:
                     x_metric[i][j][k][0] = (physical_grid[i+1][j][k][0]-physical_grid[i-1][j][k][0])/( grid[i+1][j][k][0] - grid[i-1][j][k][0] ) # Central difference
                     y_metric[i][j][k][0] = (physical_grid[i+1][j][k][1]-physical_grid[i-1][j][k][1])/( grid[i+1][j][k][0] - grid[i-1][j][k][0] ) # Central difference
-                    z_metric[i][j][k][0] = (physical_grid[i+1][j][k][2]-physical_grid[i-1][j][k][2])/( grid[i+1][j][k][0] - grid[i-1][j][k][0] ) # Central difference
-                    # print( 'centred: x_metric = ' + str(x_metric[i][j][k][0]) + ', y_metric = ' + str(y_metric[i][j][k][0]) + ', z_metric = ' + str(z_metric[i][j][k][0]) )
-                                    
+                    z_metric[i][j][k][0] = (physical_grid[i+1][j][k][2]-physical_grid[i-1][j][k][2])/( grid[i+1][j][k][0] - grid[i-1][j][k][0] ) # Central difference 
+
                 if j == 0:
                     x_metric[i][j][k][1] = (physical_grid[i][j+1][k][0] - physical_grid[i][j][k][0])/( grid[i][j+1][k][1] - grid[i][j][k][1] ) # Forward difference
                     y_metric[i][j][k][1] = (physical_grid[i][j+1][k][1] - physical_grid[i][j][k][1])/( grid[i][j+1][k][1] - grid[i][j][k][1] ) # Forward difference
                     z_metric[i][j][k][1] = (physical_grid[i][j+1][k][2] - physical_grid[i][j][k][2])/( grid[i][j+1][k][1] - grid[i][j][k][1] ) # Forward difference
-                    # print( 'forward: x_metric = ' + str(x_metric[i][j][k][1]) + ', y_metric = ' + str(y_metric[i][j][k][1]) + ', z_metric = ' + str(z_metric[i][j][k][1]) )
                 elif j == num_grid_y + 1:
                     x_metric[i][j][k][1] = (physical_grid[i][j][k][0] - physical_grid[i][j-1][k][0])/( grid[i][j][k][1] - grid[i][j-1][k][1] ) # Backward difference
                     y_metric[i][j][k][1] = (physical_grid[i][j][k][1] - physical_grid[i][j-1][k][1])/( grid[i][j][k][1] - grid[i][j-1][k][1] ) # Backward difference
                     z_metric[i][j][k][1] = (physical_grid[i][j][k][2] - physical_grid[i][j-1][k][2])/( grid[i][j][k][1] - grid[i][j-1][k][1] ) # Backward difference
-                    # print( 'backward: x_metric = ' + str(x_metric[i][j][k][1]) + ', y_metric = ' + str(y_metric[i][j][k][1]) + ', z_metric = ' + str(z_metric[i][j][k][1]) )
                 else:
                     x_metric[i][j][k][1] = (physical_grid[i][j+1][k][0] - physical_grid[i][j-1][k][0])/( grid[i][j+1][k][1] - grid[i][j-1][k][1] ) # Central difference
                     y_metric[i][j][k][1] = (physical_grid[i][j+1][k][1] - physical_grid[i][j-1][k][1])/( grid[i][j+1][k][1] - grid[i][j-1][k][1] ) # Central difference
                     z_metric[i][j][k][1] = (physical_grid[i][j+1][k][2] - physical_grid[i][j-1][k][2])/( grid[i][j+1][k][1] - grid[i][j-1][k][1] ) # Central difference
-                    # print( 'centred: x_metric = ' + str(x_metric[i][j][k][1]) + ', y_metric = ' + str(y_metric[i][j][k][1]) + ', z_metric = ' + str(z_metric[i][j][k][1]) )
 
                 if k == 0:
                     x_metric[i][j][k][2] = (physical_grid[i][j][k+1][0] - physical_grid[i][j][k][0])/( grid[i][j][k+1][2] - grid[i][j][k][2] ) # Forward difference
                     y_metric[i][j][k][2] = (physical_grid[i][j][k+1][1] - physical_grid[i][j][k][1])/( grid[i][j][k+1][2] - grid[i][j][k][2] ) # Forward difference
                     z_metric[i][j][k][2] = (physical_grid[i][j][k+1][2] - physical_grid[i][j][k][2])/( grid[i][j][k+1][2] - grid[i][j][k][2] ) # Forward difference
-                    # print( 'forward: x_metric = ' + str(x_metric[i][j][k][2]) + ', y_metric = ' + str(y_metric[i][j][k][2]) + ', z_metric = ' + str(z_metric[i][j][k][2]) )
                 elif k == num_grid_z + 1:
                     x_metric[i][j][k][2] = (physical_grid[i][j][k][0] - physical_grid[i][j][k-1][0])/( grid[i][j][k][2] - grid[i][j][k-1][2] ) # Backward difference
                     y_metric[i][j][k][2] = (physical_grid[i][j][k][1] - physical_grid[i][j][k-1][1])/( grid[i][j][k][2] - grid[i][j][k-1][2] ) # Backward difference
                     z_metric[i][j][k][2] = (physical_grid[i][j][k][2] - physical_grid[i][j][k-1][2])/( grid[i][j][k][2] - grid[i][j][k-1][2] ) # Backward difference
-                    # print( 'backward: x_metric = ' + str(x_metric[i][j][k][2]) + ', y_metric = ' + str(y_metric[i][j][k][2]) + ', z_metric = ' + str(z_metric[i][j][k][2]) )
                 else:
                     x_metric[i][j][k][2] = (physical_grid[i][j][k+1][0] - physical_grid[i][j][k-1][0])/( grid[i][j][k+1][2] - grid[i][j][k-1][2] ) # Central difference
                     y_metric[i][j][k][2] = (physical_grid[i][j][k+1][1] - physical_grid[i][j][k-1][1])/( grid[i][j][k+1][2] - grid[i][j][k-1][2] ) # Central difference
                     z_metric[i][j][k][2] = (physical_grid[i][j][k+1][2] - physical_grid[i][j][k-1][2])/( grid[i][j][k+1][2] - grid[i][j][k-1][2] ) # Central difference
-                    # print( 'centred: x_metric = ' + str(x_metric[i][j][k][2]) + ', y_metric = ' + str(y_metric[i][j][k][2]) + ', z_metric = ' + str(z_metric[i][j][k][2]) )
 
                 det_Jacobian[i][j][k] = x_metric[i][j][k][0]*y_metric[i][j][k][1]*z_metric[i][j][k][2] + x_metric[i][j][k][1]*y_metric[i][j][k][2]*z_metric[i][j][k][0] + x_metric[i][j][k][2]*y_metric[i][j][k][0]*z_metric[i][j][k][1] - x_metric[i][j][k][2]*y_metric[i][j][k][1]*z_metric[i][j][k][0] - x_metric[i][j][k][1]*y_metric[i][j][k][0]*z_metric[i][j][k][2] - x_metric[i][j][k][0]*y_metric[i][j][k][2]*z_metric[i][j][k][1] # Calculate Jacobian of coordinate transformation to computational space (xi, eta, zeta)
-                # print('|J_xyz| = ' + str(det_Jacobian[i][j][k]) + ' at i = ' + str(i) + ', j = ' + str(j) + ', k = ' + str(k) )
 
                 xi[i][j][k][0]   = (y_metric[i][j][k][1]*z_metric[i][j][k][2] - y_metric[i][j][k][2]*z_metric[i][j][k][1]) / det_Jacobian[i][j][k] # Gradient of xi in x direction
                 xi[i][j][k][1]   = (x_metric[i][j][k][2]*z_metric[i][j][k][1] - x_metric[i][j][k][1]*z_metric[i][j][k][2]) / det_Jacobian[i][j][k] # Gradient of xi in y direction
@@ -1033,7 +1088,6 @@ def spatial_discretization( grid , drc_dx):
                 zeta[i][j][k][2] = (x_metric[i][j][k][0]*y_metric[i][j][k][1] - x_metric[i][j][k][1]*y_metric[i][j][k][0]) / det_Jacobian[i][j][k] # Gradient of zeta in z direction
 
                 det_Jacobian[i][j][k] = xi[i][j][k][0]*( eta[i][j][k][1]*zeta[i][j][k][2] - eta[i][j][k][2]*zeta[i][j][k][1] ) - xi[i][j][k][1]*( eta[i][j][k][0]*zeta[i][j][k][2] - eta[i][j][k][2]*zeta[i][j][k][0] ) + xi[i][j][k][2]*( eta[i][j][k][0]*zeta[i][j][k][1] - eta[i][j][k][1]*zeta[i][j][k][0] )
-                # print('|J_xietazeta| = ' + str(det_Jacobian[i][j][k]) + ' at i = ' + str(i) + ', j = ' + str(j) + ', k = ' + str(k) )
 
                 module_grad_xi   = np.sqrt(   xi[i][j][k][0]*  xi[i][j][k][0] +   xi[i][j][k][1]*  xi[i][j][k][1] +   xi[i][j][k][2]*  xi[i][j][k][2] )
                 module_grad_eta  = np.sqrt(  eta[i][j][k][0]* eta[i][j][k][0] +  eta[i][j][k][1]* eta[i][j][k][1] +  eta[i][j][k][2]* eta[i][j][k][2] )
@@ -1052,14 +1106,6 @@ def spatial_discretization( grid , drc_dx):
                 t2_xi[i][j][k][1]   = -n_xi[i][j][k][1]*n_xi[i][j][k][2]       # Tangential vector in xi direction
                 t2_xi[i][j][k][2]   =  n_xi[i][j][k][0]*n_xi[i][j][k][0] + n_xi[i][j][k][1]*n_xi[i][j][k][1] # Tangential vector in xi direction
 
-                # SIGN CHANGE
-                # t1_xi[i][j][k][0]   =  n_xi[i][j][k][1]       # Tangential vector in xi direction
-                # t1_xi[i][j][k][1]   = -n_xi[i][j][k][0]       # Tangential vector in xi direction
-                # t1_xi[i][j][k][2]   =  0.0                    # Tangential vector in xi direction             
-                # t2_xi[i][j][k][0]   =  n_xi[i][j][k][0]*n_xi[i][j][k][2]       # Tangential vector in xi direction
-                # t2_xi[i][j][k][1]   =  n_xi[i][j][k][1]*n_xi[i][j][k][2]       # Tangential vector in xi direction
-                # t2_xi[i][j][k][2]   =  -n_xi[i][j][k][0]*n_xi[i][j][k][0] - n_xi[i][j][k][1]*n_xi[i][j][k][1] # Tangential vector in xi direction
-
                 module_t1_xi = np.sqrt( t1_xi[i][j][k][0]*t1_xi[i][j][k][0] + t1_xi[i][j][k][1]*t1_xi[i][j][k][1] + t1_xi[i][j][k][2]*t1_xi[i][j][k][2] )
                 module_t2_xi = np.sqrt( t2_xi[i][j][k][0]*t2_xi[i][j][k][0] + t2_xi[i][j][k][1]*t2_xi[i][j][k][1] + t2_xi[i][j][k][2]*t2_xi[i][j][k][2] )      
 
@@ -1069,10 +1115,6 @@ def spatial_discretization( grid , drc_dx):
                 t2_xi[i][j][k][0] /= module_t2_xi       # Normalize tangential vector in xi direction
                 t2_xi[i][j][k][1] /= module_t2_xi       # Normalize tangential vector in xi direction
                 t2_xi[i][j][k][2] /= module_t2_xi       # Normalize tangential vector in xi direction
-                # print(n_xi[i][j][k][0], n_xi[i][j][k][1], n_xi[i][j][k][2])
-                # print(t1_xi[i][j][k][0], t1_xi[i][j][k][1], t1_xi[i][j][k][2])
-                # print(t2_xi[i][j][k][0], t2_xi[i][j][k][1], t2_xi[i][j][k][2])
-                # print( '-----------------------------' )
 
                 # Calculate tangential vectors in eta direction using the normal vector in eta direction
 
@@ -1083,14 +1125,6 @@ def spatial_discretization( grid , drc_dx):
                 t2_eta[i][j][k][1]   = -n_eta[i][j][k][1]*n_eta[i][j][k][2]       # Tangential vector in eta direction
                 t2_eta[i][j][k][2]   =  n_eta[i][j][k][0]*n_eta[i][j][k][0] + n_eta[i][j][k][1]*n_eta[i][j][k][1] # Tangential vector in eta direction
 
-                # SIGN CHANGE
-                # t1_eta[i][j][k][0]   = -n_eta[i][j][k][1]       # Tangential vector in eta direction
-                # t1_eta[i][j][k][1]   =  n_eta[i][j][k][0]       # Tangential vector in eta direction
-                # t1_eta[i][j][k][2]   =  0.0                     # Tangential vector in eta direction
-                # t2_eta[i][j][k][0]   =  n_eta[i][j][k][0]*n_eta[i][j][k][2]       # Tangential vector in eta direction
-                # t2_eta[i][j][k][1]   =  n_eta[i][j][k][1]*n_eta[i][j][k][2]       # Tangential vector in eta direction
-                # t2_eta[i][j][k][2]   =  -n_eta[i][j][k][0]*n_eta[i][j][k][0] - n_eta[i][j][k][1]*n_eta[i][j][k][1] # Tangential vector in eta direction
-
                 module_t1_eta = np.sqrt( t1_eta[i][j][k][0]*t1_eta[i][j][k][0] + t1_eta[i][j][k][1]*t1_eta[i][j][k][1] + t1_eta[i][j][k][2]*t1_eta[i][j][k][2] )
                 module_t2_eta = np.sqrt( t2_eta[i][j][k][0]*t2_eta[i][j][k][0] + t2_eta[i][j][k][1]*t2_eta[i][j][k][1] + t2_eta[i][j][k][2]*t2_eta[i][j][k][2] )
 
@@ -1100,12 +1134,7 @@ def spatial_discretization( grid , drc_dx):
                 t2_eta[i][j][k][0] /= module_t2_eta       # Normalize tangential vector in eta direction
                 t2_eta[i][j][k][1] /= module_t2_eta       # Normalize tangential vector in eta direction
                 t2_eta[i][j][k][2] /= module_t2_eta       # Normalize tangential vector in eta direction
-                # print(n_eta[i][-1][k][0], n_eta[i][17][k][1], n_eta[i][-1][k][2])
-                # print(t1_eta[i][j][k][0], t1_eta[i][j][k][1], t1_eta[i][j][k][2])
-                # print(t2_eta[i][j][k][0], t2_eta[i][j][k][1], t2_eta[i][j][k][2])
-                # print( '-----------------------------' )
-                # print(n_eta[i][j][k][0]*t1_eta[i][j][k][0]+n_eta[i][j][k][1]*t1_eta[i][j][k][1]+n_eta[i][j][k][2]*t1_eta[i][j][k][2], n_eta[i][j][k][0]*t2_eta[i][j][k][0]+n_eta[i][j][k][1]*t2_eta[i][j][k][1]+n_eta[i][j][k][2]*t2_eta[i][j][k][2]) # Check orthogonality between normal and tangrential vectors in eta direction
-
+              
                 # Calculate tangential vectors in zeta direction using the normal vector in zeta direction
                 t1_zeta[i][j][k][0]   =  n_zeta[i][j][k][2]       # Tangential vector in zeta direction
                 t1_zeta[i][j][k][1]   =  0.0                      # Tangential vector in zeta direction
@@ -1113,14 +1142,6 @@ def spatial_discretization( grid , drc_dx):
                 t2_zeta[i][j][k][0]   = -n_zeta[i][j][k][0]*n_zeta[i][j][k][1]       # Tangential vector in zeta direction
                 t2_zeta[i][j][k][1]   =  n_zeta[i][j][k][0]*n_zeta[i][j][k][0] + n_zeta[i][j][k][2]*n_zeta[i][j][k][2] # Tangential vector in zeta direction
                 t2_zeta[i][j][k][2]   = -n_zeta[i][j][k][1]*n_zeta[i][j][k][2]       # Tangential vector in zeta direction
-
-                # SIGN CHANGE
-                # t1_zeta[i][j][k][0]   = -n_zeta[i][j][k][2]       # Tangential vector in zeta direction
-                # t1_zeta[i][j][k][1]   =  0.0                      # Tangential vector in zeta direction
-                # t1_zeta[i][j][k][2]   =  n_zeta[i][j][k][0]       # Tangential vector in zeta direction
-                # t2_zeta[i][j][k][0]   =  n_zeta[i][j][k][0]*n_zeta[i][j][k][1]       # Tangential vector in zeta direction
-                # t2_zeta[i][j][k][1]   = -n_zeta[i][j][k][0]*n_zeta[i][j][k][0] - n_zeta[i][j][k][2]*n_zeta[i][j][k][2] # Tangential vector in zeta direction
-                # t2_zeta[i][j][k][2]   =  n_zeta[i][j][k][1]*n_zeta[i][j][k][2]       # Tangential vector in zeta direction
 
                 module_t1_zeta = np.sqrt( t1_zeta[i][j][k][0]*t1_zeta[i][j][k][0] + t1_zeta[i][j][k][1]*t1_zeta[i][j][k][1] + t1_zeta[i][j][k][2]*t1_zeta[i][j][k][2] )
                 module_t2_zeta = np.sqrt( t2_zeta[i][j][k][0]*t2_zeta[i][j][k][0] + t2_zeta[i][j][k][1]*t2_zeta[i][j][k][1] + t2_zeta[i][j][k][2]*t2_zeta[i][j][k][2] )
@@ -1131,11 +1152,6 @@ def spatial_discretization( grid , drc_dx):
                 t2_zeta[i][j][k][0] /= module_t2_zeta       # Normalize tangential vector in zeta direction
                 t2_zeta[i][j][k][1] /= module_t2_zeta       # Normalize tangential vector in zeta direction
                 t2_zeta[i][j][k][2] /= module_t2_zeta       # Normalize tangential vector in zeta direction
-                # print(n_zeta[i][j][k][0], n_zeta[i][j][k][1], n_zeta[i][j][k][2])
-                # print(t1_zeta[i][j][k][0], t1_zeta[i][j][k][1], t1_zeta[i][j][k][2])
-                # print(t2_zeta[i][j][k][0], t2_zeta[i][j][k][1], t2_zeta[i][j][k][2])
-                # print( '-----------------------------' )
-        # print(eta[i][j][k][0], eta[i][j][k][1], eta[i][j][k][2], '-eta/L_y drc_dx = ' + str(-grid[i][j][k][1]/L_y[i]*drc_dx[i]) ) 
     
 ### Initialize thermodynamic variables
 def initialize_thermodynamics( rho, E, s, u, v, w, P, T ):
@@ -1613,38 +1629,12 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 a_L     = sos[index_L][j][k]; a_R     = sos[index_R][j][k]
                 P_rhouvw_L = P_L - P_thermo;  P_rhouvw_R = P_R - P_thermo       # P_Thermo = 0.0 when ACM is deactivated
                 
-                n_xi_x_p  = 0.5*( n_xi[index_L][j][k][0] +  n_xi[index_R][j][k][0])
-                n_xi_y_p  = 0.5*( n_xi[index_L][j][k][1] +  n_xi[index_R][j][k][1])
-                n_xi_z_p  = 0.5*( n_xi[index_L][j][k][2] +  n_xi[index_R][j][k][2])
-                t1_xi_x_p = 0.5*(t1_xi[index_L][j][k][0] + t1_xi[index_R][j][k][0])
-                t1_xi_y_p = 0.5*(t1_xi[index_L][j][k][1] + t1_xi[index_R][j][k][1])
-                t1_xi_z_p = 0.5*(t1_xi[index_L][j][k][2] + t1_xi[index_R][j][k][2])
-                t2_xi_x_p = 0.5*(t2_xi[index_L][j][k][0] + t2_xi[index_R][j][k][0])
-                t2_xi_y_p = 0.5*(t2_xi[index_L][j][k][1] + t2_xi[index_R][j][k][1])
-                t2_xi_z_p = 0.5*(t2_xi[index_L][j][k][2] + t2_xi[index_R][j][k][2])
-                det_J_mean_xi_p = 0.5*( det_Jacobian[index_L][j][k] + det_Jacobian[index_R][j][k] )
-                # print('det_J_mean_xi_p = ', det_J_mean_xi_p )
-                module_grad_xi_p   = 0.5*(np.sqrt(   xi[index_L][j][k][0]*  xi[index_L][j][k][0] +   xi[index_L][j][k][1]*  xi[index_L][j][k][1] +   xi[index_L][j][k][2]*  xi[index_L][j][k][2] ) + np.sqrt(   xi[index_R][j][k][0]*  xi[index_R][j][k][0] +   xi[index_R][j][k][1]*  xi[index_R][j][k][1] +   xi[index_R][j][k][2]*  xi[index_R][j][k][2] ) )
-                
-
-                # print( n_xi_x_p, n_xi_y_p, n_xi_z_p )
-
-                # V_n_xi_L_p  = u_L *  n_xi_x_p + v_L *  n_xi_y_p + w_L *  n_xi_z_p
-                # V_n_xi_R_p  = u_R *  n_xi_x_p + v_R *  n_xi_y_p + w_R *  n_xi_z_p
-                # V_t1_xi_L_p = u_L * t1_xi_x_p + v_L * t1_xi_y_p + w_L * t1_xi_z_p
-                # V_t1_xi_R_p = u_R * t1_xi_x_p + v_R * t1_xi_y_p + w_R * t1_xi_z_p
-                # V_t2_xi_L_p = u_L * t2_xi_x_p + v_L * t2_xi_y_p + w_L * t2_xi_z_p
-                # V_t2_xi_R_p = u_R * t2_xi_x_p + v_R * t2_xi_y_p + w_R * t2_xi_z_p
-
                 V_n_xi_L_p  = u_L *  n_xi[i][j][k][0] + v_L *  n_xi[i][j][k][1] + w_L *  n_xi[i][j][k][2]
                 V_n_xi_R_p  = u_R *  n_xi[i][j][k][0] + v_R *  n_xi[i][j][k][1] + w_R *  n_xi[i][j][k][2]
                 V_t1_xi_L_p = u_L * t1_xi[i][j][k][0] + v_L * t1_xi[i][j][k][1] + w_L * t1_xi[i][j][k][2]
                 V_t1_xi_R_p = u_R * t1_xi[i][j][k][0] + v_R * t1_xi[i][j][k][1] + w_R * t1_xi[i][j][k][2]
                 V_t2_xi_L_p = u_L * t2_xi[i][j][k][0] + v_L * t2_xi[i][j][k][1] + w_L * t2_xi[i][j][k][2]
                 V_t2_xi_R_p = u_R * t2_xi[i][j][k][0] + v_R * t2_xi[i][j][k][1] + w_R * t2_xi[i][j][k][2]
-
-                # print('V_n_xi_L_p = ', V_n_xi_L_p, 'V_t1_xi_L_p = ', V_t1_xi_L_p, 'V_t2_xi_L_p = ', V_t2_xi_L_p)
-
 
                 # rho
                 var_type = 0
@@ -1661,10 +1651,6 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 # rhoE
                 var_type = 4
                 rhoE_F_p_x = HLLC_flux(rho_L, rho_R, V_n_xi_L_p, V_n_xi_R_p, V_t1_xi_L_p, V_t1_xi_R_p, V_t2_xi_L_p, V_t2_xi_R_p, E_L, E_R, s_L, s_R, P_L, P_R, T_L, T_R, a_L, a_R, var_type)
-
-                # rhou_F_p_x = (rho_n_F_p_x * n_xi_x_p + rho_t1_F_p_x * t1_xi_x_p + rho_t2_F_p_x * t2_xi_x_p) #* module_grad_xi_p/det_J_mean_xi_p
-                # rhov_F_p_x = (rho_n_F_p_x * n_xi_y_p + rho_t1_F_p_x * t1_xi_y_p + rho_t2_F_p_x * t2_xi_y_p) #* module_grad_xi_p/det_J_mean_xi_p
-                # rhow_F_p_x = (rho_n_F_p_x * n_xi_z_p + rho_t1_F_p_x * t1_xi_z_p + rho_t2_F_p_x * t2_xi_z_p) #* module_grad_xi_p/det_J_mean_xi_p
 
                 rhou_F_p_x = (rho_n_F_p_x * n_xi[i][j][k][0] + rho_t1_F_p_x * t1_xi[i][j][k][0] + rho_t2_F_p_x * t2_xi[i][j][k][0]) 
                 rhov_F_p_x = (rho_n_F_p_x * n_xi[i][j][k][1] + rho_t1_F_p_x * t1_xi[i][j][k][1] + rho_t2_F_p_x * t2_xi[i][j][k][1]) 
@@ -1683,37 +1669,12 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 a_L     = sos[index_L][j][k]; a_R     = sos[index_R][j][k]
                 P_rhouvw_L = P_L - P_thermo;  P_rhouvw_R = P_R - P_thermo       # P_Thermo = 0.0 when ACM is deactivated
 
-                n_xi_x_m  = 0.5*( n_xi[index_L][j][k][0] +  n_xi[index_R][j][k][0])
-                n_xi_y_m  = 0.5*( n_xi[index_L][j][k][1] +  n_xi[index_R][j][k][1])
-                n_xi_z_m  = 0.5*( n_xi[index_L][j][k][2] +  n_xi[index_R][j][k][2])
-                t1_xi_x_m = 0.5*(t1_xi[index_L][j][k][0] + t1_xi[index_R][j][k][0])
-                t1_xi_y_m = 0.5*(t1_xi[index_L][j][k][1] + t1_xi[index_R][j][k][1])
-                t1_xi_z_m = 0.5*(t1_xi[index_L][j][k][2] + t1_xi[index_R][j][k][2])
-                t2_xi_x_m = 0.5*(t2_xi[index_L][j][k][0] + t2_xi[index_R][j][k][0])
-                t2_xi_y_m = 0.5*(t2_xi[index_L][j][k][1] + t2_xi[index_R][j][k][1])
-                t2_xi_z_m = 0.5*(t2_xi[index_L][j][k][2] + t2_xi[index_R][j][k][2])
-                det_J_mean_xi_m = 0.5*( det_Jacobian[index_L][j][k] + det_Jacobian[index_R][j][k] )
-                # print('det_J_mean_xi_m = ', det_J_mean_xi_m )
-                module_grad_xi_m   = 0.5*(np.sqrt(   xi[index_L][j][k][0]*  xi[index_L][j][k][0] +   xi[index_L][j][k][1]*  xi[index_L][j][k][1] +   xi[index_L][j][k][2]*  xi[index_L][j][k][2] ) + np.sqrt(   xi[index_R][j][k][0]*  xi[index_R][j][k][0] +   xi[index_R][j][k][1]*  xi[index_R][j][k][1] +   xi[index_R][j][k][2]*  xi[index_R][j][k][2] ) )
-
-                # V_n_xi_L_m  = u_L *  n_xi_x_m + v_L *  n_xi_y_m + w_L *  n_xi_z_m
-                # V_n_xi_R_m  = u_R *  n_xi_x_m + v_R *  n_xi_y_m + w_R *  n_xi_z_m
-                # V_t1_xi_L_m = u_L * t1_xi_x_m + v_L * t1_xi_y_m + w_L * t1_xi_z_m
-                # V_t1_xi_R_m = u_R * t1_xi_x_m + v_R * t1_xi_y_m + w_R * t1_xi_z_m
-                # V_t2_xi_L_m = u_L * t2_xi_x_m + v_L * t2_xi_y_m + w_L * t2_xi_z_m
-                # V_t2_xi_R_m = u_R * t2_xi_x_m + v_R * t2_xi_y_m + w_R * t2_xi_z_m
-
                 V_n_xi_L_m  = u_L *  n_xi[i][j][k][0] + v_L *  n_xi[i][j][k][1] + w_L *  n_xi[i][j][k][2]
                 V_n_xi_R_m  = u_R *  n_xi[i][j][k][0] + v_R *  n_xi[i][j][k][1] + w_R *  n_xi[i][j][k][2]
                 V_t1_xi_L_m = u_L * t1_xi[i][j][k][0] + v_L * t1_xi[i][j][k][1] + w_L * t1_xi[i][j][k][2]
                 V_t1_xi_R_m = u_R * t1_xi[i][j][k][0] + v_R * t1_xi[i][j][k][1] + w_R * t1_xi[i][j][k][2]
                 V_t2_xi_L_m = u_L * t2_xi[i][j][k][0] + v_L * t2_xi[i][j][k][1] + w_L * t2_xi[i][j][k][2]
                 V_t2_xi_R_m = u_R * t2_xi[i][j][k][0] + v_R * t2_xi[i][j][k][1] + w_R * t2_xi[i][j][k][2]
-                
-                # print('V_n_xi_L_m = ', V_n_xi_L_m, 'V_t1_xi_L_m = ', V_t1_xi_L_m, 'V_t2_xi_L_m = ', V_t2_xi_L_m)
-                # print('---------------------')
-                # print('u_L = ', u_L, 'v_L = ', v_L, 'w_L = ', w_L)
-                # print(V_n_xi_L_p*V_t1_xi_L_p)
 
                 # rho
                 var_type = 0
@@ -1730,10 +1691,6 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 # rhoE
                 var_type = 4
                 rhoE_F_m_x = HLLC_flux(rho_L, rho_R, V_n_xi_L_m, V_n_xi_R_m, V_t1_xi_L_m, V_t1_xi_R_m, V_t2_xi_L_m, V_t2_xi_R_m, E_L, E_R, s_L, s_R, P_L, P_R, T_L, T_R, a_L, a_R, var_type)
-
-                # rhou_F_m_x = (rho_n_F_m_x * n_xi_x_m + rho_t1_F_m_x * t1_xi_x_m + rho_t2_F_m_x * t2_xi_x_m) #* module_grad_xi_m/det_J_mean_xi_m
-                # rhov_F_m_x = (rho_n_F_m_x * n_xi_y_m + rho_t1_F_m_x * t1_xi_y_m + rho_t2_F_m_x * t2_xi_y_m) #* module_grad_xi_m/det_J_mean_xi_m
-                # rhow_F_m_x = (rho_n_F_m_x * n_xi_z_m + rho_t1_F_m_x * t1_xi_z_m + rho_t2_F_m_x * t2_xi_z_m) #* module_grad_xi_m/det_J_mean_xi_m
 
                 rhou_F_m_x = (rho_n_F_m_x * n_xi[i][j][k][0] + rho_t1_F_m_x * t1_xi[i][j][k][0] + rho_t2_F_m_x * t2_xi[i][j][k][0]) 
                 rhov_F_m_x = (rho_n_F_m_x * n_xi[i][j][k][1] + rho_t1_F_m_x * t1_xi[i][j][k][1] + rho_t2_F_m_x * t2_xi[i][j][k][1]) 
@@ -1752,36 +1709,12 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 a_L     = sos[i][index_L][k]; a_R     = sos[i][index_R][k]
                 P_rhouvw_L = P_L - P_thermo;  P_rhouvw_R = P_R - P_thermo       # P_Thermo = 0.0 when ACM is deactivated
 
-                n_eta_x_p  = 0.5*( n_eta[i][index_L][k][0] +  n_eta[i][index_R][k][0])
-                n_eta_y_p  = 0.5*( n_eta[i][index_L][k][1] +  n_eta[i][index_R][k][1])
-                n_eta_z_p  = 0.5*( n_eta[i][index_L][k][2] +  n_eta[i][index_R][k][2])
-                t1_eta_x_p = 0.5*(t1_eta[i][index_L][k][0] + t1_eta[i][index_R][k][0])
-                t1_eta_y_p = 0.5*(t1_eta[i][index_L][k][1] + t1_eta[i][index_R][k][1])
-                t1_eta_z_p = 0.5*(t1_eta[i][index_L][k][2] + t1_eta[i][index_R][k][2])
-                t2_eta_x_p = 0.5*(t2_eta[i][index_L][k][0] + t2_eta[i][index_R][k][0])
-                t2_eta_y_p = 0.5*(t2_eta[i][index_L][k][1] + t2_eta[i][index_R][k][1])
-                t2_eta_z_p = 0.5*(t2_eta[i][index_L][k][2] + t2_eta[i][index_R][k][2])
-                det_J_mean_eta_p = 0.5*( det_Jacobian[i][index_L][k] + det_Jacobian[i][index_R][k] )
-                # print('det_J_mean_eta_p = ', det_J_mean_eta_p)  
-                module_grad_eta_p  = 0.5*(np.sqrt(  eta[index_L][j][k][0]* eta[index_L][j][k][0] +  eta[index_L][j][k][1]* eta[index_L][j][k][1] +  eta[index_L][j][k][2]* eta[index_L][j][k][2] ) + np.sqrt(  eta[index_R][j][k][0]* eta[index_R][j][k][0] +  eta[index_R][j][k][1]* eta[index_R][j][k][1] +  eta[index_R][j][k][2]* eta[index_R][j][k][2] ) )
-
-
-                # V_n_eta_L_p  = u_L *  n_eta_x_p + v_L *  n_eta_y_p + w_L *  n_eta_z_p
-                # V_n_eta_R_p  = u_R *  n_eta_x_p + v_R *  n_eta_y_p + w_R *  n_eta_z_p
-                # V_t1_eta_L_p = u_L * t1_eta_x_p + v_L * t1_eta_y_p + w_L * t1_eta_z_p
-                # V_t1_eta_R_p = u_R * t1_eta_x_p + v_R * t1_eta_y_p + w_R * t1_eta_z_p
-                # V_t2_eta_L_p = u_L * t2_eta_x_p + v_L * t2_eta_y_p + w_L * t2_eta_z_p
-                # V_t2_eta_R_p = u_R * t2_eta_x_p + v_R * t2_eta_y_p + w_R * t2_eta_z_p
-
                 V_n_eta_L_p  = u_L *  n_eta[i][j][k][0] + v_L *  n_eta[i][j][k][1] + w_L *  n_eta[i][j][k][2]
                 V_n_eta_R_p  = u_R *  n_eta[i][j][k][0] + v_R *  n_eta[i][j][k][1] + w_R *  n_eta[i][j][k][2]
                 V_t1_eta_L_p = u_L * t1_eta[i][j][k][0] + v_L * t1_eta[i][j][k][1] + w_L * t1_eta[i][j][k][2]
                 V_t1_eta_R_p = u_R * t1_eta[i][j][k][0] + v_R * t1_eta[i][j][k][1] + w_R * t1_eta[i][j][k][2]
                 V_t2_eta_L_p = u_L * t2_eta[i][j][k][0] + v_L * t2_eta[i][j][k][1] + w_L * t2_eta[i][j][k][2]
                 V_t2_eta_R_p = u_R * t2_eta[i][j][k][0] + v_R * t2_eta[i][j][k][1] + w_R * t2_eta[i][j][k][2]
-                
-                # print('V_n_eta_L_p = ', V_n_eta_L_p, 'V_t1_eta_L_p = ', V_t1_eta_L_p, 'V_t2_eta_L_p = ', V_t2_eta_L_p)
-                # print(V_n_eta_L_p*V_t1_eta_L_p)
 
                 # rho
                 var_type = 0
@@ -1799,10 +1732,6 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 var_type = 4
                 rhoE_F_p_y = HLLC_flux(rho_L, rho_R, V_n_eta_L_p, V_n_eta_R_p, V_t1_eta_L_p, V_t1_eta_R_p, V_t2_eta_L_p, V_t2_eta_R_p, E_L, E_R, s_L, s_R, P_L, P_R, T_L, T_R, a_L, a_R, var_type)
 
-                # rhou_F_p_y = (rho_n_F_p_y * n_eta_x_p + rho_t1_F_p_y * t1_eta_x_p + rho_t2_F_p_y * t2_eta_x_p) #* module_grad_eta_p/det_J_mean_eta_p
-                # rhov_F_p_y = (rho_n_F_p_y * n_eta_y_p + rho_t1_F_p_y * t1_eta_y_p + rho_t2_F_p_y * t2_eta_y_p) #* module_grad_eta_p/det_J_mean_eta_p
-                # rhow_F_p_y = (rho_n_F_p_y * n_eta_z_p + rho_t1_F_p_y * t1_eta_z_p + rho_t2_F_p_y * t2_eta_z_p) #* module_grad_eta_p/det_J_mean_eta_p
-
                 rhou_F_p_y = (rho_n_F_p_y * n_eta[i][j][k][0] + rho_t1_F_p_y * t1_eta[i][j][k][0] + rho_t2_F_p_y * t2_eta[i][j][k][0]) 
                 rhov_F_p_y = (rho_n_F_p_y * n_eta[i][j][k][1] + rho_t1_F_p_y * t1_eta[i][j][k][1] + rho_t2_F_p_y * t2_eta[i][j][k][1]) 
                 rhow_F_p_y = (rho_n_F_p_y * n_eta[i][j][k][2] + rho_t1_F_p_y * t1_eta[i][j][k][2] + rho_t2_F_p_y * t2_eta[i][j][k][2]) 
@@ -1819,27 +1748,6 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 T_L     = T[i][index_L][k];   T_R     = T[i][index_R][k]
                 a_L     = sos[i][index_L][k]; a_R     = sos[i][index_R][k]
                 P_rhouvw_L = P_L - P_thermo;  P_rhouvw_R = P_R - P_thermo       # P_Thermo = 0.0 when ACM is deactivated
-
-                n_eta_x_m  = 0.5*( n_eta[i][index_L][k][0] +  n_eta[i][index_R][k][0])
-                n_eta_y_m  = 0.5*( n_eta[i][index_L][k][1] +  n_eta[i][index_R][k][1])
-                n_eta_z_m  = 0.5*( n_eta[i][index_L][k][2] +  n_eta[i][index_R][k][2])
-                t1_eta_x_m = 0.5*(t1_eta[i][index_L][k][0] + t1_eta[i][index_R][k][0])
-                t1_eta_y_m = 0.5*(t1_eta[i][index_L][k][1] + t1_eta[i][index_R][k][1])
-                t1_eta_z_m = 0.5*(t1_eta[i][index_L][k][2] + t1_eta[i][index_R][k][2])
-                t2_eta_x_m = 0.5*(t2_eta[i][index_L][k][0] + t2_eta[i][index_R][k][0])
-                t2_eta_y_m = 0.5*(t2_eta[i][index_L][k][1] + t2_eta[i][index_R][k][1])
-                t2_eta_z_m = 0.5*(t2_eta[i][index_L][k][2] + t2_eta[i][index_R][k][2])
-                det_J_mean_eta_m = 0.5*( det_Jacobian[i][index_L][k] + det_Jacobian[i][index_R][k] )
-                # print('det_J_mean_eta_m = ', det_J_mean_eta_m)
-                module_grad_eta_m  = 0.5*(np.sqrt(  eta[index_L][j][k][0]* eta[index_L][j][k][0] +  eta[index_L][j][k][1]* eta[index_L][j][k][1] +  eta[index_L][j][k][2]* eta[index_L][j][k][2] ) + np.sqrt(  eta[index_R][j][k][0]* eta[index_R][j][k][0] +  eta[index_R][j][k][1]* eta[index_R][j][k][1] +  eta[index_R][j][k][2]* eta[index_R][j][k][2] ) )
-
-
-                # V_n_eta_L_m  = u_L *  n_eta_x_m + v_L *  n_eta_y_m + w_L *  n_eta_z_m
-                # V_n_eta_R_m  = u_R *  n_eta_x_m + v_R *  n_eta_y_m + w_R *  n_eta_z_m
-                # V_t1_eta_L_m = u_L * t1_eta_x_m + v_L * t1_eta_y_m + w_L * t1_eta_z_m
-                # V_t1_eta_R_m = u_R * t1_eta_x_m + v_R * t1_eta_y_m + w_R * t1_eta_z_m
-                # V_t2_eta_L_m = u_L * t2_eta_x_m + v_L * t2_eta_y_m + w_L * t2_eta_z_m
-                # V_t2_eta_R_m = u_R * t2_eta_x_m + v_R * t2_eta_y_m + w_R * t2_eta_z_m
 
                 V_n_eta_L_m  = u_L *  n_eta[i][j][k][0] + v_L *  n_eta[i][j][k][1] + w_L *  n_eta[i][j][k][2]
                 V_n_eta_R_m  = u_R *  n_eta[i][j][k][0] + v_R *  n_eta[i][j][k][1] + w_R *  n_eta[i][j][k][2]
@@ -1863,10 +1771,6 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 var_type = 4
                 rhoE_F_m_y = HLLC_flux(rho_L, rho_R, V_n_eta_L_m, V_n_eta_R_m, V_t1_eta_L_m, V_t1_eta_R_m, V_t2_eta_L_m, V_t2_eta_R_m, E_L, E_R, s_L, s_R, P_L, P_R, T_L, T_R, a_L, a_R, var_type)
 
-                # rhou_F_m_y = (rho_n_F_m_y * n_eta_x_m + rho_t1_F_m_y * t1_eta_x_m + rho_t2_F_m_y * t2_eta_x_m) #* module_grad_eta_m/det_J_mean_eta_m
-                # rhov_F_m_y = (rho_n_F_m_y * n_eta_y_m + rho_t1_F_m_y * t1_eta_y_m + rho_t2_F_m_y * t2_eta_y_m) #* module_grad_eta_m/det_J_mean_eta_m
-                # rhow_F_m_y = (rho_n_F_m_y * n_eta_z_m + rho_t1_F_m_y * t1_eta_z_m + rho_t2_F_m_y * t2_eta_z_m) #* module_grad_eta_m/det_J_mean_eta_m
-
                 rhou_F_m_y = (rho_n_F_m_y * n_eta[i][j][k][0] + rho_t1_F_m_y * t1_eta[i][j][k][0] + rho_t2_F_m_y * t2_eta[i][j][k][0])  
                 rhov_F_m_y = (rho_n_F_m_y * n_eta[i][j][k][1] + rho_t1_F_m_y * t1_eta[i][j][k][1] + rho_t2_F_m_y * t2_eta[i][j][k][1])  
                 rhow_F_m_y = (rho_n_F_m_y * n_eta[i][j][k][2] + rho_t1_F_m_y * t1_eta[i][j][k][2] + rho_t2_F_m_y * t2_eta[i][j][k][2])  
@@ -1883,26 +1787,6 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 T_L     = T[i][j][index_L];   T_R     = T[i][j][index_R]
                 a_L     = sos[i][j][index_L]; a_R     = sos[i][j][index_R]
                 P_rhouvw_L = P_L - P_thermo;  P_rhouvw_R = P_R - P_thermo       # P_Thermo = 0.0 when ACM is deactivated
-                
-                n_zeta_x_p  = 0.5*( n_zeta[i][j][index_L][0] +  n_zeta[i][j][index_R][0])
-                n_zeta_y_p  = 0.5*( n_zeta[i][j][index_L][1] +  n_zeta[i][j][index_R][1])
-                n_zeta_z_p  = 0.5*( n_zeta[i][j][index_L][2] +  n_zeta[i][j][index_R][2])
-                t1_zeta_x_p = 0.5*(t1_zeta[i][j][index_L][0] + t1_zeta[i][j][index_R][0])
-                t1_zeta_y_p = 0.5*(t1_zeta[i][j][index_L][1] + t1_zeta[i][j][index_R][1])
-                t1_zeta_z_p = 0.5*(t1_zeta[i][j][index_L][2] + t1_zeta[i][j][index_R][2])
-                t2_zeta_x_p = 0.5*(t2_zeta[i][j][index_L][0] + t2_zeta[i][j][index_R][0])
-                t2_zeta_y_p = 0.5*(t2_zeta[i][j][index_L][1] + t2_zeta[i][j][index_R][1])
-                t2_zeta_z_p = 0.5*(t2_zeta[i][j][index_L][2] + t2_zeta[i][j][index_R][2])
-                det_J_mean_zeta_p = 0.5*( det_Jacobian[i][j][index_L] + det_Jacobian[i][j][index_R] )
-                # print('det_J_mean_zeta_p = ', det_J_mean_zeta_p)
-                module_grad_zeta_p = 0.5*(np.sqrt( zeta[index_L][j][k][0]*zeta[index_L][j][k][0] + zeta[index_L][j][k][1]*zeta[index_L][j][k][1] + zeta[index_L][j][k][2]*zeta[index_L][j][k][2] ) + np.sqrt( zeta[index_R][j][k][0]*zeta[index_R][j][k][0] + zeta[index_R][j][k][1]*zeta[index_R][j][k][1] + zeta[index_R][j][k][2]*zeta[index_R][j][k][2] ) )
-
-                # V_n_zeta_L_p  = u_L *  n_zeta_x_p + v_L *  n_zeta_y_p + w_L *  n_zeta_z_p
-                # V_n_zeta_R_p  = u_R *  n_zeta_x_p + v_R *  n_zeta_y_p + w_R *  n_zeta_z_p
-                # V_t1_zeta_L_p = u_L * t1_zeta_x_p + v_L * t1_zeta_y_p + w_L * t1_zeta_z_p
-                # V_t1_zeta_R_p = u_R * t1_zeta_x_p + v_R * t1_zeta_y_p + w_R * t1_zeta_z_p
-                # V_t2_zeta_L_p = u_L * t2_zeta_x_p + v_L * t2_zeta_y_p + w_L * t2_zeta_z_p
-                # V_t2_zeta_R_p = u_R * t2_zeta_x_p + v_R * t2_zeta_y_p + w_R * t2_zeta_z_p
 
                 V_n_zeta_L_p  = u_L *  n_zeta[i][j][k][0] + v_L *  n_zeta[i][j][k][1] + w_L *  n_zeta[i][j][k][2]
                 V_n_zeta_R_p  = u_R *  n_zeta[i][j][k][0] + v_R *  n_zeta[i][j][k][1] + w_R *  n_zeta[i][j][k][2]
@@ -1910,8 +1794,6 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 V_t1_zeta_R_p = u_R * t1_zeta[i][j][k][0] + v_R * t1_zeta[i][j][k][1] + w_R * t1_zeta[i][j][k][2]
                 V_t2_zeta_L_p = u_L * t2_zeta[i][j][k][0] + v_L * t2_zeta[i][j][k][1] + w_L * t2_zeta[i][j][k][2]
                 V_t2_zeta_R_p = u_R * t2_zeta[i][j][k][0] + v_R * t2_zeta[i][j][k][1] + w_R * t2_zeta[i][j][k][2]
-               
-                # print(V_n_zeta_L_p*V_t1_zeta_L_p)
 
                 # rho
                 var_type = 0
@@ -1929,10 +1811,6 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 var_type = 4
                 rhoE_F_p_z = HLLC_flux(rho_L, rho_R, V_n_zeta_L_p, V_n_zeta_R_p, V_t1_zeta_L_p, V_t1_zeta_R_p, V_t2_zeta_L_p, V_t2_zeta_R_p, E_L, E_R, s_L, s_R, P_L, P_R, T_L, T_R, a_L, a_R, var_type)
 
-                # rhou_F_p_z = (rho_n_F_p_z * n_zeta_x_p + rho_t1_F_p_z * t1_zeta_x_p + rho_t2_F_p_z * t2_zeta_x_p) #* module_grad_zeta_p/det_J_mean_zeta_p
-                # rhov_F_p_z = (rho_n_F_p_z * n_zeta_y_p + rho_t1_F_p_z * t1_zeta_y_p + rho_t2_F_p_z * t2_zeta_y_p) #* module_grad_zeta_p/det_J_mean_zeta_p
-                # rhow_F_p_z = (rho_n_F_p_z * n_zeta_z_p + rho_t1_F_p_z * t1_zeta_z_p + rho_t2_F_p_z * t2_zeta_z_p) #* module_grad_zeta_p/det_J_mean_zeta_p
-
                 rhou_F_p_z = (rho_n_F_p_z * n_zeta[i][j][k][0] + rho_t1_F_p_z * t1_zeta[i][j][k][0] + rho_t2_F_p_z * t2_zeta[i][j][k][0]) 
                 rhov_F_p_z = (rho_n_F_p_z * n_zeta[i][j][k][1] + rho_t1_F_p_z * t1_zeta[i][j][k][1] + rho_t2_F_p_z * t2_zeta[i][j][k][1]) 
                 rhow_F_p_z = (rho_n_F_p_z * n_zeta[i][j][k][2] + rho_t1_F_p_z * t1_zeta[i][j][k][2] + rho_t2_F_p_z * t2_zeta[i][j][k][2]) 
@@ -1949,26 +1827,6 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 T_L     = T[i][j][index_L];   T_R     = T[i][j][index_R]
                 a_L     = sos[i][j][index_L]; a_R     = sos[i][j][index_R]
                 P_rhouvw_L = P_L - P_thermo;  P_rhouvw_R = P_R - P_thermo       # P_Thermo = 0.0 when ACM is deactivated
-                
-                n_zeta_x_m  = 0.5*( n_zeta[i][j][index_L][0] +  n_zeta[i][j][index_R][0])
-                n_zeta_y_m  = 0.5*( n_zeta[i][j][index_L][1] +  n_zeta[i][j][index_R][1])
-                n_zeta_z_m  = 0.5*( n_zeta[i][j][index_L][2] +  n_zeta[i][j][index_R][2])
-                t1_zeta_x_m = 0.5*(t1_zeta[i][j][index_L][0] + t1_zeta[i][j][index_R][0])
-                t1_zeta_y_m = 0.5*(t1_zeta[i][j][index_L][1] + t1_zeta[i][j][index_R][1])
-                t1_zeta_z_m = 0.5*(t1_zeta[i][j][index_L][2] + t1_zeta[i][j][index_R][2])
-                t2_zeta_x_m = 0.5*(t2_zeta[i][j][index_L][0] + t2_zeta[i][j][index_R][0])
-                t2_zeta_y_m = 0.5*(t2_zeta[i][j][index_L][1] + t2_zeta[i][j][index_R][1])
-                t2_zeta_z_m = 0.5*(t2_zeta[i][j][index_L][2] + t2_zeta[i][j][index_R][2])
-                det_J_mean_zeta_m = 0.5*( det_Jacobian[i][j][index_L] + det_Jacobian[i][j][index_R] )
-                # print('det_J_mean_zeta_m = ', det_J_mean_zeta_m)
-                module_grad_zeta_m = 0.5*(np.sqrt( zeta[index_L][j][k][0]*zeta[index_L][j][k][0] + zeta[index_L][j][k][1]*zeta[index_L][j][k][1] + zeta[index_L][j][k][2]*zeta[index_L][j][k][2] ) + np.sqrt( zeta[index_R][j][k][0]*zeta[index_R][j][k][0] + zeta[index_R][j][k][1]*zeta[index_R][j][k][1] + zeta[index_R][j][k][2]*zeta[index_R][j][k][2] ) )
-                
-                # V_n_zeta_L_m  = u_L *  n_zeta_x_m + v_L *  n_zeta_y_m + w_L *  n_zeta_z_m
-                # V_n_zeta_R_m  = u_R *  n_zeta_x_m + v_R *  n_zeta_y_m + w_R *  n_zeta_z_m
-                # V_t1_zeta_L_m = u_L * t1_zeta_x_m + v_L * t1_zeta_y_m + w_L * t1_zeta_z_m
-                # V_t1_zeta_R_m = u_R * t1_zeta_x_m + v_R * t1_zeta_y_m + w_R * t1_zeta_z_m
-                # V_t2_zeta_L_m = u_L * t2_zeta_x_m + v_L * t2_zeta_y_m + w_L * t2_zeta_z_m
-                # V_t2_zeta_R_m = u_R * t2_zeta_x_m + v_R * t2_zeta_y_m + w_R * t2_zeta_z_m
 
                 V_n_zeta_L_m  = u_L *  n_zeta[i][j][k][0] + v_L *  n_zeta[i][j][k][1] + w_L *  n_zeta[i][j][k][2]
                 V_n_zeta_R_m  = u_R *  n_zeta[i][j][k][0] + v_R *  n_zeta[i][j][k][1] + w_R *  n_zeta[i][j][k][2]
@@ -1976,8 +1834,6 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 V_t1_zeta_R_m = u_R * t1_zeta[i][j][k][0] + v_R * t1_zeta[i][j][k][1] + w_R * t1_zeta[i][j][k][2]
                 V_t2_zeta_L_m = u_L * t2_zeta[i][j][k][0] + v_L * t2_zeta[i][j][k][1] + w_L * t2_zeta[i][j][k][2]
                 V_t2_zeta_R_m = u_R * t2_zeta[i][j][k][0] + v_R * t2_zeta[i][j][k][1] + w_R * t2_zeta[i][j][k][2]
-                
-                # print('V_n_zeta_L_p = ', V_n_zeta_L_p, 'V_t1_zeta_L_p = ', V_t1_zeta_L_p, 'V_t2_zeta_L_p = ', V_t2_zeta_L_p)
                 
                 # rho
                 var_type = 0
@@ -1995,54 +1851,9 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 var_type = 4
                 rhoE_F_m_z = HLLC_flux(rho_L, rho_R, V_n_zeta_L_m, V_n_zeta_R_m, V_t1_zeta_L_m, V_t1_zeta_R_m, V_t2_zeta_L_m, V_t2_zeta_R_m, E_L, E_R, s_L, s_R, P_L, P_R, T_L, T_R, a_L, a_R, var_type)
 
-                # rhou_F_m_z = (rho_n_F_m_z * n_zeta_x_m + rho_t1_F_m_z * t1_zeta_x_m + rho_t2_F_m_z * t2_zeta_x_m) #* module_grad_zeta_m/det_J_mean_zeta_m
-                # rhov_F_m_z = (rho_n_F_m_z * n_zeta_y_m + rho_t1_F_m_z * t1_zeta_y_m + rho_t2_F_m_z * t2_zeta_y_m) #* module_grad_zeta_m/det_J_mean_zeta_m
-                # rhow_F_m_z = (rho_n_F_m_z * n_zeta_z_m + rho_t1_F_m_z * t1_zeta_z_m + rho_t2_F_m_z * t2_zeta_z_m) #* module_grad_zeta_m/det_J_mean_zeta_m
-
                 rhou_F_m_z = (rho_n_F_m_z * n_zeta[i][j][k][0] + rho_t1_F_m_z * t1_zeta[i][j][k][0] + rho_t2_F_m_z * t2_zeta[i][j][k][0])  
                 rhov_F_m_z = (rho_n_F_m_z * n_zeta[i][j][k][1] + rho_t1_F_m_z * t1_zeta[i][j][k][1] + rho_t2_F_m_z * t2_zeta[i][j][k][1])  
                 rhow_F_m_z = (rho_n_F_m_z * n_zeta[i][j][k][2] + rho_t1_F_m_z * t1_zeta[i][j][k][2] + rho_t2_F_m_z * t2_zeta[i][j][k][2])  
-
-                # ### Strong conservative form of the Navier-Stokes equations
-                # ## Fluxes x-direction
-                # rho_conF_p_x  = 0.5 * ((xi[i][j][k][0]/det_Jacobian[i][j][k] + (xi[i+1][j][k][0])/det_Jacobian[i+1][j][k])* rho_F_p_x + (xi[i][j][k][1]/det_Jacobian[i][j][k] + xi[i+1][j][k][1]/det_Jacobian[i+1][j][k])* rho_F_p_y + (xi[i][j][k][2]/det_Jacobian[i][j][k] + xi[i+1][j][k][2]/det_Jacobian[i+1][j][k])* rho_F_p_z)  
-                # rhou_conF_p_x = 0.5 * ((xi[i][j][k][0]/det_Jacobian[i][j][k] + (xi[i+1][j][k][0])/det_Jacobian[i+1][j][k])*rhou_F_p_x + (xi[i][j][k][1]/det_Jacobian[i][j][k] + xi[i+1][j][k][1]/det_Jacobian[i+1][j][k])*rhou_F_p_y + (xi[i][j][k][2]/det_Jacobian[i][j][k] + xi[i+1][j][k][2]/det_Jacobian[i+1][j][k])*rhou_F_p_z) 
-                # rhov_conF_p_x = 0.5 * ((xi[i][j][k][0]/det_Jacobian[i][j][k] + (xi[i+1][j][k][0])/det_Jacobian[i+1][j][k])*rhov_F_p_x + (xi[i][j][k][1]/det_Jacobian[i][j][k] + xi[i+1][j][k][1]/det_Jacobian[i+1][j][k])*rhov_F_p_y + (xi[i][j][k][2]/det_Jacobian[i][j][k] + xi[i+1][j][k][2]/det_Jacobian[i+1][j][k])*rhov_F_p_z) 
-                # rhow_conF_p_x = 0.5 * ((xi[i][j][k][0]/det_Jacobian[i][j][k] + (xi[i+1][j][k][0])/det_Jacobian[i+1][j][k])*rhow_F_p_x + (xi[i][j][k][1]/det_Jacobian[i][j][k] + xi[i+1][j][k][1]/det_Jacobian[i+1][j][k])*rhow_F_p_y + (xi[i][j][k][2]/det_Jacobian[i][j][k] + xi[i+1][j][k][2]/det_Jacobian[i+1][j][k])*rhow_F_p_z) 
-                # rhoE_conF_p_x = 0.5 * ((xi[i][j][k][0]/det_Jacobian[i][j][k] + (xi[i+1][j][k][0])/det_Jacobian[i+1][j][k])*rhoE_F_p_x + (xi[i][j][k][1]/det_Jacobian[i][j][k] + xi[i+1][j][k][1]/det_Jacobian[i+1][j][k])*rhoE_F_p_y + (xi[i][j][k][2]/det_Jacobian[i][j][k] + xi[i+1][j][k][2]/det_Jacobian[i+1][j][k])*rhoE_F_p_z) 
-                
-                # rho_conF_m_x  = 0.5 * ((xi[i][j][k][0]/det_Jacobian[i][j][k] + (xi[i-1][j][k][0])/det_Jacobian[i-1][j][k])* rho_F_m_x + (xi[i][j][k][1]/det_Jacobian[i][j][k] + xi[i-1][j][k][1]/det_Jacobian[i-1][j][k])* rho_F_m_y + (xi[i][j][k][2]/det_Jacobian[i][j][k] + xi[i-1][j][k][2]/det_Jacobian[i-1][j][k])* rho_F_m_z)  
-                # rhou_conF_m_x = 0.5 * ((xi[i][j][k][0]/det_Jacobian[i][j][k] + (xi[i-1][j][k][0])/det_Jacobian[i-1][j][k])*rhou_F_m_x + (xi[i][j][k][1]/det_Jacobian[i][j][k] + xi[i-1][j][k][1]/det_Jacobian[i-1][j][k])*rhou_F_m_y + (xi[i][j][k][2]/det_Jacobian[i][j][k] + xi[i-1][j][k][2]/det_Jacobian[i-1][j][k])*rhou_F_m_z) 
-                # rhov_conF_m_x = 0.5 * ((xi[i][j][k][0]/det_Jacobian[i][j][k] + (xi[i-1][j][k][0])/det_Jacobian[i-1][j][k])*rhov_F_m_x + (xi[i][j][k][1]/det_Jacobian[i][j][k] + xi[i-1][j][k][1]/det_Jacobian[i-1][j][k])*rhov_F_m_y + (xi[i][j][k][2]/det_Jacobian[i][j][k] + xi[i-1][j][k][2]/det_Jacobian[i-1][j][k])*rhov_F_m_z) 
-                # rhow_conF_m_x = 0.5 * ((xi[i][j][k][0]/det_Jacobian[i][j][k] + (xi[i-1][j][k][0])/det_Jacobian[i-1][j][k])*rhow_F_m_x + (xi[i][j][k][1]/det_Jacobian[i][j][k] + xi[i-1][j][k][1]/det_Jacobian[i-1][j][k])*rhow_F_m_y + (xi[i][j][k][2]/det_Jacobian[i][j][k] + xi[i-1][j][k][2]/det_Jacobian[i-1][j][k])*rhow_F_m_z) 
-                # rhoE_conF_m_x = 0.5 * ((xi[i][j][k][0]/det_Jacobian[i][j][k] + (xi[i-1][j][k][0])/det_Jacobian[i-1][j][k])*rhoE_F_m_x + (xi[i][j][k][1]/det_Jacobian[i][j][k] + xi[i-1][j][k][1]/det_Jacobian[i-1][j][k])*rhoE_F_m_y + (xi[i][j][k][2]/det_Jacobian[i][j][k] + xi[i-1][j][k][2]/det_Jacobian[i-1][j][k])*rhoE_F_m_z) 
-                
-                # ## Fluxes y-direction
-                # rho_conG_p_y  = 0.5 * ((eta[i][j][k][0]/det_Jacobian[i][j][k] + (eta[i][j+1][k][0])/det_Jacobian[i][j+1][k])* rho_F_p_x + (eta[i][j][k][1]/det_Jacobian[i][j][k] + eta[i][j+1][k][1]/det_Jacobian[i][j+1][k])* rho_F_p_y + (eta[i][j][k][2]/det_Jacobian[i][j][k] + eta[i][j+1][k][2]/det_Jacobian[i][j+1][k])* rho_F_p_z)
-                # rhou_conG_p_y = 0.5 * ((eta[i][j][k][0]/det_Jacobian[i][j][k] + (eta[i][j+1][k][0])/det_Jacobian[i][j+1][k])*rhou_F_p_x + (eta[i][j][k][1]/det_Jacobian[i][j][k] + eta[i][j+1][k][1]/det_Jacobian[i][j+1][k])*rhou_F_p_y + (eta[i][j][k][2]/det_Jacobian[i][j][k] + eta[i][j+1][k][2]/det_Jacobian[i][j+1][k])*rhou_F_p_z)
-                # rhov_conG_p_y = 0.5 * ((eta[i][j][k][0]/det_Jacobian[i][j][k] + (eta[i][j+1][k][0])/det_Jacobian[i][j+1][k])*rhov_F_p_x + (eta[i][j][k][1]/det_Jacobian[i][j][k] + eta[i][j+1][k][1]/det_Jacobian[i][j+1][k])*rhov_F_p_y + (eta[i][j][k][2]/det_Jacobian[i][j][k] + eta[i][j+1][k][2]/det_Jacobian[i][j+1][k])*rhov_F_p_z)
-                # rhow_conG_p_y = 0.5 * ((eta[i][j][k][0]/det_Jacobian[i][j][k] + (eta[i][j+1][k][0])/det_Jacobian[i][j+1][k])*rhow_F_p_x + (eta[i][j][k][1]/det_Jacobian[i][j][k] + eta[i][j+1][k][1]/det_Jacobian[i][j+1][k])*rhow_F_p_y + (eta[i][j][k][2]/det_Jacobian[i][j][k] + eta[i][j+1][k][2]/det_Jacobian[i][j+1][k])*rhow_F_p_z)
-                # rhoE_conG_p_y = 0.5 * ((eta[i][j][k][0]/det_Jacobian[i][j][k] + (eta[i][j+1][k][0])/det_Jacobian[i][j+1][k])*rhoE_F_p_x + (eta[i][j][k][1]/det_Jacobian[i][j][k] + eta[i][j+1][k][1]/det_Jacobian[i][j+1][k])*rhoE_F_p_y + (eta[i][j][k][2]/det_Jacobian[i][j][k] + eta[i][j+1][k][2]/det_Jacobian[i][j+1][k])*rhoE_F_p_z)
-
-                # rho_conG_m_y  = 0.5 * ((eta[i][j][k][0]/det_Jacobian[i][j][k] + (eta[i][j-1][k][0])/det_Jacobian[i][j-1][k])* rho_F_m_x + (eta[i][j][k][1]/det_Jacobian[i][j][k] + eta[i][j-1][k][1]/det_Jacobian[i][j-1][k])* rho_F_m_y + (eta[i][j][k][2]/det_Jacobian[i][j][k] + eta[i][j-1][k][2]/det_Jacobian[i][j-1][k])* rho_F_m_z)
-                # rhou_conG_m_y = 0.5 * ((eta[i][j][k][0]/det_Jacobian[i][j][k] + (eta[i][j-1][k][0])/det_Jacobian[i][j-1][k])*rhou_F_m_x + (eta[i][j][k][1]/det_Jacobian[i][j][k] + eta[i][j-1][k][1]/det_Jacobian[i][j-1][k])*rhou_F_m_y + (eta[i][j][k][2]/det_Jacobian[i][j][k] + eta[i][j-1][k][2]/det_Jacobian[i][j-1][k])*rhou_F_m_z)
-                # rhov_conG_m_y = 0.5 * ((eta[i][j][k][0]/det_Jacobian[i][j][k] + (eta[i][j-1][k][0])/det_Jacobian[i][j-1][k])*rhov_F_m_x + (eta[i][j][k][1]/det_Jacobian[i][j][k] + eta[i][j-1][k][1]/det_Jacobian[i][j-1][k])*rhov_F_m_y + (eta[i][j][k][2]/det_Jacobian[i][j][k] + eta[i][j-1][k][2]/det_Jacobian[i][j-1][k])*rhov_F_m_z)
-                # rhow_conG_m_y = 0.5 * ((eta[i][j][k][0]/det_Jacobian[i][j][k] + (eta[i][j-1][k][0])/det_Jacobian[i][j-1][k])*rhow_F_m_x + (eta[i][j][k][1]/det_Jacobian[i][j][k] + eta[i][j-1][k][1]/det_Jacobian[i][j-1][k])*rhow_F_m_y + (eta[i][j][k][2]/det_Jacobian[i][j][k] + eta[i][j-1][k][2]/det_Jacobian[i][j-1][k])*rhow_F_m_z)
-                # rhoE_conG_m_y = 0.5 * ((eta[i][j][k][0]/det_Jacobian[i][j][k] + (eta[i][j-1][k][0])/det_Jacobian[i][j-1][k])*rhoE_F_m_x + (eta[i][j][k][1]/det_Jacobian[i][j][k] + eta[i][j-1][k][1]/det_Jacobian[i][j-1][k])*rhoE_F_m_y + (eta[i][j][k][2]/det_Jacobian[i][j][k] + eta[i][j-1][k][2]/det_Jacobian[i][j-1][k])*rhoE_F_m_z)
-
-                # ## Fluxes z-direction
-                # rho_conH_p_z  = 0.5 * ((zeta[i][j][k][0]/det_Jacobian[i][j][k] + (zeta[i][j][k+1][0])/det_Jacobian[i][j][k+1])* rho_F_p_x + (zeta[i][j][k][1]/det_Jacobian[i][j][k] + zeta[i][j][k+1][1]/det_Jacobian[i][j][k+1])* rho_F_p_y + (zeta[i][j][k][2]/det_Jacobian[i][j][k] + zeta[i][j][k+1][2]/det_Jacobian[i][j][k+1])* rho_F_p_z)
-                # rhou_conH_p_z = 0.5 * ((zeta[i][j][k][0]/det_Jacobian[i][j][k] + (zeta[i][j][k+1][0])/det_Jacobian[i][j][k+1])*rhou_F_p_x + (zeta[i][j][k][1]/det_Jacobian[i][j][k] + zeta[i][j][k+1][1]/det_Jacobian[i][j][k+1])*rhou_F_p_y + (zeta[i][j][k][2]/det_Jacobian[i][j][k] + zeta[i][j][k+1][2]/det_Jacobian[i][j][k+1])*rhou_F_p_z)
-                # rhov_conH_p_z = 0.5 * ((zeta[i][j][k][0]/det_Jacobian[i][j][k] + (zeta[i][j][k+1][0])/det_Jacobian[i][j][k+1])*rhov_F_p_x + (zeta[i][j][k][1]/det_Jacobian[i][j][k] + zeta[i][j][k+1][1]/det_Jacobian[i][j][k+1])*rhov_F_p_y + (zeta[i][j][k][2]/det_Jacobian[i][j][k] + zeta[i][j][k+1][2]/det_Jacobian[i][j][k+1])*rhov_F_p_z)
-                # rhow_conH_p_z = 0.5 * ((zeta[i][j][k][0]/det_Jacobian[i][j][k] + (zeta[i][j][k+1][0])/det_Jacobian[i][j][k+1])*rhow_F_p_x + (zeta[i][j][k][1]/det_Jacobian[i][j][k] + zeta[i][j][k+1][1]/det_Jacobian[i][j][k+1])*rhow_F_p_y + (zeta[i][j][k][2]/det_Jacobian[i][j][k] + zeta[i][j][k+1][2]/det_Jacobian[i][j][k+1])*rhow_F_p_z)
-                # rhoE_conH_p_z = 0.5 * ((zeta[i][j][k][0]/det_Jacobian[i][j][k] + (zeta[i][j][k+1][0])/det_Jacobian[i][j][k+1])*rhoE_F_p_x + (zeta[i][j][k][1]/det_Jacobian[i][j][k] + zeta[i][j][k+1][1]/det_Jacobian[i][j][k+1])*rhoE_F_p_y + (zeta[i][j][k][2]/det_Jacobian[i][j][k] + zeta[i][j][k+1][2]/det_Jacobian[i][j][k+1])*rhoE_F_p_z)
-
-                # rho_conH_m_z  = 0.5 * ((zeta[i][j][k][0]/det_Jacobian[i][j][k] + (zeta[i][j][k-1][0])/det_Jacobian[i][j][k-1])* rho_F_m_x + (zeta[i][j][k][1]/det_Jacobian[i][j][k] + zeta[i][j][k-1][1]/det_Jacobian[i][j][k-1])* rho_F_m_y + (zeta[i][j][k][2]/det_Jacobian[i][j][k] + zeta[i][j][k-1][2]/det_Jacobian[i][j][k-1])* rho_F_m_z)
-                # rhou_conH_m_z = 0.5 * ((zeta[i][j][k][0]/det_Jacobian[i][j][k] + (zeta[i][j][k-1][0])/det_Jacobian[i][j][k-1])*rhou_F_m_x + (zeta[i][j][k][1]/det_Jacobian[i][j][k] + zeta[i][j][k-1][1]/det_Jacobian[i][j][k-1])*rhou_F_m_y + (zeta[i][j][k][2]/det_Jacobian[i][j][k] + zeta[i][j][k-1][2]/det_Jacobian[i][j][k-1])*rhou_F_m_z)
-                # rhov_conH_m_z = 0.5 * ((zeta[i][j][k][0]/det_Jacobian[i][j][k] + (zeta[i][j][k-1][0])/det_Jacobian[i][j][k-1])*rhov_F_m_x + (zeta[i][j][k][1]/det_Jacobian[i][j][k] + zeta[i][j][k-1][1]/det_Jacobian[i][j][k-1])*rhov_F_m_y + (zeta[i][j][k][2]/det_Jacobian[i][j][k] + zeta[i][j][k-1][2]/det_Jacobian[i][j][k-1])*rhov_F_m_z)
-                # rhow_conH_m_z = 0.5 * ((zeta[i][j][k][0]/det_Jacobian[i][j][k] + (zeta[i][j][k-1][0])/det_Jacobian[i][j][k-1])*rhow_F_m_x + (zeta[i][j][k][1]/det_Jacobian[i][j][k] + zeta[i][j][k-1][1]/det_Jacobian[i][j][k-1])*rhow_F_m_y + (zeta[i][j][k][2]/det_Jacobian[i][j][k] + zeta[i][j][k-1][2]/det_Jacobian[i][j][k-1])*rhow_F_m_z)
-                # rhoE_conH_m_z = 0.5 * ((zeta[i][j][k][0]/det_Jacobian[i][j][k] + (zeta[i][j][k-1][0])/det_Jacobian[i][j][k-1])*rhoE_F_m_x + (zeta[i][j][k][1]/det_Jacobian[i][j][k] + zeta[i][j][k-1][1]/det_Jacobian[i][j][k-1])*rhoE_F_m_y + (zeta[i][j][k][2]/det_Jacobian[i][j][k] + zeta[i][j][k-1][2]/det_Jacobian[i][j][k-1])*rhoE_F_m_z)
-
 
                 ### Strong conservative form of the Navier-Stokes equations
                 module_grad_xi   = np.sqrt(  xi[i][j][k][0]**2 +   xi[i][j][k][1]**2 +   xi[i][j][k][2]**2)
@@ -2050,101 +1861,48 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 module_grad_zeta = np.sqrt(zeta[i][j][k][0]**2 + zeta[i][j][k][1]**2 + zeta[i][j][k][2]**2)
 
                 ## Fluxes x-direction
-                rho_conF_p_x  = (module_grad_xi/det_Jacobian[i][j][k]) *  rho_F_p_x
-                rhou_conF_p_x = (module_grad_xi/det_Jacobian[i][j][k]) * rhou_F_p_x
-                rhov_conF_p_x = (module_grad_xi/det_Jacobian[i][j][k]) * rhov_F_p_x
-                rhow_conF_p_x = (module_grad_xi/det_Jacobian[i][j][k]) * rhow_F_p_x
-                rhoE_conF_p_x = (module_grad_xi/det_Jacobian[i][j][k]) * rhoE_F_p_x
-                rho_conF_m_x  = (module_grad_xi/det_Jacobian[i][j][k]) *  rho_F_m_x
-                rhou_conF_m_x = (module_grad_xi/det_Jacobian[i][j][k]) * rhou_F_m_x
-                rhov_conF_m_x = (module_grad_xi/det_Jacobian[i][j][k]) * rhov_F_m_x
-                rhow_conF_m_x = (module_grad_xi/det_Jacobian[i][j][k]) * rhow_F_m_x
-                rhoE_conF_m_x = (module_grad_xi/det_Jacobian[i][j][k]) * rhoE_F_m_x
+                scale_x = module_grad_xi / det_Jacobian[i][j][k]
+                rho_conF_p_x  = scale_x *  rho_F_p_x
+                rhou_conF_p_x = scale_x * rhou_F_p_x
+                rhov_conF_p_x = scale_x * rhov_F_p_x
+                rhow_conF_p_x = scale_x * rhow_F_p_x
+                rhoE_conF_p_x = scale_x * rhoE_F_p_x
+
+                rho_conF_m_x  = scale_x *  rho_F_m_x
+                rhou_conF_m_x = scale_x * rhou_F_m_x
+                rhov_conF_m_x = scale_x * rhov_F_m_x
+                rhow_conF_m_x = scale_x * rhow_F_m_x
+                rhoE_conF_m_x = scale_x * rhoE_F_m_x
 
                 ## Fluxes y-direction
-                rho_conG_p_y  = (module_grad_eta/det_Jacobian[i][j][k]) *  rho_F_p_y
-                rhou_conG_p_y = (module_grad_eta/det_Jacobian[i][j][k]) * rhou_F_p_y
-                rhov_conG_p_y = (module_grad_eta/det_Jacobian[i][j][k]) * rhov_F_p_y
-                rhow_conG_p_y = (module_grad_eta/det_Jacobian[i][j][k]) * rhow_F_p_y
-                rhoE_conG_p_y = (module_grad_eta/det_Jacobian[i][j][k]) * rhoE_F_p_y
-                rho_conG_m_y  = (module_grad_eta/det_Jacobian[i][j][k]) *  rho_F_m_y
-                rhou_conG_m_y = (module_grad_eta/det_Jacobian[i][j][k]) * rhou_F_m_y
-                rhov_conG_m_y = (module_grad_eta/det_Jacobian[i][j][k]) * rhov_F_m_y
-                rhow_conG_m_y = (module_grad_eta/det_Jacobian[i][j][k]) * rhow_F_m_y
-                rhoE_conG_m_y = (module_grad_eta/det_Jacobian[i][j][k]) * rhoE_F_m_y
+                scale_y = module_grad_eta / det_Jacobian[i][j][k]
+
+                rho_conG_p_y  = scale_y *  rho_F_p_y
+                rhou_conG_p_y = scale_y * rhou_F_p_y
+                rhov_conG_p_y = scale_y * rhov_F_p_y
+                rhow_conG_p_y = scale_y * rhow_F_p_y
+                rhoE_conG_p_y = scale_y * rhoE_F_p_y
+
+                rho_conG_m_y  = scale_y *  rho_F_m_y
+                rhou_conG_m_y = scale_y * rhou_F_m_y
+                rhov_conG_m_y = scale_y * rhov_F_m_y
+                rhow_conG_m_y = scale_y * rhow_F_m_y
+                rhoE_conG_m_y = scale_y * rhoE_F_m_y
 
                 ## Fluxes z-direction  
-                rho_conH_p_z  = (module_grad_zeta/det_Jacobian[i][j][k]) *  rho_F_p_z
-                rhou_conH_p_z = (module_grad_zeta/det_Jacobian[i][j][k]) * rhou_F_p_z
-                rhov_conH_p_z = (module_grad_zeta/det_Jacobian[i][j][k]) * rhov_F_p_z
-                rhow_conH_p_z = (module_grad_zeta/det_Jacobian[i][j][k]) * rhow_F_p_z
-                rhoE_conH_p_z = (module_grad_zeta/det_Jacobian[i][j][k]) * rhoE_F_p_z
-                rho_conH_m_z  = (module_grad_zeta/det_Jacobian[i][j][k]) *  rho_F_m_z
-                rhou_conH_m_z = (module_grad_zeta/det_Jacobian[i][j][k]) * rhou_F_m_z
-                rhov_conH_m_z = (module_grad_zeta/det_Jacobian[i][j][k]) * rhov_F_m_z
-                rhow_conH_m_z = (module_grad_zeta/det_Jacobian[i][j][k]) * rhow_F_m_z
-                rhoE_conH_m_z = (module_grad_zeta/det_Jacobian[i][j][k]) * rhoE_F_m_z
-
-
-
-                # ### Strong conservative form of the Navier-Stokes equations
-                # ## Fluxes x-direction
-                # rho_conF_p_x  = ( rho_F_p_x * n_xi_x_p +  rho_F_p_y * n_xi_y_p +  rho_F_p_z * n_xi_z_p) * module_grad_xi_p/det_J_mean_xi_p  
-                # rhou_conF_p_x = (rhou_F_p_x * n_xi_x_p + rhou_F_p_y * n_xi_y_p + rhou_F_p_z * n_xi_z_p) * module_grad_xi_p/det_J_mean_xi_p 
-                # rhov_conF_p_x = (rhov_F_p_x * n_xi_x_p + rhov_F_p_y * n_xi_y_p + rhov_F_p_z * n_xi_z_p) * module_grad_xi_p/det_J_mean_xi_p 
-                # rhow_conF_p_x = (rhow_F_p_x * n_xi_x_p + rhow_F_p_y * n_xi_y_p + rhow_F_p_z * n_xi_z_p) * module_grad_xi_p/det_J_mean_xi_p 
-                # rhoE_conF_p_x = (rhoE_F_p_x * n_xi_x_p + rhoE_F_p_y * n_xi_y_p + rhoE_F_p_z * n_xi_z_p) * module_grad_xi_p/det_J_mean_xi_p 
-                # rho_conF_m_x  = ( rho_F_m_x * n_xi_x_m +  rho_F_m_y * n_xi_y_m +  rho_F_m_z * n_xi_z_m) * module_grad_xi_m/det_J_mean_xi_m  
-                # rhou_conF_m_x = (rhou_F_m_x * n_xi_x_m + rhou_F_m_y * n_xi_y_m + rhou_F_m_z * n_xi_z_m) * module_grad_xi_m/det_J_mean_xi_m 
-                # rhov_conF_m_x = (rhov_F_m_x * n_xi_x_m + rhov_F_m_y * n_xi_y_m + rhov_F_m_z * n_xi_z_m) * module_grad_xi_m/det_J_mean_xi_m 
-                # rhow_conF_m_x = (rhow_F_m_x * n_xi_x_m + rhow_F_m_y * n_xi_y_m + rhow_F_m_z * n_xi_z_m) * module_grad_xi_m/det_J_mean_xi_m 
-                # rhoE_conF_m_x = (rhoE_F_m_x * n_xi_x_m + rhoE_F_m_y * n_xi_y_m + rhoE_F_m_z * n_xi_z_m) * module_grad_xi_m/det_J_mean_xi_m 
+                scale_z = module_grad_zeta / det_Jacobian[i][j][k]
                 
-                # ## Fluxes y-direction
-                # rho_conG_p_y  = ( rho_F_p_x * n_eta_x_p +  rho_F_p_y* n_eta_y_p +  rho_F_p_z* n_eta_z_p) * module_grad_eta_p/det_J_mean_eta_p
-                # rhou_conG_p_y = (rhou_F_p_x * n_eta_x_p + rhou_F_p_y* n_eta_y_p + rhou_F_p_z* n_eta_z_p) * module_grad_eta_p/det_J_mean_eta_p
-                # rhov_conG_p_y = (rhov_F_p_x * n_eta_x_p + rhov_F_p_y* n_eta_y_p + rhov_F_p_z* n_eta_z_p) * module_grad_eta_p/det_J_mean_eta_p
-                # rhow_conG_p_y = (rhow_F_p_x * n_eta_x_p + rhow_F_p_y* n_eta_y_p + rhow_F_p_z* n_eta_z_p) * module_grad_eta_p/det_J_mean_eta_p
-                # rhoE_conG_p_y = (rhoE_F_p_x * n_eta_x_p + rhoE_F_p_y* n_eta_y_p + rhoE_F_p_z* n_eta_z_p) * module_grad_eta_p/det_J_mean_eta_p
-                # rho_conG_m_y  = ( rho_F_m_x * n_eta_x_m +  rho_F_m_y* n_eta_y_m +  rho_F_m_z* n_eta_z_m) * module_grad_eta_m/det_J_mean_eta_m
-                # rhou_conG_m_y = (rhou_F_m_x * n_eta_x_m + rhou_F_m_y* n_eta_y_m + rhou_F_m_z* n_eta_z_m) * module_grad_eta_m/det_J_mean_eta_m
-                # rhov_conG_m_y = (rhov_F_m_x * n_eta_x_m + rhov_F_m_y* n_eta_y_m + rhov_F_m_z* n_eta_z_m) * module_grad_eta_m/det_J_mean_eta_m
-                # rhow_conG_m_y = (rhow_F_m_x * n_eta_x_m + rhow_F_m_y* n_eta_y_m + rhow_F_m_z* n_eta_z_m) * module_grad_eta_m/det_J_mean_eta_m
-                # rhoE_conG_m_y = (rhoE_F_m_x * n_eta_x_m + rhoE_F_m_y* n_eta_y_m + rhoE_F_m_z* n_eta_z_m) * module_grad_eta_m/det_J_mean_eta_m
+                rho_conH_p_z  = scale_z *  rho_F_p_z
+                rhou_conH_p_z = scale_z * rhou_F_p_z
+                rhov_conH_p_z = scale_z * rhov_F_p_z
+                rhow_conH_p_z = scale_z * rhow_F_p_z
+                rhoE_conH_p_z = scale_z * rhoE_F_p_z
 
-                # ## Fluxes z-direction
-                # rho_conH_p_z  = ( rho_F_p_x * n_zeta_x_p +  rho_F_p_y * n_zeta_y_p +  rho_F_p_z * n_zeta_z_p) * module_grad_zeta_p/det_J_mean_zeta_p
-                # rhou_conH_p_z = (rhou_F_p_x * n_zeta_x_p + rhou_F_p_y * n_zeta_y_p + rhou_F_p_z * n_zeta_z_p) * module_grad_zeta_p/det_J_mean_zeta_p
-                # rhov_conH_p_z = (rhov_F_p_x * n_zeta_x_p + rhov_F_p_y * n_zeta_y_p + rhov_F_p_z * n_zeta_z_p) * module_grad_zeta_p/det_J_mean_zeta_p
-                # rhow_conH_p_z = (rhow_F_p_x * n_zeta_x_p + rhow_F_p_y * n_zeta_y_p + rhow_F_p_z * n_zeta_z_p) * module_grad_zeta_p/det_J_mean_zeta_p
-                # rhoE_conH_p_z = (rhoE_F_p_x * n_zeta_x_p + rhoE_F_p_y * n_zeta_y_p + rhoE_F_p_z * n_zeta_z_p) * module_grad_zeta_p/det_J_mean_zeta_p
-                # rho_conH_m_z  = ( rho_F_m_x * n_zeta_x_m +  rho_F_m_y * n_zeta_y_m +  rho_F_m_z * n_zeta_z_m) * module_grad_zeta_m/det_J_mean_zeta_m
-                # rhou_conH_m_z = (rhou_F_m_x * n_zeta_x_m + rhou_F_m_y * n_zeta_y_m + rhou_F_m_z * n_zeta_z_m) * module_grad_zeta_m/det_J_mean_zeta_m
-                # rhov_conH_m_z = (rhov_F_m_x * n_zeta_x_m + rhov_F_m_y * n_zeta_y_m + rhov_F_m_z * n_zeta_z_m) * module_grad_zeta_m/det_J_mean_zeta_m
-                # rhow_conH_m_z = (rhow_F_m_x * n_zeta_x_m + rhow_F_m_y * n_zeta_y_m + rhow_F_m_z * n_zeta_z_m) * module_grad_zeta_m/det_J_mean_zeta_m
-                # rhoE_conH_m_z = (rhoE_F_m_x * n_zeta_x_m + rhoE_F_m_y * n_zeta_y_m + rhoE_F_m_z * n_zeta_z_m) * module_grad_zeta_m/det_J_mean_zeta_m
-
-                # ## Fluxes x-direction 
-                # rho_inv[i][j][k]  = (1.0 / delta_x) * ( rho_F_p_x -  rho_F_m_x)
-                # rhou_inv[i][j][k] = (1.0 / delta_x) * (rhou_F_p_x - rhou_F_m_x)
-                # rhov_inv[i][j][k] = (1.0 / delta_x) * (rhov_F_p_x - rhov_F_m_x)
-                # rhow_inv[i][j][k] = (1.0 / delta_x) * (rhow_F_p_x - rhow_F_m_x)
-                # rhoE_inv[i][j][k] = (1.0 / delta_x) * (rhoE_F_p_x - rhoE_F_m_x)
-
-                # ## Fluxes y-direction 
-                # rho_inv[i][j][k]  += (1.0 / delta_y) * ( rho_F_p_y -  rho_F_m_y)
-                # rhou_inv[i][j][k] += (1.0 / delta_y) * (rhou_F_p_y - rhou_F_m_y)
-                # rhov_inv[i][j][k] += (1.0 / delta_y) * (rhov_F_p_y - rhov_F_m_y)
-                # rhow_inv[i][j][k] += (1.0 / delta_y) * (rhow_F_p_y - rhow_F_m_y)
-                # rhoE_inv[i][j][k] += (1.0 / delta_y) * (rhoE_F_p_y - rhoE_F_m_y)
-
-                # ## Fluxes z-direction
-                # rho_inv[i][j][k]  += (1.0 / delta_z) * ( rho_F_p_z -  rho_F_m_z)
-                # rhou_inv[i][j][k] += (1.0 / delta_z) * (rhou_F_p_z - rhou_F_m_z)
-                # rhov_inv[i][j][k] += (1.0 / delta_z) * (rhov_F_p_z - rhov_F_m_z)
-                # rhow_inv[i][j][k] += (1.0 / delta_z) * (rhow_F_p_z - rhow_F_m_z)
-                # rhoE_inv[i][j][k] += (1.0 / delta_z) * (rhoE_F_p_z - rhoE_F_m_z)
-
+                rho_conH_m_z  = scale_z *  rho_F_m_z
+                rhou_conH_m_z = scale_z * rhou_F_m_z
+                rhov_conH_m_z = scale_z * rhov_F_m_z
+                rhow_conH_m_z = scale_z * rhow_F_m_z
+                rhoE_conH_m_z = scale_z * rhoE_F_m_z
 
                 ## Fluxes x-direction 
                 rho_inv[i][j][k]  = (1.0 / delta_x) * ( rho_conF_p_x -  rho_conF_m_x)
@@ -2167,33 +1925,11 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 rhow_inv[i][j][k] += (1.0 / delta_z) * (rhow_conH_p_z - rhow_conH_m_z)
                 rhoE_inv[i][j][k] += (1.0 / delta_z) * (rhoE_conH_p_z - rhoE_conH_m_z)
 
-                ## Fluxes x-direction 
-                # rho_inv[i][j][k]  =  ( rho_conF_p_x -  rho_conF_m_x)
-                # rhou_inv[i][j][k] =  (rhou_conF_p_x - rhou_conF_m_x)
-                # rhov_inv[i][j][k] =  (rhov_conF_p_x - rhov_conF_m_x)
-                # rhow_inv[i][j][k] =  (rhow_conF_p_x - rhow_conF_m_x)
-                # rhoE_inv[i][j][k] =  (rhoE_conF_p_x - rhoE_conF_m_x)
-
-                # ## Fluxes y-direction 
-                # rho_inv[i][j][k]  += ( rho_conG_p_y -  rho_conG_m_y)
-                # rhou_inv[i][j][k] += (rhou_conG_p_y - rhou_conG_m_y)
-                # rhov_inv[i][j][k] += (rhov_conG_p_y - rhov_conG_m_y)
-                # rhow_inv[i][j][k] += (rhow_conG_p_y - rhow_conG_m_y)
-                # rhoE_inv[i][j][k] += (rhoE_conG_p_y - rhoE_conG_m_y)
-
-                # ## Fluxes z-direction
-                # rho_inv[i][j][k]  += ( rho_conH_p_z -  rho_conH_m_z)
-                # rhou_inv[i][j][k] += (rhou_conH_p_z - rhou_conH_m_z)
-                # rhov_inv[i][j][k] += (rhov_conH_p_z - rhov_conH_m_z)
-                # rhow_inv[i][j][k] += (rhow_conH_p_z - rhow_conH_m_z)
-                # rhoE_inv[i][j][k] += (rhoE_conH_p_z - rhoE_conH_m_z)
-
     #print( rho_inv )
     #print( rhou_inv )
     #print( rhov_inv )
     #print( rhow_inv )
     #print( rhoE_inv )
-    # exit()
 
 ### Calculate viscous fluxes
 @njit
@@ -2306,56 +2042,10 @@ def viscous_fluxes( rhou_vis, rhov_vis, rhow_vis, rhoE_vis, work_vis_rhoe, u, v,
 #@njit
 def sum_fluxes_source_terms( rho_tot, rhou_tot, rhov_tot, rhow_tot, rhoE_tot, P_tot, rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rhou_vis, rhov_vis, rhow_vis, rhoE_vis, work_vis_rhoe, f_rhou, f_rhov, f_rhow, f_rhoE, rho, u, v, w, P, T, sos, rk_iter, grid ):
     
-    # # Internal points
-    # for i in range( 1, num_grid_x + 1 ):    
-    #     for j in range( 1, num_grid_y + 1 ):    
-    #         for k in range( 1, num_grid_z + 1 ):
-    #             # Calculate specific heat capacities
-    #             c_v = -1.0; c_p = -1.0
-    #             c_v, c_p = thermodynamics.calculateSpecificHeatCapacities(c_v, c_p, P[i][j][k], T[i][j][k], rho[i][j][k])                
-    #             ## Geometric stuff
-    #             delta_x = 0.5*( grid[i+1][j][k][0] - grid[i-1][j][k][0] ) 
-    #             delta_y = 0.5*( grid[i][j+1][k][1] - grid[i][j-1][k][1] ) 
-    #             delta_z = 0.5*( grid[i][j][k+1][2] - grid[i][j][k-1][2] )
-    #             ## Pressure and velocity derivatives
-    #             d_P_x = ( P[i+1][j][k] - P[i-1][j][k] )/( 2.0*delta_x )
-    #             d_P_y = ( P[i][j+1][k] - P[i][j-1][k] )/( 2.0*delta_y )
-    #             d_P_z = ( P[i][j][k+1] - P[i][j][k-1] )/( 2.0*delta_z )
-    #             d_u_x = ( u[i+1][j][k] - u[i-1][j][k] )/( 2.0*delta_x )
-    #             d_v_y = ( v[i][j+1][k] - v[i][j-1][k] )/( 2.0*delta_y )
-    #             d_w_z = ( w[i][j][k+1] - w[i][j][k-1] )/( 2.0*delta_z )
-    #             ## Divergence of velocity
-    #             div_uvw = d_u_x + d_v_y + d_w_z
-    #             ## Pressure inviscid flux
-    #             P_inv_flux = u[i][j][k]*d_P_x + v[i][j][k]*d_P_y + w[i][j][k]*d_P_z + rho[i][j][k]*( sos[i][j][k]**2.0 )*div_uvw
-    #             ## Pressure viscous flux
-    #             volume_expansivity         = 1.0/T[i][j][k]    
-    #             isothermal_compressibility = 1.0/P[i][j][k]     
-    #             P_vis_flux = ( volume_expansivity/( rho[i][j][k]*c_v*isothermal_compressibility ) )*work_vis_rhoe[i][j][k]                
-    #             ## Calculate total right-hand side
-    #             rho_tot[i][j][k][rk_iter]  = det_Jacobian[i][j][k]*( ( -1.0 )*rho_inv[i][j][k] )
-    #             rhou_tot[i][j][k][rk_iter] = det_Jacobian[i][j][k]*( ( -1.0 )*rhou_inv[i][j][k] + rhou_vis[i][j][k] + f_rhou[i][j][k] )
-    #             rhov_tot[i][j][k][rk_iter] = det_Jacobian[i][j][k]*( ( -1.0 )*rhov_inv[i][j][k] + rhov_vis[i][j][k] + f_rhov[i][j][k] )
-    #             rhow_tot[i][j][k][rk_iter] = det_Jacobian[i][j][k]*( ( -1.0 )*rhow_inv[i][j][k] + rhow_vis[i][j][k] + f_rhow[i][j][k] )   ########################################################################################################################################################################################################
-    #             rhoE_tot[i][j][k][rk_iter] = det_Jacobian[i][j][k]*( ( -1.0 )*rhoE_inv[i][j][k] + rhoE_vis[i][j][k] + f_rhoE[i][j][k] )
-    #             P_tot[i][j][k][rk_iter]    = det_Jacobian[i][j][k]*( ( -1.0 )*P_inv_flux + P_vis_flux + f_rhoE[i][j][k] )
-    #             # rho_tot[i][j][k][rk_iter]  = ( ( -1.0 )*rho_inv[i][j][k] )
-    #             # rhou_tot[i][j][k][rk_iter] = ( ( -1.0 )*rhou_inv[i][j][k] + rhou_vis[i][j][k] + f_rhou[i][j][k] )
-    #             # rhov_tot[i][j][k][rk_iter] = ( ( -1.0 )*rhov_inv[i][j][k] + rhov_vis[i][j][k] + f_rhov[i][j][k] )
-    #             # rhow_tot[i][j][k][rk_iter] = ( ( -1.0 )*rhow_inv[i][j][k] + rhow_vis[i][j][k] + f_rhow[i][j][k] )
-    #             # rhoE_tot[i][j][k][rk_iter] = ( ( -1.0 )*rhoE_inv[i][j][k] + rhoE_vis[i][j][k] + f_rhoE[i][j][k] )
-    #             # P_tot[i][j][k][rk_iter]    = ( ( -1.0 )*P_inv_flux + P_vis_flux + f_rhoE[i][j][k] )
-    # #print( rho_tot )
-    # #print( rhou_tot )
-    # #print( rhov_tot )
-    # #print( rhow_tot )
-    # #print( rhoE_tot )
-    # #print( P_tot )
-
     # Internal points
-    for i in range(1, num_grid_x + 1):    
-        for j in range(1, num_grid_y + 1):    
-            for k in range(1, num_grid_z + 1):
+    for i in range( 1, num_grid_x + 1 ):    
+        for j in range( 1, num_grid_y + 1 ):    
+            for k in range( 1, num_grid_z + 1 ):
                 # Calculate specific heat capacities
                 c_v = -1.0; c_p = -1.0
                 c_v, c_p = thermodynamics.calculateSpecificHeatCapacities(c_v, c_p, P[i][j][k], T[i][j][k], rho[i][j][k])                
@@ -2363,55 +2053,98 @@ def sum_fluxes_source_terms( rho_tot, rhou_tot, rhov_tot, rhow_tot, rhoE_tot, P_
                 delta_x = 0.5*( grid[i+1][j][k][0] - grid[i-1][j][k][0] ) 
                 delta_y = 0.5*( grid[i][j+1][k][1] - grid[i][j-1][k][1] ) 
                 delta_z = 0.5*( grid[i][j][k+1][2] - grid[i][j][k-1][2] )
-                # 1. Computational Space Derivatives 
-                d_P_dxi   = (P[i+1][j][k] - P[i-1][j][k]) / (2*delta_x) 
-                d_P_deta  = (P[i][j+1][k] - P[i][j-1][k]) / (2*delta_y)
-                d_P_dzeta = (P[i][j][k+1] - P[i][j][k-1]) / (2*delta_z)
-
-                d_u_dxi   = (u[i+1][j][k] - u[i-1][j][k]) / (2*delta_x)
-                d_u_deta  = (u[i][j+1][k] - u[i][j-1][k]) / (2*delta_y)
-                d_u_dzeta = (u[i][j][k+1] - u[i][j][k-1]) / (2*delta_z)
-
-                d_v_dxi   = (v[i+1][j][k] - v[i-1][j][k]) / (2*delta_x)
-                d_v_deta  = (v[i][j+1][k] - v[i][j-1][k]) / (2*delta_y)
-                d_v_dzeta = (v[i][j][k+1] - v[i][j][k-1]) / (2*delta_z)
-
-                d_w_dxi   = (w[i+1][j][k] - w[i-1][j][k]) / (2*delta_x)
-                d_w_deta  = (w[i][j+1][k] - w[i][j-1][k]) / (2*delta_y)
-                d_w_dzeta = (w[i][j][k+1] - w[i][j][k-1]) / (2*delta_z)
-
-                # 2. Transform to Physical Cartesian Derivatives via Chain Rule
-                # (Using cell-centered metrics: xi[i][j][k][0] is xi_x, [1] is xi_y, etc.)
-                d_P_x = d_P_dxi * xi[i][j][k][0] + d_P_deta * eta[i][j][k][0] + d_P_dzeta * zeta[i][j][k][0]
-                d_P_y = d_P_dxi * xi[i][j][k][1] + d_P_deta * eta[i][j][k][1] + d_P_dzeta * zeta[i][j][k][1]
-                d_P_z = d_P_dxi * xi[i][j][k][2] + d_P_deta * eta[i][j][k][2] + d_P_dzeta * zeta[i][j][k][2]
-
-                d_u_x = d_u_dxi * xi[i][j][k][0] + d_u_deta * eta[i][j][k][0] + d_u_dzeta * zeta[i][j][k][0]
-                d_v_y = d_v_dxi * xi[i][j][k][1] + d_v_deta * eta[i][j][k][1] + d_v_dzeta * zeta[i][j][k][1]
-                d_w_z = d_w_dxi * xi[i][j][k][2] + d_w_deta * eta[i][j][k][2] + d_w_dzeta * zeta[i][j][k][2]
-
+                ## Pressure and velocity derivatives
+                d_P_x = ( P[i+1][j][k] - P[i-1][j][k] )/( 2.0*delta_x )
+                d_P_y = ( P[i][j+1][k] - P[i][j-1][k] )/( 2.0*delta_y )
+                d_P_z = ( P[i][j][k+1] - P[i][j][k-1] )/( 2.0*delta_z )
+                d_u_x = ( u[i+1][j][k] - u[i-1][j][k] )/( 2.0*delta_x )
+                d_v_y = ( v[i][j+1][k] - v[i][j-1][k] )/( 2.0*delta_y )
+                d_w_z = ( w[i][j][k+1] - w[i][j][k-1] )/( 2.0*delta_z )
                 ## Divergence of velocity
                 div_uvw = d_u_x + d_v_y + d_w_z
-
+                ## Pressure inviscid flux
+                P_inv_flux = u[i][j][k]*d_P_x + v[i][j][k]*d_P_y + w[i][j][k]*d_P_z + rho[i][j][k]*( sos[i][j][k]**2.0 )*div_uvw
                 ## Pressure viscous flux
-                P_inv_flux = u[i][j][k]*d_P_x + v[i][j][k]*d_P_y + w[i][j][k]*d_P_z + rho[i][j][k]*(sos[i][j][k]**2.0)*div_uvw
-                
-                volume_expansivity         = 1.0 / T[i][j][k]    
-                isothermal_compressibility = 1.0 / P[i][j][k]     
-                P_vis_flux = (volume_expansivity / (rho[i][j][k] * c_v * isothermal_compressibility)) * work_vis_rhoe[i][j][k]                
-
+                volume_expansivity         = 1.0/T[i][j][k]    
+                isothermal_compressibility = 1.0/P[i][j][k]     
+                P_vis_flux = ( volume_expansivity/( rho[i][j][k]*c_v*isothermal_compressibility ) )*work_vis_rhoe[i][j][k]                
                 ## Calculate total right-hand side
-                rho_tot[i][j][k][rk_iter]  = ( -det_Jacobian[i][j][k] *  rho_inv[i][j][k] )
-                rhou_tot[i][j][k][rk_iter] = ( -det_Jacobian[i][j][k] * rhou_inv[i][j][k] + rhou_vis[i][j][k] + f_rhou[i][j][k])
-                rhov_tot[i][j][k][rk_iter] = ( -det_Jacobian[i][j][k] * rhov_inv[i][j][k] + rhov_vis[i][j][k] + f_rhov[i][j][k])
-                rhow_tot[i][j][k][rk_iter] = ( -det_Jacobian[i][j][k] * rhow_inv[i][j][k] + rhow_vis[i][j][k] + f_rhow[i][j][k])
-                rhoE_tot[i][j][k][rk_iter] = ( -det_Jacobian[i][j][k] * rhoE_inv[i][j][k] + rhoE_vis[i][j][k] + f_rhoE[i][j][k])
-                P_tot[i][j][k][rk_iter]    = ( -det_Jacobian[i][j][k] * P_inv_flux        + P_vis_flux        + f_rhoE[i][j][k])
-                # print('rhou_tot{i}{7}{1} =' , rhou_tot[i][7][1][rk_iter])
+                rho_tot[i][j][k][rk_iter]  = det_Jacobian[i][j][k]*( ( -1.0 )*rho_inv[i][j][k] )
+                rhou_tot[i][j][k][rk_iter] = det_Jacobian[i][j][k]*( ( -1.0 )*rhou_inv[i][j][k] + rhou_vis[i][j][k] + f_rhou[i][j][k] )
+                rhov_tot[i][j][k][rk_iter] = det_Jacobian[i][j][k]*( ( -1.0 )*rhov_inv[i][j][k] + rhov_vis[i][j][k] + f_rhov[i][j][k] )
+                rhow_tot[i][j][k][rk_iter] = det_Jacobian[i][j][k]*( ( -1.0 )*rhow_inv[i][j][k] + rhow_vis[i][j][k] + f_rhow[i][j][k] )   ########################################################################################################################################################################################################
+                rhoE_tot[i][j][k][rk_iter] = det_Jacobian[i][j][k]*( ( -1.0 )*rhoE_inv[i][j][k] + rhoE_vis[i][j][k] + f_rhoE[i][j][k] )
+                P_tot[i][j][k][rk_iter]    = det_Jacobian[i][j][k]*( ( -1.0 )*P_inv_flux + P_vis_flux + f_rhoE[i][j][k] )
+                # rho_tot[i][j][k][rk_iter]  = ( ( -1.0 )*rho_inv[i][j][k] )
+                # rhou_tot[i][j][k][rk_iter] = ( ( -1.0 )*rhou_inv[i][j][k] + rhou_vis[i][j][k] + f_rhou[i][j][k] )
+                # rhov_tot[i][j][k][rk_iter] = ( ( -1.0 )*rhov_inv[i][j][k] + rhov_vis[i][j][k] + f_rhov[i][j][k] )
+                # rhow_tot[i][j][k][rk_iter] = ( ( -1.0 )*rhow_inv[i][j][k] + rhow_vis[i][j][k] + f_rhow[i][j][k] )
+                # rhoE_tot[i][j][k][rk_iter] = ( ( -1.0 )*rhoE_inv[i][j][k] + rhoE_vis[i][j][k] + f_rhoE[i][j][k] )
+                # P_tot[i][j][k][rk_iter]    = ( ( -1.0 )*P_inv_flux + P_vis_flux + f_rhoE[i][j][k] )
+    #print( rho_tot )
+    #print( rhou_tot )
+    #print( rhov_tot )
+    #print( rhow_tot )
+    #print( rhoE_tot )
+    #print( P_tot )
 
+    # # Internal points
+    # for i in range(1, num_grid_x + 1):    
+    #     for j in range(1, num_grid_y + 1):    
+    #         for k in range(1, num_grid_z + 1):
+    #             # Calculate specific heat capacities
+    #             c_v = -1.0; c_p = -1.0
+    #             c_v, c_p = thermodynamics.calculateSpecificHeatCapacities(c_v, c_p, P[i][j][k], T[i][j][k], rho[i][j][k])                
+    #             ## Geometric stuff
+    #             delta_x = 0.5*( grid[i+1][j][k][0] - grid[i-1][j][k][0] ) 
+    #             delta_y = 0.5*( grid[i][j+1][k][1] - grid[i][j-1][k][1] ) 
+    #             delta_z = 0.5*( grid[i][j][k+1][2] - grid[i][j][k-1][2] )
+    #             # 1. Computational Space Derivatives 
+    #             d_P_dxi   = (P[i+1][j][k] - P[i-1][j][k]) / (2*delta_x) 
+    #             d_P_deta  = (P[i][j+1][k] - P[i][j-1][k]) / (2*delta_y)
+    #             d_P_dzeta = (P[i][j][k+1] - P[i][j][k-1]) / (2*delta_z)
 
+    #             d_u_dxi   = (u[i+1][j][k] - u[i-1][j][k]) / (2*delta_x)
+    #             d_u_deta  = (u[i][j+1][k] - u[i][j-1][k]) / (2*delta_y)
+    #             d_u_dzeta = (u[i][j][k+1] - u[i][j][k-1]) / (2*delta_z)
 
+    #             d_v_dxi   = (v[i+1][j][k] - v[i-1][j][k]) / (2*delta_x)
+    #             d_v_deta  = (v[i][j+1][k] - v[i][j-1][k]) / (2*delta_y)
+    #             d_v_dzeta = (v[i][j][k+1] - v[i][j][k-1]) / (2*delta_z)
+
+    #             d_w_dxi   = (w[i+1][j][k] - w[i-1][j][k]) / (2*delta_x)
+    #             d_w_deta  = (w[i][j+1][k] - w[i][j-1][k]) / (2*delta_y)
+    #             d_w_dzeta = (w[i][j][k+1] - w[i][j][k-1]) / (2*delta_z)
+
+    #             # 2. Transform to Physical Cartesian Derivatives via Chain Rule
+    #             # (Using cell-centered metrics: xi[i][j][k][0] is xi_x, [1] is xi_y, etc.)
+    #             d_P_x = d_P_dxi * xi[i][j][k][0] + d_P_deta * eta[i][j][k][0] + d_P_dzeta * zeta[i][j][k][0]
+    #             d_P_y = d_P_dxi * xi[i][j][k][1] + d_P_deta * eta[i][j][k][1] + d_P_dzeta * zeta[i][j][k][1]
+    #             d_P_z = d_P_dxi * xi[i][j][k][2] + d_P_deta * eta[i][j][k][2] + d_P_dzeta * zeta[i][j][k][2]
+
+    #             d_u_x = d_u_dxi * xi[i][j][k][0] + d_u_deta * eta[i][j][k][0] + d_u_dzeta * zeta[i][j][k][0]
+    #             d_v_y = d_v_dxi * xi[i][j][k][1] + d_v_deta * eta[i][j][k][1] + d_v_dzeta * zeta[i][j][k][1]
+    #             d_w_z = d_w_dxi * xi[i][j][k][2] + d_w_deta * eta[i][j][k][2] + d_w_dzeta * zeta[i][j][k][2]
+
+    #             ## Divergence of velocity
+    #             div_uvw = d_u_x + d_v_y + d_w_z
+
+    #             ## Pressure viscous flux
+    #             P_inv_flux = u[i][j][k]*d_P_x + v[i][j][k]*d_P_y + w[i][j][k]*d_P_z + rho[i][j][k]*(sos[i][j][k]**2.0)*div_uvw
                 
+    #             volume_expansivity         = 1.0 / T[i][j][k]    
+    #             isothermal_compressibility = 1.0 / P[i][j][k]     
+    #             P_vis_flux = (volume_expansivity / (rho[i][j][k] * c_v * isothermal_compressibility)) * work_vis_rhoe[i][j][k]                
+
+    #             ## Calculate total right-hand side
+    #             rho_tot[i][j][k][rk_iter]  = det_Jacobian[i][j][k]*( ( -1.0 )*rho_inv[i][j][k] )
+    #             rhou_tot[i][j][k][rk_iter] = det_Jacobian[i][j][k]*( ( -1.0 )*rhou_inv[i][j][k] + rhou_vis[i][j][k] + f_rhou[i][j][k] )
+    #             rhov_tot[i][j][k][rk_iter] = det_Jacobian[i][j][k]*( ( -1.0 )*rhov_inv[i][j][k] + rhov_vis[i][j][k] + f_rhov[i][j][k] )
+    #             rhow_tot[i][j][k][rk_iter] = det_Jacobian[i][j][k]*( ( -1.0 )*rhow_inv[i][j][k] + rhow_vis[i][j][k] + f_rhow[i][j][k] )   ########################################################################################################################################################################################################
+    #             rhoE_tot[i][j][k][rk_iter] = det_Jacobian[i][j][k]*( ( -1.0 )*rhoE_inv[i][j][k] + rhoE_vis[i][j][k] + f_rhoE[i][j][k] )
+    #             P_tot[i][j][k][rk_iter]    = det_Jacobian[i][j][k]*( ( -1.0 )*P_inv_flux + P_vis_flux + f_rhoE[i][j][k] )
+    #             # print('rhou_tot{i}{7}{1} =' , rhou_tot[i][7][1][rk_iter])
+            
 
 ### Time integration of conserved variables
 @njit
