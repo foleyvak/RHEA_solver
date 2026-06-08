@@ -173,8 +173,8 @@ transport_coefficients = ConstantTransportCoefficients(mu_value, kappa_value)
 #transport_coefficients = CoolPropTransportCoefficients(substance)
 
 ### Computational parameters
-num_grid_x        = 128			                        # Number of internal grid points in the x-direction
-num_grid_y        = 128			                        # Number of internal grid points in the y-direction
+num_grid_x        = 32                        # Number of internal grid points in the x-direction
+num_grid_y        = 16	                        # Number of internal grid points in the y-direction
 num_grid_z        = 1			                        # Number of internal grid points in the z-direction
 # Stretching factors: x = L*eta + A*( 0.5*L - L*eta )*( 1.0 - eta )*eta, with eta = ( l - 0.5 )/num_grid 
 # A < 0: stretching at ends; A = 0: uniform; A > 0: stretching at center
@@ -183,7 +183,7 @@ A_y               = 0.0                                 # Stretching factor in y
 A_z               = 0.0                                 # Stretching factor in z-direction
 CFL               = 0.1 		                        # CFL coefficient
 max_num_time_iter = 1e6			                        # Maximum number of time iterations
-output_iter       = 1000		                        # Output data every given number of iterations
+output_iter       = 100		                        # Output data every given number of iterations
 transport_pressure_scheme = False	                    # Select transporting pressure instead of total energy
 artificial_compressibility_method = False               # Activate artificial compressibility method
 epsilon_acm       = 0.01 		                        # Relative error of artificial compressibility method ... it has to be small
@@ -950,7 +950,7 @@ def spatial_discretization( grid , drc_dx):
                 # # Ramp
                 # L_y[i] = L_y_0 + (L_y_f-L_y_0)/L_x*grid[i][j][k][0] # Example geometry -- a linearly expanding duct
                 
-                # # Hyperbolic tangent
+                # # Hyperbolic tangent convergent
                 # # 1. Extract the current X coordinate for readability
                 # x_coord = grid[i][j][k][0]
                 # # 2. Define a scaling/sharpness parameter (s)
@@ -958,6 +958,15 @@ def spatial_discretization( grid , drc_dx):
                 # s = 3.5 
                 # # 3. The tanh geometry transformation
                 # L_y[i] = L_y_0 + (L_y_f - L_y_0) * 0.5 * (1.0 + np.tanh(s * (2.0 * x_coord / L_x - 1.0)))
+
+                # # Hyperbolic tanget divergent
+                # # 1. Extract the current X coordinate for readability
+                # x_coord = grid[i][j][k][0]
+                # # 2. Define a scaling/sharpness parameter (s)
+                # # s = 3.0 is a good default where the transition finishes right at the boundaries.
+                # s = 3.5
+                # # 3. The tanh geometry transformation
+                # L_y[i] = L_y_0 + (L_y_f - L_y_0) * 0.5 * (1.0 + np.tanh(-s * (2.0 * x_coord / L_x - 1.0)))
 
                 # Convergent-Divergent nozzle
                 # Clean variable for the current x-coordinate
@@ -1860,9 +1869,9 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 module_grad_eta  = np.sqrt( eta[i][j][k][0]**2 +  eta[i][j][k][1]**2 +  eta[i][j][k][2]**2)
                 module_grad_zeta = np.sqrt(zeta[i][j][k][0]**2 + zeta[i][j][k][1]**2 + zeta[i][j][k][2]**2)
 
-               ## Fluxes x-direction
+                ## Fluxes x-direction
                 scale_x = module_grad_xi / det_Jacobian[i][j][k]
-                
+
                 rho_conF_p_x  = scale_x *  rho_F_p_x
                 rhou_conF_p_x = scale_x * rhou_F_p_x
                 rhov_conF_p_x = scale_x * rhov_F_p_x
@@ -1905,26 +1914,47 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 rhow_conH_m_z = scale_z * rhow_F_m_z
                 rhoE_conH_m_z = scale_z * rhoE_F_m_z
 
+                # ## Fluxes x-direction 
+                # rho_inv[i][j][k]  = (1.0 / delta_x) * ( rho_conF_p_x -  rho_conF_m_x)
+                # rhou_inv[i][j][k] = (1.0 / delta_x) * (rhou_conF_p_x - rhou_conF_m_x)
+                # rhov_inv[i][j][k] = (1.0 / delta_x) * (rhov_conF_p_x - rhov_conF_m_x)
+                # rhow_inv[i][j][k] = (1.0 / delta_x) * (rhow_conF_p_x - rhow_conF_m_x)
+                # rhoE_inv[i][j][k] = (1.0 / delta_x) * (rhoE_conF_p_x - rhoE_conF_m_x)
+
+                # ## Fluxes y-direction 
+                # rho_inv[i][j][k]  += (1.0 / delta_y) * ( rho_conG_p_y -  rho_conG_m_y)
+                # rhou_inv[i][j][k] += (1.0 / delta_y) * (rhou_conG_p_y - rhou_conG_m_y)
+                # rhov_inv[i][j][k] += (1.0 / delta_y) * (rhov_conG_p_y - rhov_conG_m_y)
+                # rhow_inv[i][j][k] += (1.0 / delta_y) * (rhow_conG_p_y - rhow_conG_m_y)
+                # rhoE_inv[i][j][k] += (1.0 / delta_y) * (rhoE_conG_p_y - rhoE_conG_m_y)
+
+                # ## Fluxes z-direction
+                # rho_inv[i][j][k]  += (1.0 / delta_z) * ( rho_conH_p_z -  rho_conH_m_z)
+                # rhou_inv[i][j][k] += (1.0 / delta_z) * (rhou_conH_p_z - rhou_conH_m_z)
+                # rhov_inv[i][j][k] += (1.0 / delta_z) * (rhov_conH_p_z - rhov_conH_m_z)
+                # rhow_inv[i][j][k] += (1.0 / delta_z) * (rhow_conH_p_z - rhow_conH_m_z)
+                # rhoE_inv[i][j][k] += (1.0 / delta_z) * (rhoE_conH_p_z - rhoE_conH_m_z)
+
                 ## Fluxes x-direction 
-                rho_inv[i][j][k]  = (1.0 / delta_x) * ( rho_conF_p_x -  rho_conF_m_x)
-                rhou_inv[i][j][k] = (1.0 / delta_x) * (rhou_conF_p_x - rhou_conF_m_x)
-                rhov_inv[i][j][k] = (1.0 / delta_x) * (rhov_conF_p_x - rhov_conF_m_x)
-                rhow_inv[i][j][k] = (1.0 / delta_x) * (rhow_conF_p_x - rhow_conF_m_x)
-                rhoE_inv[i][j][k] = (1.0 / delta_x) * (rhoE_conF_p_x - rhoE_conF_m_x)
+                rho_inv[i][j][k]  = ( rho_conF_p_x -  rho_conF_m_x)
+                rhou_inv[i][j][k] = (rhou_conF_p_x - rhou_conF_m_x)
+                rhov_inv[i][j][k] = (rhov_conF_p_x - rhov_conF_m_x)
+                rhow_inv[i][j][k] = (rhow_conF_p_x - rhow_conF_m_x)
+                rhoE_inv[i][j][k] = (rhoE_conF_p_x - rhoE_conF_m_x)
 
                 ## Fluxes y-direction 
-                rho_inv[i][j][k]  += (1.0 / delta_y) * ( rho_conG_p_y -  rho_conG_m_y)
-                rhou_inv[i][j][k] += (1.0 / delta_y) * (rhou_conG_p_y - rhou_conG_m_y)
-                rhov_inv[i][j][k] += (1.0 / delta_y) * (rhov_conG_p_y - rhov_conG_m_y)
-                rhow_inv[i][j][k] += (1.0 / delta_y) * (rhow_conG_p_y - rhow_conG_m_y)
-                rhoE_inv[i][j][k] += (1.0 / delta_y) * (rhoE_conG_p_y - rhoE_conG_m_y)
+                rho_inv[i][j][k]  += ( rho_conG_p_y -  rho_conG_m_y)
+                rhou_inv[i][j][k] += (rhou_conG_p_y - rhou_conG_m_y)
+                rhov_inv[i][j][k] += (rhov_conG_p_y - rhov_conG_m_y)
+                rhow_inv[i][j][k] += (rhow_conG_p_y - rhow_conG_m_y)
+                rhoE_inv[i][j][k] += (rhoE_conG_p_y - rhoE_conG_m_y)
 
                 ## Fluxes z-direction
-                rho_inv[i][j][k]  += (1.0 / delta_z) * ( rho_conH_p_z -  rho_conH_m_z)
-                rhou_inv[i][j][k] += (1.0 / delta_z) * (rhou_conH_p_z - rhou_conH_m_z)
-                rhov_inv[i][j][k] += (1.0 / delta_z) * (rhov_conH_p_z - rhov_conH_m_z)
-                rhow_inv[i][j][k] += (1.0 / delta_z) * (rhow_conH_p_z - rhow_conH_m_z)
-                rhoE_inv[i][j][k] += (1.0 / delta_z) * (rhoE_conH_p_z - rhoE_conH_m_z)
+                rho_inv[i][j][k]  += ( rho_conH_p_z -  rho_conH_m_z)
+                rhou_inv[i][j][k] += (rhou_conH_p_z - rhou_conH_m_z)
+                rhov_inv[i][j][k] += (rhov_conH_p_z - rhov_conH_m_z)
+                rhow_inv[i][j][k] += (rhow_conH_p_z - rhow_conH_m_z)
+                rhoE_inv[i][j][k] += (rhoE_conH_p_z - rhoE_conH_m_z)
 
     #print( rho_inv )
     #print( rhou_inv )
