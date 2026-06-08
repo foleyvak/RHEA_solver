@@ -18,7 +18,7 @@ import math
 ########## SET PARAMETERS ############
 
 ###################### DATA IMPORT SETTINGS ##########################
-output_iter     = 52000  # Select imported data iteration
+output_iter     = 77000  # Select imported data iteration
 num_grid_x      = 128            # Number of internal grid points in the x-direction
 num_grid_y      = 128            # Number of internal grid points in the y-direction
 num_grid_z      = 1              # Number of internal grid points in the z-direction
@@ -431,7 +431,7 @@ domain_width = x_max - x_min
 
 # Queremos que la flecha más rápida mida el 4% (0.04) del ancho del dominio. 
 # Puedes ajustar este 0.04 (más grande = flechas más largas; más chico = flechas más cortas)
-desired_max_arrow_length = 0.04 * domain_width 
+desired_max_arrow_length = 0.015 * domain_width 
 
 # El scale correcto para 'scale_units=xy' es: velocidad_maxima / longitud_deseada
 dynamic_scale = max_vel / desired_max_arrow_length
@@ -470,9 +470,11 @@ plt.tight_layout()
 plt.show()
 
 png_filename = f'plot_iter_{output_iter}.png'
+svg_filename = f'plot_iter_{output_iter}.svg'
 
 # Save figure
-plt.savefig(png_filename, dpi=600, bbox_inches='tight')
+# plt.savefig(png_filename, dpi=600, bbox_inches='tight')
+plt.savefig(svg_filename, dpi=600, bbox_inches='tight')
 
 plt.close(fig)
 
