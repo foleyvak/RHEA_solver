@@ -18,7 +18,7 @@ import math
 ########## SET PARAMETERS ############
 
 ###################### DATA IMPORT SETTINGS ##########################
-output_iter     = 105000 # Select imported data iteration
+output_iter     = 107000 # Select imported data iteration
 num_grid_x      = 128            # Number of internal grid points in the x-direction
 num_grid_y      = 128            # Number of internal grid points in the y-direction
 num_grid_z      = 1              # Number of internal grid points in the z-direction
