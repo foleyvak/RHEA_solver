@@ -18,9 +18,9 @@ import math
 ########## SET PARAMETERS ############
 
 ###################### DATA IMPORT SETTINGS ##########################
-output_iter     = 9800 # Select imported data iteration
-num_grid_x      = 128            # Number of internal grid points in the x-direction
-num_grid_y      = 128            # Number of internal grid points in the y-direction
+output_iter     = 51100  # Select imported data iteration
+num_grid_x      = 64          # Number of internal grid points in the x-direction
+num_grid_y      = 32            # Number of internal grid points in the y-direction
 num_grid_z      = 1              # Number of internal grid points in the z-direction
 
 name_file_out   = 'output_data_'  # Name of output data [-]
@@ -72,20 +72,20 @@ z_0           = 0.0                                     # Domain origin in z-dir
 L             = 1.0					                    # Cavity size [m]
 L_x           = 2.00*L             	                    # Size of domain in x-direction
 L_y           = np.ones(num_grid_x + 2)*L	  		                        # Size of domain in y-direction
-L_y_0         = 1.0*L_y         	                    # Initial size of domain in y-direction (for time-varying geometries)
-L_y_f         = 0.5*L_y         	                    # Final size of domain in y-direction (for time-varying geometries)
+L_y_0         = 0.2*L         	                    # Initial size of domain in y-direction (for time-varying geometries)
+L_y_f         = 0.1*L         	                    # Final size of domain in y-direction (for time-varying geometries)
 L_z           = 0.01*L         	                        # Size of domain in z-direction
 # Rc            = 0.25*L_x         	                    # Radius of curvature of the geometry (for curved geometries)
 #Nozzle
-r_t           = 0.8e-3         	                        # Nozzle throat radius (for nozzle geometries)
-r_c           = 1.5e-3         	                        # Nozzle chamber radius (for nozzle geometries)
+r_t           = 0.1         	                        # Nozzle throat radius (for nozzle geometries)
+r_c           = 0.2         	                        # Nozzle chamber radius (for nozzle geometries)
 R1_rt         = 10.0         	                        # Convergent-throat arc ratio as (R1/rt)
 R2_R1         = 3.0                                     # Chamber-convergent arc ratio as (R2/R1)
 Rexp_rt       = 30.0                                    # Expansion arc ratio as (Rexp/rt)
-theta         = 5.0                                     # Convergent segment inclination angle [deg]
+theta         = 10.0                                     # Convergent segment inclination angle [deg]
 alpha         = 3.0                                     # Conical nozzle half-angle [deg]
-L_N           = 30e-3                                   # Conical section length [m]
-L_c           = 3e-3                                    # Chamber section length [m]
+L_N           = 3.0                                   # Conical section length [m]
+L_c           = 5.0                                    # Chamber section length [m]
 R1 = r_t * R1_rt # Convergent-Throat arc radius
 R2 = R1 * R2_R1 # Chamber-Convergent arc radius
 Rexp = r_t * Rexp_rt # Expansion arc radius
@@ -107,7 +107,11 @@ x_exp = x_t + Rexp * math.sin(alpha_rad)
 r_exp = r_t + Rexp * (1 - math.cos(alpha_rad))
 
 L_x = x_t + L_N
-#
+
+# L_x = x_t + L_N + L_c
+# L_N = 5.0
+# L_con = 4.0
+# L_x = L_con + L_N
 
 #############################################################################################
 
@@ -158,11 +162,11 @@ def spatial_discretization( grid ):
                 # L_y[i] = L_y_0 + (L_y_f-L_y_0)/L_x*grid[i][j][k][0] # Example geometry -- a linearly expanding duct
                 
                 # # Hyperbolic tangent
-                # # 1. Extract the current X coordinate for readability
-                # x_coord = grid[i][j][k][0]
+                # 1. Extract the current X coordinate for readability
+                x_coord = grid[i][j][k][0]
                 # # 2. Define a scaling/sharpness parameter (s)
                 # # s = 3.0 is a good default where the transition finishes right at the boundaries.
-                # s = 3.5 
+                s = 3.5 
                 # # 3. The tanh geometry transformation
                 # L_y[i] = L_y_0 + (L_y_f - L_y_0) * 0.5 * (1.0 + np.tanh(s * (2.0 * x_coord / L_x - 1.0)))
 
@@ -189,7 +193,13 @@ def spatial_discretization( grid ):
                     # Straight divergent section
                     L_y[i] = r_exp + (x - x_exp) * math.tan(alpha_rad)
 
-
+                # x_lim = 0.9*L_con
+                # if x < x_lim:
+                #     L_y[i] = L_y_0 + (L_y_f - L_y_0) * 0.5 * (1.0 + np.tanh(s * (2.0 * x_coord / L_con - 1.0)))
+                # else:
+                #     x_coord = x_lim
+                #     r1 = L_y_0 + (L_y_f - L_y_0) * 0.5 * (1.0 + np.tanh(s * (2.0 * x_coord / L_con - 1.0)))
+                #     L_y[i] = r1 + (x - x_lim) * math.tan(alpha_rad)
 
                 grid[i][j][k][1] = y_0 + L_y[i]*eta_y + A_y*( 0.5*L_y[i] - L_y[i]*eta_y )*( 1.0 - eta_y )*eta_y
                 grid[i][j][k][2] = z_0 + L_z*eta_z + A_z*( 0.5*L_z - L_z*eta_z )*( 1.0 - eta_z )*eta_z
@@ -431,22 +441,24 @@ domain_width = x_max - x_min
 
 # Queremos que la flecha más rápida mida el 4% (0.04) del ancho del dominio. 
 # Puedes ajustar este 0.04 (más grande = flechas más largas; más chico = flechas más cortas)
-desired_max_arrow_length = 0.015 * domain_width 
+desired_max_arrow_length = 0.05 * domain_width 
 
 # El scale correcto para 'scale_units=xy' es: velocidad_maxima / longitud_deseada
 dynamic_scale = max_vel / desired_max_arrow_length
 
 # 3. Generar el campo vectorial usando quiver en ax3
-surf3 = ax3.quiver(physical_plane[1:num_grid_x, 1:num_grid_y, 1, 0], 
-                   physical_plane[1:num_grid_x, 1:num_grid_y, 1, 1], 
-                   u_2d[1:num_grid_x, 1:num_grid_y], 
-                   v_2d[1:num_grid_x, 1:num_grid_y], 
-                   vel_mag[1:num_grid_x, 1:num_grid_y],
+
+surf3 = ax3.quiver(physical_plane[1:num_grid_x+1, 1:num_grid_y+1, 1, 0], 
+                   physical_plane[1:num_grid_x+1, 1:num_grid_y+1, 1, 1], 
+                   u_2d[1:num_grid_x+1, 1:num_grid_y+1], 
+                   v_2d[1:num_grid_x+1, 1:num_grid_y+1], 
+                   vel_mag[1:num_grid_x+1, 1:num_grid_y+1],
                    cmap='viridis', 
                    scale=dynamic_scale,  # Escala adaptada automáticamente a la Vmax
                    pivot='mid',          # Centra la flecha en el punto de la malla
                    angles='xy',          # Dirección física real alineada con los ejes
-                   scale_units='xy')     # Escala proporcional al plano físico
+                   scale_units='xy',
+                   linewidth=1.5)     # Escala proporcional al plano físico
 
 # Contorno negro original
 ax3.plot(contour_x[0:num_grid_x+1], contour_y[0:num_grid_x+1], linewidth=2.5, color='black')
@@ -458,23 +470,58 @@ ax3.set_ylim(0, None)
 ax3.set_xlabel('Axis distance [m]')
 ax3.set_ylabel('Radial distance [m]')
 
-# --- Bottom right corner - Plot (Pressure-Axis) ---
-ax4.plot(physical_plane[1:num_grid_x,1,1,0], P_2d[1:num_grid_x,1]/1.0e5, linewidth=1.5)
+# --- Gráfico en ax4 (Presión en el eje izquierdo) ---
+color_p = 'tab:blue'  # Puedes elegir el color que prefieras
+ax4.plot(physical_plane[1:num_grid_x, 1, 1, 0], P_2d[1:num_grid_x, 1] / 1.0e5, 
+         linewidth=1.5, color=color_p, label='Pressure')
+
 ax4.set_xlabel('Axis distance [m]')
-ax4.set_ylabel('Pressure [bar]')
+ax4.set_ylabel('Pressure [bar]', color=color_p)
 ax4.set_ylim(0, None)
+ax4.tick_params(axis='y', labelcolor=color_p)  # Colorea los números del eje Y izquierdo
 ax4.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.4f'))
+
+# --- Crear el eje gemelo para el Número de Mach (Eje derecho) ---
+ax4_Ma = ax4.twinx()
+
+color_ma = 'tab:orange'  # Color contrastante para Mach
+ax4_Ma.plot(physical_plane[1:num_grid_x, 1, 1, 0], Ma_2d[1:num_grid_x, 1], 
+            linewidth=1.5, color=color_ma, linestyle='--', label='Mach Number')
+
+ax4_Ma.set_ylabel('Mach Number [-]', color=color_ma)
+# Si quieres que el número de Mach también empiece en 0, descomenta la siguiente línea:
+# ax4_Ma.set_ylim(0, None) 
+ax4_Ma.tick_params(axis='y', labelcolor=color_ma)  # Colorea los números del eje Y derecho
+
+# --- Opcional: Combinar ambas leyendas en ax4 ---
+# Esto evita que tengas que usar plt.legend() y que las cajas se superpongan
+lines4, labels4 = ax4.get_legend_handles_labels()
+lines4_Ma, labels4_Ma = ax4_Ma.get_legend_handles_labels()
+ax4.legend(lines4 + lines4_Ma, labels4 + labels4_Ma, loc='upper right')
 
 # Show subplot
 plt.tight_layout()
 plt.show()
 
 png_filename = f'plot_iter_{output_iter}.png'
-svg_filename = f'plot_iter_{output_iter}.svg'
 
 # Save figure
 plt.savefig(png_filename, dpi=600, bbox_inches='tight')
-# plt.savefig(svg_filename, dpi=600, bbox_inches='tight')
 
 plt.close(fig)
+
+plt.plot(contour_x[0:num_grid_x+1], contour_y[0:num_grid_x+1], linewidth=2.5, color='black')
+plt.quiver(physical_plane[1:num_grid_x, 1:num_grid_y, 1, 0], 
+                   physical_plane[1:num_grid_x, 1:num_grid_y, 1, 1], 
+                   u_2d[1:num_grid_x, 1:num_grid_y], 
+                   v_2d[1:num_grid_x, 1:num_grid_y], 
+                   vel_mag[1:num_grid_x, 1:num_grid_y],
+                   cmap='viridis', 
+                   scale=dynamic_scale,  # Escala adaptada automáticamente a la Vmax
+                   pivot='mid',          # Centra la flecha en el punto de la malla
+                   angles='xy',          # Dirección física real alineada con los ejes
+                   scale_units='xy',
+                   linewidth=1.5)     # Escala proporcional al plano físico
+plt.colorbar()
+plt.show()
 
