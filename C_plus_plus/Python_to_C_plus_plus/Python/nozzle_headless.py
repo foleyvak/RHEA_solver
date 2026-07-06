@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use("Agg")
 ################################################################################################################
 #                                                                                                              #
 # RHEA - an open-source Reproducible Hybrid-architecture flow solver Engineered for Academia                   #
@@ -108,7 +110,7 @@ x_0           = 0.0                                     # Domain origin in x-dir
 y_0           = 0.0                                     # Domain origin in y-direction [m]
 z_0           = 0.0                                     # Domain origin in z-direction [m]
 L             = 1.0e-2					                    # Cavity size [m]
-L_x           = 4.00*L             	                    # Size of domain in x-direction
+L_x           = 5.00*L             	                    # Size of domain in x-direction
 L_y           = 1.00*L	  		                        # Size of domain in y-direction
 L_y_0         = 1.0*L # 0.2*L_y         	                    # Initial size of domain in y-direction (for time-varying geometries)
 L_y_f         = 0.5*L_y         	                    # Final size of domain in y-direction (for time-varying geometries)
@@ -149,7 +151,7 @@ L_x = x_t + L_N + L_c
 # L_N = 5.0
 # L_x = L_con + L_N
 #
-U_inlet       = 10.0		                    		# Inlet velocity [m/s]
+U_inlet       = 100		                    		# Inlet velocity [m/s]
 # rho_inlet     = 1.0					                    # Inlet density [kg/m^3]
 P_inlet       = 150.0e5                                   # Inlet pressure [Pa] 
 T_inlet       = 600.0                                     # Inlet temperature [K]
@@ -164,7 +166,7 @@ initial_time  = 0.0   			                        # Initial time [s]
 final_time    = 10.0      		                        # Final time [s]
 name_file_out = 'output_data'          	                # Name of output data [-]
 use_restart   = False        	               		    # Use restart [-]
-name_restart  = 'output_data_34000.csv'          	    # Name of restart data [-]
+name_restart  = 'output_data_64000.csv'          	    # Name of restart data [-]
 
 ### Thermodynamics & transport properties model
 thermodynamics = IdealGasModel(R_specific, gamma)
@@ -176,17 +178,18 @@ transport_coefficients = ConstantTransportCoefficients(mu_value, kappa_value)
 #transport_coefficients = CoolPropTransportCoefficients(substance)
 
 ### Computational parameters
-num_grid_x        = 128	                        # Number of internal grid points in the x-direction
-num_grid_y        = 128			                        # Number of internal grid points in the y-direction
+num_grid_x        = 32	                        # Number of internal grid points in the x-direction
+num_grid_y        = 32			                        # Number of internal grid points in the y-direction
 num_grid_z        = 1			                        # Number of internal grid points in the z-direction
 # Stretching factors: x = L*eta + A*( 0.5*L - L*eta )*( 1.0 - eta )*eta, with eta = ( l - 0.5 )/num_grid 
 # A < 0: stretching at ends; A = 0: uniform; A > 0: stretching at center
 A_x               = 0.0                             	# Stretching factor in x-direction
 A_y               = -1.0                                 # Stretching factor in y-direction
 A_z               = 0.0                                 # Stretching factor in z-direction
-CFL               = 0.001		                        # CFL coefficient
-max_num_time_iter = 1e6			                        # Maximum number of time iterations
-output_iter       = 2000		                        # Output data every given number of iterations
+CFL               = 0.1		                        # CFL coefficient
+import os as _os
+max_num_time_iter = int(_os.environ.get('RHEA_MAXIT','2'))			                        # Maximum number of time iterations
+output_iter       = 100		                        # Output data every given number of iterations
 transport_pressure_scheme = False	                    # Select transporting pressure instead of total energy
 artificial_compressibility_method = False               # Activate artificial compressibility method
 epsilon_acm       = 0.01 		                        # Relative error of artificial compressibility method ... it has to be small
@@ -224,19 +227,8 @@ det_Jacobian = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2]) # Jaco
 xi   = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_sptl_dim]) # Computational coordinates xi
 eta  = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_sptl_dim]) # Computational coordinates eta
 zeta = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_sptl_dim]) # Computational coordinates zeta
-# module_grad_xi   = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2]) # Module of gradient in xi direction
-# module_grad_eta  = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2]) # Module of gradient in eta direction
-# module_grad_zeta = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2]) # Module of gradient in zeta direction
-n_xi    = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_sptl_dim]) # Normal vector in xi direction
-n_eta   = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_sptl_dim]) # Normal vector in eta direction
-n_zeta  = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_sptl_dim]) # Normal vector in zeta direction
-t1_xi   = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_sptl_dim]) # Tangential vector in xi direction
-t2_xi   = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_sptl_dim]) # Tangential vector in xi direction
-t1_eta  = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_sptl_dim]) # Tangential vector in eta direction
-t2_eta  = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_sptl_dim]) # Tangential vector in eta direction
-t1_zeta = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_sptl_dim]) # Tangential vector in zeta direction
-t2_zeta = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, num_sptl_dim]) # Tangential vector in zeta direction
-
+facemetrics = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, 2*num_sptl_dim, num_sptl_dim, num_sptl_dim])
+face_J = np.zeros([num_grid_x + 2, num_grid_y + 2, num_grid_z + 2, 2*num_sptl_dim])
 ### Primitive, conserved and thermodynamic variables ... two positions added for boundary points
 rho_field  = np.zeros( [ num_grid_x + 2, num_grid_y + 2, num_grid_z + 2 ] )                     # 3-D field of rho
 u_field    = np.zeros( [ num_grid_x + 2, num_grid_y + 2, num_grid_z + 2 ] )                     # 3-D field of u
@@ -472,7 +464,7 @@ def update_boundaries( rho, rhou, rhov, rhow, rhoE, u, v, w, P, T, sos, grid ):
     # Ma_exit = 2.0             # Uncomment to activate supersonic outflow only
     # Ma_exit = 0.1             # Uncomment to activate subsonic outflow only
    
-    if Ma_exit < 1.2: 
+    if Ma_exit < 1.2:       # Threshole 1.2 to leave breathing room for proper resolution of the flow field
         for j in range( 1, num_grid_y + 1 ):    
             for k in range( 1, num_grid_z + 1 ):
                 wg_g  = 1.0 - ( grid[i][j][k][0] - ( x_0 + L_x ) )/( grid[i][j][k][0] - grid[i-1][j][k][0] )
@@ -954,14 +946,17 @@ def spatial_discretization( grid , drc_dx):
                 # Ramp
                 # L_y[i] = L_y_0 + (L_y_f-L_y_0)/L_x*grid[i][j][k][0] # Example geometry -- a linearly expanding duct
                 
-                # Hyperbolic tangent
-                # 1. Extract the current X coordinate for readability
-                x_coord = grid[i][j][k][0]
-                # 2. Define a scaling/sharpness parameter (s)
-                # s = 3.0 is a good default where the transition finishes right at the boundaries.
-                s = 3.5 
-                # 3. The tanh geometry transformation
-                # L_y[i] = L_y_0 + (L_y_f - L_y_0) * 0.5 * (1.0 + np.tanh(s * (2.0 * x_coord / L_x - 1.0)))
+                # # Hyperbolic tangent
+                # # 1. Extract the current X coordinate for readability
+                # x_coord = grid[i][j][k][0]
+                # # 2. Define a scaling/sharpness parameter (s)
+                # # s = 3.0 is a good default where the transition finishes right at the boundaries.
+                # s = 3.5 
+                # # 3. The tanh geometry transformation
+                # if x_coord < 1.5*L:
+                #     L_y[i] = L_y_0
+                # else:
+                #     L_y[i] = L_y_0 + (L_y_f - L_y_0) * 0.5 * (1.0 + np.tanh(s * (2.0 * (x_coord - 1.5*L) / (L_x - 1.5*L) - 1.0)))
 
                 # Convergent-Divergent nozzle
                 # Clean variable for the current x-coordinate
@@ -1032,7 +1027,7 @@ def spatial_discretization( grid , drc_dx):
     ax2.set_title('Computational Grid')
     ax2.set_xlabel('xi')
     ax2.set_ylabel('eta')
-    plt.show()
+    plt.savefig('nozzle_grid.png', dpi=110); plt.close('all')
     # exit()
     # ################################################
     # #print( grid )
@@ -1101,11 +1096,186 @@ def spatial_discretization( grid , drc_dx):
 
                 det_Jacobian[i][j][k] = xi[i][j][k][0]*( eta[i][j][k][1]*zeta[i][j][k][2] - eta[i][j][k][2]*zeta[i][j][k][1] ) - xi[i][j][k][1]*( eta[i][j][k][0]*zeta[i][j][k][2] - eta[i][j][k][2]*zeta[i][j][k][0] ) + xi[i][j][k][2]*( eta[i][j][k][0]*zeta[i][j][k][1] - eta[i][j][k][1]*zeta[i][j][k][0] )
 
-                module_grad_xi   = np.sqrt(   xi[i][j][k][0]*  xi[i][j][k][0] +   xi[i][j][k][1]*  xi[i][j][k][1] +   xi[i][j][k][2]*  xi[i][j][k][2] )
-                module_grad_eta  = np.sqrt(  eta[i][j][k][0]* eta[i][j][k][0] +  eta[i][j][k][1]* eta[i][j][k][1] +  eta[i][j][k][2]* eta[i][j][k][2] )
-                module_grad_zeta = np.sqrt( zeta[i][j][k][0]*zeta[i][j][k][0] + zeta[i][j][k][1]*zeta[i][j][k][1] + zeta[i][j][k][2]*zeta[i][j][k][2] )
-
                 # print(det_Jacobian[i][j][k])
+
+    xi_x_avg_p      = np.zeros(num_sptl_dim); x_xi_avg_p   = np.zeros(num_sptl_dim)
+    xi_y_avg_p      = np.zeros(num_sptl_dim); x_eta_avg_p  = np.zeros(num_sptl_dim)
+    xi_z_avg_p      = np.zeros(num_sptl_dim); x_zeta_avg_p = np.zeros(num_sptl_dim)
+    eta_x_avg_p     = np.zeros(num_sptl_dim); y_xi_avg_p   = np.zeros(num_sptl_dim)
+    eta_y_avg_p     = np.zeros(num_sptl_dim); y_eta_avg_p  = np.zeros(num_sptl_dim)
+    eta_z_avg_p     = np.zeros(num_sptl_dim); y_zeta_avg_p = np.zeros(num_sptl_dim)
+    zeta_x_avg_p    = np.zeros(num_sptl_dim); z_xi_avg_p   = np.zeros(num_sptl_dim)
+    zeta_y_avg_p    = np.zeros(num_sptl_dim); z_eta_avg_p  = np.zeros(num_sptl_dim)
+    zeta_z_avg_p    = np.zeros(num_sptl_dim); z_zeta_avg_p = np.zeros(num_sptl_dim)
+    xi_x_avg_m      = np.zeros(num_sptl_dim); x_xi_avg_m   = np.zeros(num_sptl_dim)
+    xi_y_avg_m      = np.zeros(num_sptl_dim); x_eta_avg_m  = np.zeros(num_sptl_dim)
+    xi_z_avg_m      = np.zeros(num_sptl_dim); x_zeta_avg_m = np.zeros(num_sptl_dim)
+    eta_x_avg_m     = np.zeros(num_sptl_dim); y_xi_avg_m   = np.zeros(num_sptl_dim)
+    eta_y_avg_m     = np.zeros(num_sptl_dim); y_eta_avg_m  = np.zeros(num_sptl_dim)
+    eta_z_avg_m     = np.zeros(num_sptl_dim); y_zeta_avg_m = np.zeros(num_sptl_dim)
+    zeta_x_avg_m    = np.zeros(num_sptl_dim); z_xi_avg_m   = np.zeros(num_sptl_dim)
+    zeta_y_avg_m    = np.zeros(num_sptl_dim); z_eta_avg_m  = np.zeros(num_sptl_dim)
+    zeta_z_avg_m    = np.zeros(num_sptl_dim); z_zeta_avg_m = np.zeros(num_sptl_dim)
+
+    for i in range(1, num_grid_x+1):
+        for j in range(1, num_grid_y+1):
+            for k in range(1, num_grid_z+1):
+                # xi-face
+                x_xi_avg_p[0] = (physical_grid[i+1][j][k][0] - physical_grid[i][j][k][0])/(grid[i+1][j][k][0] - grid[i][j][k][0])
+                x_xi_avg_p[1] = 0.5 * ( (physical_grid[i+1][j+1][k][0] - physical_grid[i+1][j-1][k][0])/(grid[i+1][j+1][k][1] - grid[i+1][j-1][k][1]) + (physical_grid[i][j+1][k][0] - physical_grid[i][j-1][k][0])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]))
+                x_xi_avg_p[2] = 0.5 * ( (physical_grid[i+1][j][k+1][0] - physical_grid[i+1][j][k-1][0])/(grid[i+1][j][k+1][2] - grid[i+1][j][k-1][2]) + (physical_grid[i][j][k+1][0] - physical_grid[i][j][k-1][0])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]))
+                x_xi_avg_m[0] = (physical_grid[i][j][k][0] - physical_grid[i-1][j][k][0])/(grid[i][j][k][0] - grid[i-1][j][k][0])
+                x_xi_avg_m[1] = 0.5 * ( (physical_grid[i][j+1][k][0] - physical_grid[i][j-1][k][0])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (physical_grid[i-1][j+1][k][0] - physical_grid[i-1][j-1][k][0])/(grid[i-1][j+1][k][1] - grid[i-1][j-1][k][1]))
+                x_xi_avg_m[2] = 0.5 * ( (physical_grid[i][j][k+1][0] - physical_grid[i][j][k-1][0])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (physical_grid[i-1][j][k+1][0] - physical_grid[i-1][j][k-1][0])/(grid[i-1][j][k+1][2] - grid[i-1][j][k-1][2]))
+                
+                y_xi_avg_p[0] = (physical_grid[i+1][j][k][1] - physical_grid[i][j][k][1])/(grid[i+1][j][k][0] - grid[i][j][k][0])
+                y_xi_avg_p[1] = 0.5 * ( (physical_grid[i+1][j+1][k][1] - physical_grid[i+1][j-1][k][1])/(grid[i+1][j+1][k][1] - grid[i+1][j-1][k][1]) + (physical_grid[i][j+1][k][1] - physical_grid[i][j-1][k][1])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]))
+                y_xi_avg_p[2] = 0.5 * ( (physical_grid[i+1][j][k+1][1] - physical_grid[i+1][j][k-1][1])/(grid[i+1][j][k+1][2] - grid[i+1][j][k-1][2]) + (physical_grid[i][j][k+1][1] - physical_grid[i][j][k-1][1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]))
+                y_xi_avg_m[0] = (physical_grid[i][j][k][1] - physical_grid[i-1][j][k][1])/(grid[i][j][k][0] - grid[i-1][j][k][0])
+                y_xi_avg_m[1] = 0.5 * ( (physical_grid[i][j+1][k][1] - physical_grid[i][j-1][k][1])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (physical_grid[i-1][j+1][k][1] - physical_grid[i-1][j-1][k][1])/(grid[i-1][j+1][k][1] - grid[i-1][j-1][k][1]))
+                y_xi_avg_m[2] = 0.5 * ( (physical_grid[i][j][k+1][1] - physical_grid[i][j][k-1][1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (physical_grid[i-1][j][k+1][1] - physical_grid[i-1][j][k-1][1])/(grid[i-1][j][k+1][2] - grid[i-1][j][k-1][2]))
+
+                z_xi_avg_p[0] = (physical_grid[i+1][j][k][2] - physical_grid[i][j][k][2])/(grid[i+1][j][k][0] - grid[i][j][k][0])
+                z_xi_avg_p[1] = 0.5 * ( (physical_grid[i+1][j+1][k][2] - physical_grid[i+1][j-1][k][2])/(grid[i+1][j+1][k][1] - grid[i+1][j-1][k][1]) + (physical_grid[i][j+1][k][2] - physical_grid[i][j-1][k][2])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]))
+                z_xi_avg_p[2] = 0.5 * ( (physical_grid[i+1][j][k+1][2] - physical_grid[i+1][j][k-1][2])/(grid[i+1][j][k+1][2] - grid[i+1][j][k-1][2]) + (physical_grid[i][j][k+1][2] - physical_grid[i][j][k-1][2])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]))
+                z_xi_avg_m[0] = (physical_grid[i][j][k][2] - physical_grid[i-1][j][k][2])/(grid[i][j][k][0] - grid[i-1][j][k][0])
+                z_xi_avg_m[1] = 0.5 * ( (physical_grid[i][j+1][k][2] - physical_grid[i][j-1][k][2])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (physical_grid[i-1][j+1][k][2] - physical_grid[i-1][j-1][k][2])/(grid[i-1][j+1][k][1] - grid[i-1][j-1][k][1]))
+                z_xi_avg_m[2] = 0.5 * ( (physical_grid[i][j][k+1][2] - physical_grid[i][j][k-1][2])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (physical_grid[i-1][j][k+1][2] - physical_grid[i-1][j][k-1][2])/(grid[i-1][j][k+1][2] - grid[i-1][j][k-1][2]))
+
+                J_x_p = x_xi_avg_p[0]*y_xi_avg_p[1]*z_xi_avg_p[2] + x_xi_avg_p[1]*y_xi_avg_p[2]*z_xi_avg_p[0] + x_xi_avg_p[2]*y_xi_avg_p[0]*z_xi_avg_p[1] - x_xi_avg_p[2]*y_xi_avg_p[1]*z_xi_avg_p[0] - x_xi_avg_p[1]*y_xi_avg_p[0]*z_xi_avg_p[2] - x_xi_avg_p[0]*y_xi_avg_p[2]*z_xi_avg_p[1] # Calculate Jacobian of coordinate transformation to computational space (xi, eta, zeta)
+                J_x_m = x_xi_avg_m[0]*y_xi_avg_m[1]*z_xi_avg_m[2] + x_xi_avg_m[1]*y_xi_avg_m[2]*z_xi_avg_m[0] + x_xi_avg_m[2]*y_xi_avg_m[0]*z_xi_avg_m[1] - x_xi_avg_m[2]*y_xi_avg_m[1]*z_xi_avg_m[0] - x_xi_avg_m[1]*y_xi_avg_m[0]*z_xi_avg_m[2] - x_xi_avg_m[0]*y_xi_avg_m[2]*z_xi_avg_m[1] # Calculate Jacobian of coordinate transformation to computational space (xi, eta, zeta)
+
+                xi_x_avg_p[0]   = (y_xi_avg_p[1]*z_xi_avg_p[2] - y_xi_avg_p[2]*z_xi_avg_p[1]) / J_x_p # Gradient of xi in x direction
+                xi_x_avg_p[1]   = (x_xi_avg_p[2]*z_xi_avg_p[1] - x_xi_avg_p[1]*z_xi_avg_p[2]) / J_x_p # Gradient of xi in y direction
+                xi_x_avg_p[2]   = (x_xi_avg_p[1]*y_xi_avg_p[2] - x_xi_avg_p[2]*y_xi_avg_p[1]) / J_x_p # Gradient of xi in z direction
+                eta_x_avg_p[0]  = (y_xi_avg_p[2]*z_xi_avg_p[0] - y_xi_avg_p[0]*z_xi_avg_p[2]) / J_x_p # Gradient of eta in x direction
+                eta_x_avg_p[1]  = (x_xi_avg_p[0]*z_xi_avg_p[2] - x_xi_avg_p[2]*z_xi_avg_p[0]) / J_x_p # Gradient of eta in y direction
+                eta_x_avg_p[2]  = (x_xi_avg_p[2]*y_xi_avg_p[0] - x_xi_avg_p[0]*y_xi_avg_p[2]) / J_x_p # Gradient of eta in z direction
+                zeta_x_avg_p[0] = (y_xi_avg_p[0]*z_xi_avg_p[1] - y_xi_avg_p[1]*z_xi_avg_p[0]) / J_x_p # Gradient of zeta in x direction
+                zeta_x_avg_p[1] = (x_xi_avg_p[1]*z_xi_avg_p[0] - x_xi_avg_p[0]*z_xi_avg_p[1]) / J_x_p # Gradient of zeta in y direction
+                zeta_x_avg_p[2] = (x_xi_avg_p[0]*y_xi_avg_p[1] - x_xi_avg_p[1]*y_xi_avg_p[0]) / J_x_p # Gradient of zeta in z direction
+
+                xi_x_avg_m[0]   = (y_xi_avg_m[1]*z_xi_avg_m[2] - y_xi_avg_m[2]*z_xi_avg_m[1]) / J_x_m # Gradient of xi in x direction
+                xi_x_avg_m[1]   = (x_xi_avg_m[2]*z_xi_avg_m[1] - x_xi_avg_m[1]*z_xi_avg_m[2]) / J_x_m # Gradient of xi in y direction
+                xi_x_avg_m[2]   = (x_xi_avg_m[1]*y_xi_avg_m[2] - x_xi_avg_m[2]*y_xi_avg_m[1]) / J_x_m # Gradient of xi in z direction
+                eta_x_avg_m[0]  = (y_xi_avg_m[2]*z_xi_avg_m[0] - y_xi_avg_m[0]*z_xi_avg_m[2]) / J_x_m # Gradient of eta in x direction
+                eta_x_avg_m[1]  = (x_xi_avg_m[0]*z_xi_avg_m[2] - x_xi_avg_m[2]*z_xi_avg_m[0]) / J_x_m # Gradient of eta in y direction
+                eta_x_avg_m[2]  = (x_xi_avg_m[2]*y_xi_avg_m[0] - x_xi_avg_m[0]*y_xi_avg_m[2]) / J_x_m # Gradient of eta in z direction
+                zeta_x_avg_m[0] = (y_xi_avg_m[0]*z_xi_avg_m[1] - y_xi_avg_m[1]*z_xi_avg_m[0]) / J_x_m # Gradient of zeta in x direction
+                zeta_x_avg_m[1] = (x_xi_avg_m[1]*z_xi_avg_m[0] - x_xi_avg_m[0]*z_xi_avg_m[1]) / J_x_m # Gradient of zeta in y direction
+                zeta_x_avg_m[2] = (x_xi_avg_m[0]*y_xi_avg_m[1] - x_xi_avg_m[1]*y_xi_avg_m[0]) / J_x_m # Gradient of zeta in z direction
+
+                J_xi_p = xi_x_avg_p[0]*( eta_x_avg_p[1]*zeta_x_avg_p[2] - eta_x_avg_p[2]*zeta_x_avg_p[1] ) - xi_x_avg_p[1]*( eta_x_avg_p[0]*zeta_x_avg_p[2] - eta_x_avg_p[2]*zeta_x_avg_p[0] ) + xi_x_avg_p[2]*( eta_x_avg_p[0]*zeta_x_avg_p[1] - eta_x_avg_p[1]*zeta_x_avg_p[0] )
+                J_xi_m = xi_x_avg_m[0]*( eta_x_avg_m[1]*zeta_x_avg_m[2] - eta_x_avg_m[2]*zeta_x_avg_m[1] ) - xi_x_avg_m[1]*( eta_x_avg_m[0]*zeta_x_avg_m[2] - eta_x_avg_m[2]*zeta_x_avg_m[0] ) + xi_x_avg_m[2]*( eta_x_avg_m[0]*zeta_x_avg_m[1] - eta_x_avg_m[1]*zeta_x_avg_m[0] )
+
+                # eta-face
+                x_eta_avg_p[0] = 0.5 * ( (physical_grid[i+1][j+1][k][0] - physical_grid[i-1][j+1][k][0])/(grid[i+1][j+1][k][0] - grid[i-1][j+1][k][0]) + (physical_grid[i+1][j][k][0] - physical_grid[i-1][j][k][0])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) )
+                x_eta_avg_p[1] = (physical_grid[i][j+1][k][0] - physical_grid[i][j][k][0])/(grid[i][j+1][k][1] - grid[i][j][k][1])
+                x_eta_avg_p[2] = 0.5 * ( (physical_grid[i][j+1][k+1][0] - physical_grid[i][j+1][k-1][0])/(grid[i][j+1][k+1][2] - grid[i][j+1][k-1][2]) + (physical_grid[i][j][k+1][0] - physical_grid[i][j][k-1][0])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) )
+                x_eta_avg_m[0] = 0.5 * ( (physical_grid[i+1][j][k][0] - physical_grid[i-1][j][k][0])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (physical_grid[i+1][j-1][k][0] - physical_grid[i-1][j-1][k][0])/(grid[i+1][j-1][k][0] - grid[i-1][j-1][k][0]) )
+                x_eta_avg_m[1] = (physical_grid[i][j][k][0] - physical_grid[i][j-1][k][0])/(grid[i][j][k][1] - grid[i][j-1][k][1])
+                x_eta_avg_m[2] = 0.5 * ( (physical_grid[i][j][k+1][0] - physical_grid[i][j][k-1][0])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (physical_grid[i][j-1][k+1][0] - physical_grid[i][j-1][k-1][0])/(grid[i][j-1][k+1][2] - grid[i][j-1][k-1][2]) )
+
+                y_eta_avg_p[0] = 0.5 * ( (physical_grid[i+1][j+1][k][1] - physical_grid[i-1][j+1][k][1])/(grid[i+1][j+1][k][0] - grid[i-1][j+1][k][0]) + (physical_grid[i+1][j][k][1] - physical_grid[i-1][j][k][1])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) )
+                y_eta_avg_p[1] = (physical_grid[i][j+1][k][1] - physical_grid[i][j][k][1])/(grid[i][j+1][k][1] - grid[i][j][k][1])
+                y_eta_avg_p[2] = 0.5 * ( (physical_grid[i][j+1][k+1][1] - physical_grid[i][j+1][k-1][1])/(grid[i][j+1][k+1][2] - grid[i][j+1][k-1][2]) + (physical_grid[i][j][k+1][1] - physical_grid[i][j][k-1][1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) )
+                y_eta_avg_m[0] = 0.5 * ( (physical_grid[i+1][j][k][1] - physical_grid[i-1][j][k][1])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (physical_grid[i+1][j-1][k][1] - physical_grid[i-1][j-1][k][1])/(grid[i+1][j-1][k][0] - grid[i-1][j-1][k][0]) )
+                y_eta_avg_m[1] = (physical_grid[i][j][k][1] - physical_grid[i][j-1][k][1])/(grid[i][j][k][1] - grid[i][j-1][k][1])
+                y_eta_avg_m[2] = 0.5 * ( (physical_grid[i][j][k+1][1] - physical_grid[i][j][k-1][1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (physical_grid[i][j-1][k+1][1] - physical_grid[i][j-1][k-1][1])/(grid[i][j-1][k+1][2] - grid[i][j-1][k-1][2]) )
+
+                z_eta_avg_p[0] = 0.5 * ( (physical_grid[i+1][j+1][k][2] - physical_grid[i-1][j+1][k][2])/(grid[i+1][j+1][k][0] - grid[i-1][j+1][k][0]) + (physical_grid[i+1][j][k][2] - physical_grid[i-1][j][k][2])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) )
+                z_eta_avg_p[1] = (physical_grid[i][j+1][k][2] - physical_grid[i][j][k][2])/(grid[i][j+1][k][1] - grid[i][j][k][1])
+                z_eta_avg_p[2] = 0.5 * ( (physical_grid[i][j+1][k+1][2] - physical_grid[i][j+1][k-1][2])/(grid[i][j+1][k+1][2] - grid[i][j+1][k-1][2]) + (physical_grid[i][j][k+1][2] - physical_grid[i][j][k-1][2])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) )
+                z_eta_avg_m[0] = 0.5 * ( (physical_grid[i+1][j][k][2] - physical_grid[i-1][j][k][2])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (physical_grid[i+1][j-1][k][2] - physical_grid[i-1][j-1][k][2])/(grid[i+1][j-1][k][0] - grid[i-1][j-1][k][0]) )
+                z_eta_avg_m[1] = (physical_grid[i][j][k][2] - physical_grid[i][j-1][k][2])/(grid[i][j][k][1] - grid[i][j-1][k][1])
+                z_eta_avg_m[2] = 0.5 * ( (physical_grid[i][j][k+1][2] - physical_grid[i][j][k-1][2])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (physical_grid[i][j-1][k+1][2] - physical_grid[i][j-1][k-1][2])/(grid[i][j-1][k+1][2] - grid[i][j-1][k-1][2]) )
+
+                J_y_p = x_eta_avg_p[0]*y_eta_avg_p[1]*z_eta_avg_p[2] + x_eta_avg_p[1]*y_eta_avg_p[2]*z_eta_avg_p[0] + x_eta_avg_p[2]*y_eta_avg_p[0]*z_eta_avg_p[1] - x_eta_avg_p[2]*y_eta_avg_p[1]*z_eta_avg_p[0] - x_eta_avg_p[1]*y_eta_avg_p[0]*z_eta_avg_p[2] - x_eta_avg_p[0]*y_eta_avg_p[2]*z_eta_avg_p[1] # Calculate Jacobian of coordinate transformation to computational space (xi, eta, zeta)
+                J_y_m = x_eta_avg_m[0]*y_eta_avg_m[1]*z_eta_avg_m[2] + x_eta_avg_m[1]*y_eta_avg_m[2]*z_eta_avg_m[0] + x_eta_avg_m[2]*y_eta_avg_m[0]*z_eta_avg_m[1] - x_eta_avg_m[2]*y_eta_avg_m[1]*z_eta_avg_m[0] - x_eta_avg_m[1]*y_eta_avg_m[0]*z_eta_avg_m[2] - x_eta_avg_m[0]*y_eta_avg_m[2]*z_eta_avg_m[1] # Calculate Jacobian of coordinate transformation to computational space (xi, eta, zeta)
+
+                xi_y_avg_p[0]   = (y_eta_avg_p[1]*z_eta_avg_p[2] - y_eta_avg_p[2]*z_eta_avg_p[1]) / J_y_p # Gradient of xi in x direction
+                xi_y_avg_p[1]   = (x_eta_avg_p[2]*z_eta_avg_p[1] - x_eta_avg_p[1]*z_eta_avg_p[2]) / J_y_p # Gradient of xi in y direction
+                xi_y_avg_p[2]   = (x_eta_avg_p[1]*y_eta_avg_p[2] - x_eta_avg_p[2]*y_eta_avg_p[1]) / J_y_p # Gradient of xi in z direction
+                eta_y_avg_p[0]  = (y_eta_avg_p[2]*z_eta_avg_p[0] - y_eta_avg_p[0]*z_eta_avg_p[2]) / J_y_p # Gradient of eta in x direction
+                eta_y_avg_p[1]  = (x_eta_avg_p[0]*z_eta_avg_p[2] - x_eta_avg_p[2]*z_eta_avg_p[0]) / J_y_p # Gradient of eta in y direction
+                eta_y_avg_p[2]  = (x_eta_avg_p[2]*y_eta_avg_p[0] - x_eta_avg_p[0]*y_eta_avg_p[2]) / J_y_p # Gradient of eta in z direction
+                zeta_y_avg_p[0] = (y_eta_avg_p[0]*z_eta_avg_p[1] - y_eta_avg_p[1]*z_eta_avg_p[0]) / J_y_p # Gradient of zeta in x direction
+                zeta_y_avg_p[1] = (x_eta_avg_p[1]*z_eta_avg_p[0] - x_eta_avg_p[0]*z_eta_avg_p[1]) / J_y_p # Gradient of zeta in y direction
+                zeta_y_avg_p[2] = (x_eta_avg_p[0]*y_eta_avg_p[1] - x_eta_avg_p[1]*y_eta_avg_p[0]) / J_y_p # Gradient of zeta in z direction
+
+                xi_y_avg_m[0]   = (y_eta_avg_m[1]*z_eta_avg_m[2] - y_eta_avg_m[2]*z_eta_avg_m[1]) / J_y_m # Gradient of xi in x direction
+                xi_y_avg_m[1]   = (x_eta_avg_m[2]*z_eta_avg_m[1] - x_eta_avg_m[1]*z_eta_avg_m[2]) / J_y_m # Gradient of xi in y direction
+                xi_y_avg_m[2]   = (x_eta_avg_m[1]*y_eta_avg_m[2] - x_eta_avg_m[2]*y_eta_avg_m[1]) / J_y_m # Gradient of xi in z direction
+                eta_y_avg_m[0]  = (y_eta_avg_m[2]*z_eta_avg_m[0] - y_eta_avg_m[0]*z_eta_avg_m[2]) / J_y_m # Gradient of eta in x direction
+                eta_y_avg_m[1]  = (x_eta_avg_m[0]*z_eta_avg_m[2] - x_eta_avg_m[2]*z_eta_avg_m[0]) / J_y_m # Gradient of eta in y direction
+                eta_y_avg_m[2]  = (x_eta_avg_m[2]*y_eta_avg_m[0] - x_eta_avg_m[0]*y_eta_avg_m[2]) / J_y_m # Gradient of eta in z direction
+                zeta_y_avg_m[0] = (y_eta_avg_m[0]*z_eta_avg_m[1] - y_eta_avg_m[1]*z_eta_avg_m[0]) / J_y_m # Gradient of zeta in x direction
+                zeta_y_avg_m[1] = (x_eta_avg_m[1]*z_eta_avg_m[0] - x_eta_avg_m[0]*z_eta_avg_m[1]) / J_y_m # Gradient of zeta in y direction
+                zeta_y_avg_m[2] = (x_eta_avg_m[0]*y_eta_avg_m[1] - x_eta_avg_m[1]*y_eta_avg_m[0]) / J_y_m # Gradient of zeta in z direction
+
+                J_eta_p = xi_y_avg_p[0]*( eta_y_avg_p[1]*zeta_y_avg_p[2] - eta_y_avg_p[2]*zeta_y_avg_p[1] ) - xi_y_avg_p[1]*( eta_y_avg_p[0]*zeta_y_avg_p[2] - eta_y_avg_p[2]*zeta_y_avg_p[0] ) + xi_y_avg_p[2]*( eta_y_avg_p[0]*zeta_y_avg_p[1] - eta_y_avg_p[1]*zeta_y_avg_p[0] )
+                J_eta_m = xi_y_avg_m[0]*( eta_y_avg_m[1]*zeta_y_avg_m[2] - eta_y_avg_m[2]*zeta_y_avg_m[1] ) - xi_y_avg_m[1]*( eta_y_avg_m[0]*zeta_y_avg_m[2] - eta_y_avg_m[2]*zeta_y_avg_m[0] ) + xi_y_avg_m[2]*( eta_y_avg_m[0]*zeta_y_avg_m[1] - eta_y_avg_m[1]*zeta_y_avg_m[0] )
+
+                # zeta-face
+                x_zeta_avg_p[0] = 0.5 * ( (physical_grid[i+1][j][k+1][0] - physical_grid[i-1][j][k+1][0])/(grid[i+1][j][k+1][0] - grid[i-1][j][k+1][0]) + (physical_grid[i+1][j][k][0] - physical_grid[i-1][j][k][0])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) )
+                x_zeta_avg_p[1] = 0.5 * ( (physical_grid[i][j+1][k+1][0] - physical_grid[i][j-1][k+1][0])/(grid[i][j+1][k+1][1] - grid[i][j-1][k+1][1]) + (physical_grid[i][j+1][k][0] - physical_grid[i][j-1][k][0])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) )
+                x_zeta_avg_p[2] = (physical_grid[i][j][k+1][0] - physical_grid[i][j][k][0])/(grid[i][j][k+1][2] - grid[i][j][k][2])
+                x_zeta_avg_m[0] = 0.5 * ( (physical_grid[i+1][j][k][0] - physical_grid[i-1][j][k][0])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (physical_grid[i+1][j][k-1][0] - physical_grid[i-1][j][k-1][0])/(grid[i+1][j][k-1][0] - grid[i-1][j][k-1][0]) )
+                x_zeta_avg_m[1] = 0.5 * ( (physical_grid[i][j+1][k][0] - physical_grid[i][j-1][k][0])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (physical_grid[i][j+1][k-1][0] - physical_grid[i][j-1][k-1][0])/(grid[i][j+1][k-1][1] - grid[i][j-1][k-1][1]) )
+                x_zeta_avg_m[2] = (physical_grid[i][j][k][0] - physical_grid[i][j][k-1][0])/(grid[i][j][k][2] - grid[i][j][k-1][2])
+
+                y_zeta_avg_p[0] = 0.5 * ( (physical_grid[i+1][j][k+1][1] - physical_grid[i-1][j][k+1][1])/(grid[i+1][j][k+1][0] - grid[i-1][j][k+1][0]) + (physical_grid[i+1][j][k][1] - physical_grid[i-1][j][k][1])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) )
+                y_zeta_avg_p[1] = 0.5 * ( (physical_grid[i][j+1][k+1][1] - physical_grid[i][j-1][k+1][1])/(grid[i][j+1][k+1][1] - grid[i][j-1][k+1][1]) + (physical_grid[i][j+1][k][1] - physical_grid[i][j-1][k][1])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) )
+                y_zeta_avg_p[2] = (physical_grid[i][j][k+1][1] - physical_grid[i][j][k][1])/(grid[i][j][k+1][2] - grid[i][j][k][2])
+                y_zeta_avg_m[0] = 0.5 * ( (physical_grid[i+1][j][k][1] - physical_grid[i-1][j][k][1])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (physical_grid[i+1][j][k-1][1] - physical_grid[i-1][j][k-1][1])/(grid[i+1][j][k-1][0] - grid[i-1][j][k-1][0]) )
+                y_zeta_avg_m[1] = 0.5 * ( (physical_grid[i][j+1][k][1] - physical_grid[i][j-1][k][1])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (physical_grid[i][j+1][k-1][1] - physical_grid[i][j-1][k-1][1])/(grid[i][j+1][k-1][1] - grid[i][j-1][k-1][1]) )
+                y_zeta_avg_m[2] = (physical_grid[i][j][k][0] - physical_grid[i][j][k-1][0])/(grid[i][j][k][2] - grid[i][j][k-1][2])
+
+                z_zeta_avg_p[0] = 0.5 * ( (physical_grid[i+1][j][k+1][2] - physical_grid[i-1][j][k+1][2])/(grid[i+1][j][k+1][0] - grid[i-1][j][k+1][0]) + (physical_grid[i+1][j][k][2] - physical_grid[i-1][j][k][2])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) )
+                z_zeta_avg_p[1] = 0.5 * ( (physical_grid[i][j+1][k+1][2] - physical_grid[i][j-1][k+1][2])/(grid[i][j+1][k+1][1] - grid[i][j-1][k+1][1]) + (physical_grid[i][j+1][k][2] - physical_grid[i][j-1][k][2])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) )
+                z_zeta_avg_p[2] = (physical_grid[i][j][k+1][2] - physical_grid[i][j][k][2])/(grid[i][j][k+1][2] - grid[i][j][k][2])
+                z_zeta_avg_m[0] = 0.5 * ( (physical_grid[i+1][j][k][2] - physical_grid[i-1][j][k][2])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (physical_grid[i+1][j][k-1][2] - physical_grid[i-1][j][k-1][2])/(grid[i+1][j][k-1][0] - grid[i-1][j][k-1][0]) )
+                z_zeta_avg_m[1] = 0.5 * ( (physical_grid[i][j+1][k][2] - physical_grid[i][j-1][k][2])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (physical_grid[i][j+1][k-1][2] - physical_grid[i][j-1][k-1][2])/(grid[i][j+1][k-1][1] - grid[i][j-1][k-1][1]) )
+                z_zeta_avg_m[2] = (physical_grid[i][j][k][2] - physical_grid[i][j][k-1][2])/(grid[i][j][k][2] - grid[i][j][k-1][2])
+
+                J_z_p = x_zeta_avg_p[0]*y_zeta_avg_p[1]*z_zeta_avg_p[2] + x_zeta_avg_p[1]*y_zeta_avg_p[2]*z_zeta_avg_p[0] + x_zeta_avg_p[2]*y_zeta_avg_p[0]*z_zeta_avg_p[1] - x_zeta_avg_p[2]*y_zeta_avg_p[1]*z_zeta_avg_p[0] - x_zeta_avg_p[1]*y_zeta_avg_p[0]*z_zeta_avg_p[2] - x_zeta_avg_p[0]*y_zeta_avg_p[2]*z_zeta_avg_p[1] # Calculate Jacobian of coordinate transformation to computational space (xi, eta, zeta)
+                J_z_m = x_zeta_avg_m[0]*y_zeta_avg_m[1]*z_zeta_avg_m[2] + x_zeta_avg_m[1]*y_zeta_avg_m[2]*z_zeta_avg_m[0] + x_zeta_avg_m[2]*y_zeta_avg_m[0]*z_zeta_avg_m[1] - x_zeta_avg_m[2]*y_zeta_avg_m[1]*z_zeta_avg_m[0] - x_zeta_avg_m[1]*y_zeta_avg_m[0]*z_zeta_avg_m[2] - x_zeta_avg_m[0]*y_zeta_avg_m[2]*z_zeta_avg_m[1] # Calculate Jacobian of coordinate transformation to computational space (xi, eta, zeta)
+
+                xi_z_avg_p[0]   = (y_zeta_avg_p[1]*z_zeta_avg_p[2] - y_zeta_avg_p[2]*z_zeta_avg_p[1]) / J_z_p # Gradient of xi in x direction
+                xi_z_avg_p[1]   = (x_zeta_avg_p[2]*z_zeta_avg_p[1] - x_zeta_avg_p[1]*z_zeta_avg_p[2]) / J_z_p # Gradient of xi in y direction
+                xi_z_avg_p[2]   = (x_zeta_avg_p[1]*y_zeta_avg_p[2] - x_zeta_avg_p[2]*y_zeta_avg_p[1]) / J_z_p # Gradient of xi in z direction
+                eta_z_avg_p[0]  = (y_zeta_avg_p[2]*z_zeta_avg_p[0] - y_zeta_avg_p[0]*z_zeta_avg_p[2]) / J_z_p # Gradient of eta in x direction
+                eta_z_avg_p[1]  = (x_zeta_avg_p[0]*z_zeta_avg_p[2] - x_zeta_avg_p[2]*z_zeta_avg_p[0]) / J_z_p # Gradient of eta in y direction
+                eta_z_avg_p[2]  = (x_zeta_avg_p[2]*y_zeta_avg_p[0] - x_zeta_avg_p[0]*y_zeta_avg_p[2]) / J_z_p # Gradient of eta in z direction
+                zeta_z_avg_p[0] = (y_zeta_avg_p[0]*z_zeta_avg_p[1] - y_zeta_avg_p[1]*z_zeta_avg_p[0]) / J_z_p # Gradient of zeta in x direction
+                zeta_z_avg_p[1] = (x_zeta_avg_p[1]*z_zeta_avg_p[0] - x_zeta_avg_p[0]*z_zeta_avg_p[1]) / J_z_p # Gradient of zeta in y direction
+                zeta_z_avg_p[2] = (x_zeta_avg_p[0]*y_zeta_avg_p[1] - x_zeta_avg_p[1]*y_zeta_avg_p[0]) / J_z_p # Gradient of zeta in z direction
+
+                xi_z_avg_m[0]   = (y_zeta_avg_m[1]*z_zeta_avg_m[2] - y_zeta_avg_m[2]*z_zeta_avg_m[1]) / J_z_m # Gradient of xi in x direction
+                xi_z_avg_m[1]   = (x_zeta_avg_m[2]*z_zeta_avg_m[1] - x_zeta_avg_m[1]*z_zeta_avg_m[2]) / J_z_m # Gradient of xi in y direction
+                xi_z_avg_m[2]   = (x_zeta_avg_m[1]*y_zeta_avg_m[2] - x_zeta_avg_m[2]*y_zeta_avg_m[1]) / J_z_m # Gradient of xi in z direction
+                eta_z_avg_m[0]  = (y_zeta_avg_m[2]*z_zeta_avg_m[0] - y_zeta_avg_m[0]*z_zeta_avg_m[2]) / J_z_m # Gradient of eta in x direction
+                eta_z_avg_m[1]  = (x_zeta_avg_m[0]*z_zeta_avg_m[2] - x_zeta_avg_m[2]*z_zeta_avg_m[0]) / J_z_m # Gradient of eta in y direction
+                eta_z_avg_m[2]  = (x_zeta_avg_m[2]*y_zeta_avg_m[0] - x_zeta_avg_m[0]*y_zeta_avg_m[2]) / J_z_m # Gradient of eta in z direction
+                zeta_z_avg_m[0] = (y_zeta_avg_m[0]*z_zeta_avg_m[1] - y_zeta_avg_m[1]*z_zeta_avg_m[0]) / J_z_m # Gradient of zeta in x direction
+                zeta_z_avg_m[1] = (x_zeta_avg_m[1]*z_zeta_avg_m[0] - x_zeta_avg_m[0]*z_zeta_avg_m[1]) / J_z_m # Gradient of zeta in y direction
+                zeta_z_avg_m[2] = (x_zeta_avg_m[0]*y_zeta_avg_m[1] - x_zeta_avg_m[1]*y_zeta_avg_m[0]) / J_z_m # Gradient of zeta in z direction
+
+                J_zeta_p = xi_z_avg_p[0]*( eta_z_avg_p[1]*zeta_z_avg_p[2] - eta_z_avg_p[2]*zeta_z_avg_p[1] ) - xi_z_avg_p[1]*( eta_z_avg_p[0]*zeta_z_avg_p[2] - eta_z_avg_p[2]*zeta_z_avg_p[0] ) + xi_z_avg_p[2]*( eta_z_avg_p[0]*zeta_z_avg_p[1] - eta_z_avg_p[1]*zeta_z_avg_p[0] )
+                J_zeta_m = xi_z_avg_m[0]*( eta_z_avg_m[1]*zeta_z_avg_m[2] - eta_z_avg_m[2]*zeta_z_avg_m[1] ) - xi_z_avg_m[1]*( eta_z_avg_m[0]*zeta_z_avg_m[2] - eta_z_avg_m[2]*zeta_z_avg_m[0] ) + xi_z_avg_m[2]*( eta_z_avg_m[0]*zeta_z_avg_m[1] - eta_z_avg_m[1]*zeta_z_avg_m[0] )
+
+                # Write metrics in array 
+                facemetrics[i][j][k][0][0] = xi_x_avg_p; facemetrics[i][j][k][0][1] = eta_x_avg_p; facemetrics[i][j][k][0][2] = zeta_x_avg_p
+                facemetrics[i][j][k][1][0] = xi_x_avg_m; facemetrics[i][j][k][1][1] = eta_x_avg_m; facemetrics[i][j][k][1][2] = zeta_x_avg_m
+                facemetrics[i][j][k][2][0] = xi_y_avg_p; facemetrics[i][j][k][2][1] = eta_y_avg_p; facemetrics[i][j][k][2][2] = zeta_y_avg_p
+                facemetrics[i][j][k][3][0] = xi_y_avg_m; facemetrics[i][j][k][3][1] = eta_y_avg_m; facemetrics[i][j][k][3][2] = zeta_y_avg_m
+                facemetrics[i][j][k][4][0] = xi_z_avg_p; facemetrics[i][j][k][4][1] = eta_z_avg_p; facemetrics[i][j][k][4][2] = zeta_z_avg_p
+                facemetrics[i][j][k][5][0] = xi_z_avg_m; facemetrics[i][j][k][5][1] = eta_z_avg_m; facemetrics[i][j][k][5][2] = zeta_z_avg_m
+
+                face_J[i][j][k][0] = J_xi_p;   face_J[i][j][k][1] = J_xi_m
+                face_J[i][j][k][2] = J_eta_p;  face_J[i][j][k][3] = J_eta_m
+                face_J[i][j][k][4] = J_zeta_p; face_J[i][j][k][5] = J_zeta_m
+                
 
 ### Initialize thermodynamic variables
 def initialize_thermodynamics( rho, E, s, u, v, w, P, T ):
@@ -1561,10 +1731,9 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
     # Riemann solvers and numerical methods for fluid dynamics.
     # Springer, 2009.
     
-    n_xi_avg = np.zeros(3); t1_xi_avg = np.zeros(3); t2_xi_avg = np.zeros(3)
-    n_eta_avg = np.zeros(3); t1_eta_avg = np.zeros(3); t2_eta_avg = np.zeros(3)
+    n_xi_avg = np.zeros(3);   t1_xi_avg = np.zeros(3);   t2_xi_avg = np.zeros(3)
+    n_eta_avg = np.zeros(3);  t1_eta_avg = np.zeros(3);  t2_eta_avg = np.zeros(3)
     n_zeta_avg = np.zeros(3); t1_zeta_avg = np.zeros(3); t2_zeta_avg = np.zeros(3)
-    module_grad_xi = 0.0; module_grad_eta = 0.0; module_grad_zeta = 0.0
 
     # Internal points
     for i in range( 1, num_grid_x + 1 ):    
@@ -1588,7 +1757,7 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 a_L     = sos[index_L][j][k]; a_R     = sos[index_R][j][k]
                 P_rhouvw_L = P_L - P_thermo;  P_rhouvw_R = P_R - P_thermo       # P_Thermo = 0.0 when ACM is deactivated
                 
-                xi_avg = 0.5 * ((xi[index_L][j][k]/det_Jacobian[index_L][j][k]) + (xi[index_R][j][k]/det_Jacobian[index_R][j][k]))
+                xi_avg = facemetrics[i][j][k][0][0]/face_J[i][j][k][0]
                 grad_xi_avg = np.sqrt( xi_avg[0]*xi_avg[0] + xi_avg[1]*xi_avg[1] + xi_avg[2]*xi_avg[2] )
 
                 n_xi_avg = xi_avg/grad_xi_avg
@@ -1639,7 +1808,7 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 a_L     = sos[index_L][j][k]; a_R     = sos[index_R][j][k]
                 P_rhouvw_L = P_L - P_thermo;  P_rhouvw_R = P_R - P_thermo       # P_Thermo = 0.0 when ACM is deactivated
 
-                xi_avg = 0.5 * ((xi[index_L][j][k]/det_Jacobian[index_L][j][k]) + (xi[index_R][j][k]/det_Jacobian[index_R][j][k]))
+                xi_avg = facemetrics[i][j][k][1][0]/face_J[i][j][k][1]
                 grad_xi_avg = np.sqrt( xi_avg[0]*xi_avg[0] + xi_avg[1]*xi_avg[1] + xi_avg[2]*xi_avg[2] )
 
                 n_xi_avg = xi_avg/grad_xi_avg
@@ -1647,7 +1816,6 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 t2_xi_avg[0] = -1.0*n_xi_avg[0]*n_xi_avg[2]; t2_xi_avg[1] = -1.0*n_xi_avg[1]*n_xi_avg[2]; t2_xi_avg[2] = n_xi_avg[0]*n_xi_avg[0] + n_xi_avg[1]*n_xi_avg[1]
                 t1_xi_avg /= np.sqrt( t1_xi_avg[0]*t1_xi_avg[0] + t1_xi_avg[1]*t1_xi_avg[1] + t1_xi_avg[2]*t1_xi_avg[2] )
                 t2_xi_avg /= np.sqrt( t2_xi_avg[0]*t2_xi_avg[0] + t2_xi_avg[1]*t2_xi_avg[1] + t2_xi_avg[2]*t2_xi_avg[2] ) 
-
 
                 V_n_xi_L_m  = u_L *  n_xi_avg[0] + v_L *  n_xi_avg[1] + w_L *  n_xi_avg[2]
                 V_n_xi_R_m  = u_R *  n_xi_avg[0] + v_R *  n_xi_avg[1] + w_R *  n_xi_avg[2]
@@ -1691,7 +1859,7 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 a_L     = sos[i][index_L][k]; a_R     = sos[i][index_R][k]
                 P_rhouvw_L = P_L - P_thermo;  P_rhouvw_R = P_R - P_thermo       # P_Thermo = 0.0 when ACM is deactivated
 
-                eta_avg = 0.5 * ((eta[i][index_L][k]/det_Jacobian[i][index_L][k]) + (eta[i][index_R][k]/det_Jacobian[i][index_R][k]))
+                eta_avg = facemetrics[i][j][k][2][1]/face_J[i][j][k][2]
                 grad_eta_avg = np.sqrt( eta_avg[0]*eta_avg[0] + eta_avg[1]*eta_avg[1] + eta_avg[2]*eta_avg[2] )
 
                 n_eta_avg = eta_avg/grad_eta_avg
@@ -1742,7 +1910,7 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 a_L     = sos[i][index_L][k]; a_R     = sos[i][index_R][k]
                 P_rhouvw_L = P_L - P_thermo;  P_rhouvw_R = P_R - P_thermo       # P_Thermo = 0.0 when ACM is deactivated
 
-                eta_avg = 0.5 * ((eta[i][index_L][k]/det_Jacobian[i][index_L][k]) + (eta[i][index_R][k]/det_Jacobian[i][index_R][k]))
+                eta_avg = facemetrics[i][j][k][3][1]/face_J[i][j][k][3]
                 grad_eta_avg = np.sqrt( eta_avg[0]*eta_avg[0] + eta_avg[1]*eta_avg[1] + eta_avg[2]*eta_avg[2] )
 
                 n_eta_avg = eta_avg/grad_eta_avg
@@ -1792,7 +1960,7 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 a_L     = sos[i][j][index_L]; a_R     = sos[i][j][index_R]
                 P_rhouvw_L = P_L - P_thermo;  P_rhouvw_R = P_R - P_thermo       # P_Thermo = 0.0 when ACM is deactivated
 
-                zeta_avg = 0.5 * ((zeta[i][j][index_L]/det_Jacobian[i][j][index_L]) + (zeta[i][j][index_R]/det_Jacobian[i][j][index_R]))
+                zeta_avg = facemetrics[i][j][k][4][2]/face_J[i][j][k][4]
                 grad_zeta_avg = np.sqrt( zeta_avg[0]*zeta_avg[0] + zeta_avg[1]*zeta_avg[1] + zeta_avg[2]*zeta_avg[2] )
 
                 n_zeta_avg = zeta_avg/grad_zeta_avg
@@ -1843,7 +2011,7 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 a_L     = sos[i][j][index_L]; a_R     = sos[i][j][index_R]
                 P_rhouvw_L = P_L - P_thermo;  P_rhouvw_R = P_R - P_thermo       # P_Thermo = 0.0 when ACM is deactivated
 
-                zeta_avg = 0.5 * ((zeta[i][j][index_L]/det_Jacobian[i][j][index_L]) + (zeta[i][j][index_R]/det_Jacobian[i][j][index_R]))
+                zeta_avg = facemetrics[i][j][k][5][2]/face_J[i][j][k][5]
                 grad_zeta_avg = np.sqrt( zeta_avg[0]*zeta_avg[0] + zeta_avg[1]*zeta_avg[1] + zeta_avg[2]*zeta_avg[2] )
 
                 n_zeta_avg = zeta_avg/grad_zeta_avg
@@ -1881,83 +2049,33 @@ def inviscid_fluxes( rho_inv, rhou_inv, rhov_inv, rhow_inv, rhoE_inv, rho, u, v,
                 rhow_F_m_z  = (rho_n_F_m_z * n_zeta_avg[2] + rho_t1_F_m_z * t1_zeta_avg[2] + rho_t2_F_m_z * t2_zeta_avg[2]) * grad_zeta_avg
                 rhoE_F_m_z *= grad_zeta_avg
 
-                ### Strong conservative form of the Navier-Stokes equations
-                # module_grad_xi   = np.sqrt(  xi[i][j][k][0]**2 +   xi[i][j][k][1]**2 +   xi[i][j][k][2]**2)
-                # module_grad_eta  = np.sqrt( eta[i][j][k][0]**2 +  eta[i][j][k][1]**2 +  eta[i][j][k][2]**2)
-                # module_grad_zeta = np.sqrt(zeta[i][j][k][0]**2 + zeta[i][j][k][1]**2 + zeta[i][j][k][2]**2)
-
-               ## Fluxes x-direction
-                # scale_x = module_grad_xi / det_Jacobian[i][j][k]
-                
-                rho_conF_p_x  = rho_F_p_x # * scale_x
-                rhou_conF_p_x = rhou_F_p_x # * scale_x
-                rhov_conF_p_x = rhov_F_p_x # * scale_x
-                rhow_conF_p_x = rhow_F_p_x # * scale_x
-                rhoE_conF_p_x = rhoE_F_p_x # * scale_x
-
-                rho_conF_m_x  = rho_F_m_x # * scale_x
-                rhou_conF_m_x = rhou_F_m_x # * scale_x
-                rhov_conF_m_x = rhov_F_m_x # * scale_x
-                rhow_conF_m_x = rhow_F_m_x # * scale_x
-                rhoE_conF_m_x = rhoE_F_m_x # * scale_x
-
-                ## Fluxes y-direction
-                # scale_y = module_grad_eta / det_Jacobian[i][j][k]
-
-                rho_conG_p_y  = rho_F_p_y # * scale_y
-                rhou_conG_p_y = rhou_F_p_y # * scale_y
-                rhov_conG_p_y = rhov_F_p_y # * scale_y
-                rhow_conG_p_y = rhow_F_p_y # * scale_y
-                rhoE_conG_p_y = rhoE_F_p_y # * scale_y
-
-                rho_conG_m_y  = rho_F_m_y # * scale_y
-                rhou_conG_m_y = rhou_F_m_y # * scale_y
-                rhov_conG_m_y = rhov_F_m_y # * scale_y
-                rhow_conG_m_y = rhow_F_m_y # * scale_y
-                rhoE_conG_m_y = rhoE_F_m_y # * scale_y
-
-                ## Fluxes z-direction  
-                # scale_z = module_grad_zeta / det_Jacobian[i][j][k]
-                
-                rho_conH_p_z  = rho_F_p_z # * scale_z
-                rhou_conH_p_z = rhou_F_p_z # * scale_z
-                rhov_conH_p_z = rhov_F_p_z # * scale_z
-                rhow_conH_p_z = rhow_F_p_z # * scale_z
-                rhoE_conH_p_z = rhoE_F_p_z # * scale_z
-
-                rho_conH_m_z  = rho_F_m_z # * scale_z
-                rhou_conH_m_z = rhou_F_m_z # * scale_z
-                rhov_conH_m_z = rhov_F_m_z # * scale_z
-                rhow_conH_m_z = rhow_F_m_z # * scale_z
-                rhoE_conH_m_z = rhoE_F_m_z # * scale_z
-
                 ## Fluxes x-direction 
-                rho_inv[i][j][k]  = (det_Jacobian[i][j][k] / delta_x) * ( rho_conF_p_x -  rho_conF_m_x)
-                rhou_inv[i][j][k] = (det_Jacobian[i][j][k] / delta_x) * (rhou_conF_p_x - rhou_conF_m_x)
-                rhov_inv[i][j][k] = (det_Jacobian[i][j][k] / delta_x) * (rhov_conF_p_x - rhov_conF_m_x)
-                rhow_inv[i][j][k] = (det_Jacobian[i][j][k] / delta_x) * (rhow_conF_p_x - rhow_conF_m_x)
-                rhoE_inv[i][j][k] = (det_Jacobian[i][j][k] / delta_x) * (rhoE_conF_p_x - rhoE_conF_m_x)
+                rho_inv[i][j][k]  = (det_Jacobian[i][j][k] / delta_x) * ( rho_F_p_x -  rho_F_m_x)
+                rhou_inv[i][j][k] = (det_Jacobian[i][j][k] / delta_x) * (rhou_F_p_x - rhou_F_m_x)
+                rhov_inv[i][j][k] = (det_Jacobian[i][j][k] / delta_x) * (rhov_F_p_x - rhov_F_m_x)
+                rhow_inv[i][j][k] = (det_Jacobian[i][j][k] / delta_x) * (rhow_F_p_x - rhow_F_m_x)
+                rhoE_inv[i][j][k] = (det_Jacobian[i][j][k] / delta_x) * (rhoE_F_p_x - rhoE_F_m_x)
 
                 ## Fluxes y-direction 
-                rho_inv[i][j][k]  += (det_Jacobian[i][j][k] / delta_y) * ( rho_conG_p_y -  rho_conG_m_y)
-                rhou_inv[i][j][k] += (det_Jacobian[i][j][k] / delta_y) * (rhou_conG_p_y - rhou_conG_m_y)
-                rhov_inv[i][j][k] += (det_Jacobian[i][j][k] / delta_y) * (rhov_conG_p_y - rhov_conG_m_y)
-                rhow_inv[i][j][k] += (det_Jacobian[i][j][k] / delta_y) * (rhow_conG_p_y - rhow_conG_m_y)
-                rhoE_inv[i][j][k] += (det_Jacobian[i][j][k] / delta_y) * (rhoE_conG_p_y - rhoE_conG_m_y)
+                rho_inv[i][j][k]  += (det_Jacobian[i][j][k] / delta_y) * ( rho_F_p_y -  rho_F_m_y)
+                rhou_inv[i][j][k] += (det_Jacobian[i][j][k] / delta_y) * (rhou_F_p_y - rhou_F_m_y)
+                rhov_inv[i][j][k] += (det_Jacobian[i][j][k] / delta_y) * (rhov_F_p_y - rhov_F_m_y)
+                rhow_inv[i][j][k] += (det_Jacobian[i][j][k] / delta_y) * (rhow_F_p_y - rhow_F_m_y)
+                rhoE_inv[i][j][k] += (det_Jacobian[i][j][k] / delta_y) * (rhoE_F_p_y - rhoE_F_m_y)
 
                 ## Fluxes z-direction
-                rho_inv[i][j][k]  += (det_Jacobian[i][j][k] / delta_z) * ( rho_conH_p_z -  rho_conH_m_z)
-                rhou_inv[i][j][k] += (det_Jacobian[i][j][k] / delta_z) * (rhou_conH_p_z - rhou_conH_m_z)
-                rhov_inv[i][j][k] += (det_Jacobian[i][j][k] / delta_z) * (rhov_conH_p_z - rhov_conH_m_z)
-                rhow_inv[i][j][k] += (det_Jacobian[i][j][k] / delta_z) * (rhow_conH_p_z - rhow_conH_m_z)
-                rhoE_inv[i][j][k] += (det_Jacobian[i][j][k] / delta_z) * (rhoE_conH_p_z - rhoE_conH_m_z)
+                rho_inv[i][j][k]  += (det_Jacobian[i][j][k] / delta_z) * ( rho_F_p_z -  rho_F_m_z)
+                rhou_inv[i][j][k] += (det_Jacobian[i][j][k] / delta_z) * (rhou_F_p_z - rhou_F_m_z)
+                rhov_inv[i][j][k] += (det_Jacobian[i][j][k] / delta_z) * (rhov_F_p_z - rhov_F_m_z)
+                rhow_inv[i][j][k] += (det_Jacobian[i][j][k] / delta_z) * (rhow_F_p_z - rhow_F_m_z)
+                rhoE_inv[i][j][k] += (det_Jacobian[i][j][k] / delta_z) * (rhoE_F_p_z - rhoE_F_m_z)
 
-    # print(rho_inv[i][j][k], rhou_inv[i][j][k], rhov_inv[i][j][k], rhow_inv[i][j][k], rhoE_inv[i][j][k])
     #print( rho_inv )
     #print( rhou_inv )
     #print( rhov_inv )
     #print( rhow_inv )
     #print( rhoE_inv )
+
 
 ### Calculate viscous fluxes
 @njit
@@ -1972,124 +2090,38 @@ def viscous_fluxes( rhou_vis, rhov_vis, rhow_vis, rhoE_vis, work_vis_rhoe, u, v,
     for i in range( 1, num_grid_x + 1 ):    
         for j in range( 1, num_grid_y + 1 ):    
             for k in range( 1, num_grid_z + 1 ):
-                xi_x_avg_p      = np.zeros(num_sptl_dim); x_xi_avg_p   = np.zeros(num_sptl_dim)
-                xi_y_avg_p      = np.zeros(num_sptl_dim); x_eta_avg_p  = np.zeros(num_sptl_dim)
-                xi_z_avg_p      = np.zeros(num_sptl_dim); x_zeta_avg_p = np.zeros(num_sptl_dim)
-                eta_x_avg_p     = np.zeros(num_sptl_dim); y_xi_avg_p   = np.zeros(num_sptl_dim)
-                eta_y_avg_p     = np.zeros(num_sptl_dim); y_eta_avg_p  = np.zeros(num_sptl_dim)
-                eta_z_avg_p     = np.zeros(num_sptl_dim); y_zeta_avg_p = np.zeros(num_sptl_dim)
-                zeta_x_avg_p    = np.zeros(num_sptl_dim); z_xi_avg_p   = np.zeros(num_sptl_dim)
-                zeta_y_avg_p    = np.zeros(num_sptl_dim); z_eta_avg_p  = np.zeros(num_sptl_dim)
-                zeta_z_avg_p    = np.zeros(num_sptl_dim); z_zeta_avg_p = np.zeros(num_sptl_dim)
-                xi_x_avg_m      = np.zeros(num_sptl_dim); x_xi_avg_m   = np.zeros(num_sptl_dim)
-                xi_y_avg_m      = np.zeros(num_sptl_dim); x_eta_avg_m  = np.zeros(num_sptl_dim)
-                xi_z_avg_m      = np.zeros(num_sptl_dim); x_zeta_avg_m = np.zeros(num_sptl_dim)
-                eta_x_avg_m     = np.zeros(num_sptl_dim); y_xi_avg_m   = np.zeros(num_sptl_dim)
-                eta_y_avg_m     = np.zeros(num_sptl_dim); y_eta_avg_m  = np.zeros(num_sptl_dim)
-                eta_z_avg_m     = np.zeros(num_sptl_dim); y_zeta_avg_m = np.zeros(num_sptl_dim)
-                zeta_x_avg_m    = np.zeros(num_sptl_dim); z_xi_avg_m   = np.zeros(num_sptl_dim)
-                zeta_y_avg_m    = np.zeros(num_sptl_dim); z_eta_avg_m  = np.zeros(num_sptl_dim)
-                zeta_z_avg_m    = np.zeros(num_sptl_dim); z_zeta_avg_m = np.zeros(num_sptl_dim)
-
                 ## Geometric stuff
                 delta_x = 0.5*( grid[i+1][j][k][0] - grid[i-1][j][k][0] ) 
                 delta_y = 0.5*( grid[i][j+1][k][1] - grid[i][j-1][k][1] ) 
                 delta_z = 0.5*( grid[i][j][k+1][2] - grid[i][j][k-1][2] )
 
-                # xi-face
-                x_xi_avg_p[0] = (physical_grid[i+1][j][k][0] - physical_grid[i][j][k][0])/(grid[i+1][j][k][0] - grid[i][j][k][0])
-                x_xi_avg_p[1] = 0.5 * ( (physical_grid[i+1][j+1][k][0] - physical_grid[i+1][j-1][k][0])/(grid[i+1][j+1][k][1] - grid[i+1][j-1][k][1]) + (physical_grid[i][j+1][k][0] - physical_grid[i][j-1][k][0])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]))
-                x_xi_avg_p[2] = 0.5 * ( (physical_grid[i+1][j][k+1][0] - physical_grid[i+1][j][k-1][0])/(grid[i+1][j][k+1][2] - grid[i+1][j][k-1][2]) + (physical_grid[i][j][k+1][0] - physical_grid[i][j][k-1][0])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]))
-                x_xi_avg_m[0] = (physical_grid[i][j][k][0] - physical_grid[i-1][j][k][0])/(grid[i][j][k][0] - grid[i-1][j][k][0])
-                x_xi_avg_m[1] = 0.5 * ( (physical_grid[i][j+1][k][0] - physical_grid[i][j-1][k][0])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (physical_grid[i-1][j+1][k][0] - physical_grid[i-1][j-1][k][0])/(grid[i-1][j+1][k][1] - grid[i-1][j-1][k][1]))
-                x_xi_avg_m[2] = 0.5 * ( (physical_grid[i][j][k+1][0] - physical_grid[i][j][k-1][0])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (physical_grid[i-1][j][k+1][0] - physical_grid[i-1][j][k-1][0])/(grid[i-1][j][k+1][2] - grid[i-1][j][k-1][2]))
-                
-                y_xi_avg_p[0] = (physical_grid[i+1][j][k][1] - physical_grid[i][j][k][1])/(grid[i+1][j][k][0] - grid[i][j][k][0])
-                y_xi_avg_p[1] = 0.5 * ( (physical_grid[i+1][j+1][k][1] - physical_grid[i+1][j-1][k][1])/(grid[i+1][j+1][k][1] - grid[i+1][j-1][k][1]) + (physical_grid[i][j+1][k][1] - physical_grid[i][j-1][k][1])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]))
-                y_xi_avg_p[2] = 0.5 * ( (physical_grid[i+1][j][k+1][1] - physical_grid[i+1][j][k-1][1])/(grid[i+1][j][k+1][2] - grid[i+1][j][k-1][2]) + (physical_grid[i][j][k+1][1] - physical_grid[i][j][k-1][1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]))
-                y_xi_avg_m[0] = (physical_grid[i][j][k][1] - physical_grid[i-1][j][k][1])/(grid[i][j][k][0] - grid[i-1][j][k][0])
-                y_xi_avg_m[1] = 0.5 * ( (physical_grid[i][j+1][k][1] - physical_grid[i][j-1][k][1])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (physical_grid[i-1][j+1][k][1] - physical_grid[i-1][j-1][k][1])/(grid[i-1][j+1][k][1] - grid[i-1][j-1][k][1]))
-                y_xi_avg_m[2] = 0.5 * ( (physical_grid[i][j][k+1][1] - physical_grid[i][j][k-1][1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (physical_grid[i-1][j][k+1][1] - physical_grid[i-1][j][k-1][1])/(grid[i-1][j][k+1][2] - grid[i-1][j][k-1][2]))
-
-                z_xi_avg_p[0] = (physical_grid[i+1][j][k][2] - physical_grid[i][j][k][2])/(grid[i+1][j][k][0] - grid[i][j][k][0])
-                z_xi_avg_p[1] = 0.5 * ( (physical_grid[i+1][j+1][k][2] - physical_grid[i+1][j-1][k][2])/(grid[i+1][j+1][k][1] - grid[i+1][j-1][k][1]) + (physical_grid[i][j+1][k][2] - physical_grid[i][j-1][k][2])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]))
-                z_xi_avg_p[2] = 0.5 * ( (physical_grid[i+1][j][k+1][2] - physical_grid[i+1][j][k-1][2])/(grid[i+1][j][k+1][2] - grid[i+1][j][k-1][2]) + (physical_grid[i][j][k+1][2] - physical_grid[i][j][k-1][2])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]))
-                z_xi_avg_m[0] = (physical_grid[i][j][k][2] - physical_grid[i-1][j][k][2])/(grid[i][j][k][0] - grid[i-1][j][k][0])
-                z_xi_avg_m[1] = 0.5 * ( (physical_grid[i][j+1][k][2] - physical_grid[i][j-1][k][2])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (physical_grid[i-1][j+1][k][2] - physical_grid[i-1][j-1][k][2])/(grid[i-1][j+1][k][1] - grid[i-1][j-1][k][1]))
-                z_xi_avg_m[2] = 0.5 * ( (physical_grid[i][j][k+1][2] - physical_grid[i][j][k-1][2])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (physical_grid[i-1][j][k+1][2] - physical_grid[i-1][j][k-1][2])/(grid[i-1][j][k+1][2] - grid[i-1][j][k-1][2]))
-
-                J_x_p = x_xi_avg_p[0]*y_xi_avg_p[1]*z_xi_avg_p[2] + x_xi_avg_p[1]*y_xi_avg_p[2]*z_xi_avg_p[0] + x_xi_avg_p[2]*y_xi_avg_p[0]*z_xi_avg_p[1] - x_xi_avg_p[2]*y_xi_avg_p[1]*z_xi_avg_p[0] - x_xi_avg_p[1]*y_xi_avg_p[0]*z_xi_avg_p[2] - x_xi_avg_p[0]*y_xi_avg_p[2]*z_xi_avg_p[1] # Calculate Jacobian of coordinate transformation to computational space (xi, eta, zeta)
-                J_x_m = x_xi_avg_m[0]*y_xi_avg_m[1]*z_xi_avg_m[2] + x_xi_avg_m[1]*y_xi_avg_m[2]*z_xi_avg_m[0] + x_xi_avg_m[2]*y_xi_avg_m[0]*z_xi_avg_m[1] - x_xi_avg_m[2]*y_xi_avg_m[1]*z_xi_avg_m[0] - x_xi_avg_m[1]*y_xi_avg_m[0]*z_xi_avg_m[2] - x_xi_avg_m[0]*y_xi_avg_m[2]*z_xi_avg_m[1] # Calculate Jacobian of coordinate transformation to computational space (xi, eta, zeta)
-
-                xi_x_avg_p[0]   = (y_xi_avg_p[1]*z_xi_avg_p[2] - y_xi_avg_p[2]*z_xi_avg_p[1]) / J_x_p # Gradient of xi in x direction
-                xi_x_avg_p[1]   = (x_xi_avg_p[2]*z_xi_avg_p[1] - x_xi_avg_p[1]*z_xi_avg_p[2]) / J_x_p # Gradient of xi in y direction
-                xi_x_avg_p[2]   = (x_xi_avg_p[1]*y_xi_avg_p[2] - x_xi_avg_p[2]*y_xi_avg_p[1]) / J_x_p # Gradient of xi in z direction
-                eta_x_avg_p[0]  = (y_xi_avg_p[2]*z_xi_avg_p[0] - y_xi_avg_p[0]*z_xi_avg_p[2]) / J_x_p # Gradient of eta in x direction
-                eta_x_avg_p[1]  = (x_xi_avg_p[0]*z_xi_avg_p[2] - x_xi_avg_p[2]*z_xi_avg_p[0]) / J_x_p # Gradient of eta in y direction
-                eta_x_avg_p[2]  = (x_xi_avg_p[2]*y_xi_avg_p[0] - x_xi_avg_p[0]*y_xi_avg_p[2]) / J_x_p # Gradient of eta in z direction
-                zeta_x_avg_p[0] = (y_xi_avg_p[0]*z_xi_avg_p[1] - y_xi_avg_p[1]*z_xi_avg_p[0]) / J_x_p # Gradient of zeta in x direction
-                zeta_x_avg_p[1] = (x_xi_avg_p[1]*z_xi_avg_p[0] - x_xi_avg_p[0]*z_xi_avg_p[1]) / J_x_p # Gradient of zeta in y direction
-                zeta_x_avg_p[2] = (x_xi_avg_p[0]*y_xi_avg_p[1] - x_xi_avg_p[1]*y_xi_avg_p[0]) / J_x_p # Gradient of zeta in z direction
-
-                xi_x_avg_m[0]   = (y_xi_avg_m[1]*z_xi_avg_m[2] - y_xi_avg_m[2]*z_xi_avg_m[1]) / J_x_m # Gradient of xi in x direction
-                xi_x_avg_m[1]   = (x_xi_avg_m[2]*z_xi_avg_m[1] - x_xi_avg_m[1]*z_xi_avg_m[2]) / J_x_m # Gradient of xi in y direction
-                xi_x_avg_m[2]   = (x_xi_avg_m[1]*y_xi_avg_m[2] - x_xi_avg_m[2]*y_xi_avg_m[1]) / J_x_m # Gradient of xi in z direction
-                eta_x_avg_m[0]  = (y_xi_avg_m[2]*z_xi_avg_m[0] - y_xi_avg_m[0]*z_xi_avg_m[2]) / J_x_m # Gradient of eta in x direction
-                eta_x_avg_m[1]  = (x_xi_avg_m[0]*z_xi_avg_m[2] - x_xi_avg_m[2]*z_xi_avg_m[0]) / J_x_m # Gradient of eta in y direction
-                eta_x_avg_m[2]  = (x_xi_avg_m[2]*y_xi_avg_m[0] - x_xi_avg_m[0]*y_xi_avg_m[2]) / J_x_m # Gradient of eta in z direction
-                zeta_x_avg_m[0] = (y_xi_avg_m[0]*z_xi_avg_m[1] - y_xi_avg_m[1]*z_xi_avg_m[0]) / J_x_m # Gradient of zeta in x direction
-                zeta_x_avg_m[1] = (x_xi_avg_m[1]*z_xi_avg_m[0] - x_xi_avg_m[0]*z_xi_avg_m[1]) / J_x_m # Gradient of zeta in y direction
-                zeta_x_avg_m[2] = (x_xi_avg_m[0]*y_xi_avg_m[1] - x_xi_avg_m[1]*y_xi_avg_m[0]) / J_x_m # Gradient of zeta in z direction
-
-                J_xi_p = xi_x_avg_p[0]*( eta_x_avg_p[1]*zeta_x_avg_p[2] - eta_x_avg_p[2]*zeta_x_avg_p[1] ) - xi_x_avg_p[1]*( eta_x_avg_p[0]*zeta_x_avg_p[2] - eta_x_avg_p[2]*zeta_x_avg_p[0] ) + xi_x_avg_p[2]*( eta_x_avg_p[0]*zeta_x_avg_p[1] - eta_x_avg_p[1]*zeta_x_avg_p[0] )
-                J_xi_m = xi_x_avg_m[0]*( eta_x_avg_m[1]*zeta_x_avg_m[2] - eta_x_avg_m[2]*zeta_x_avg_m[1] ) - xi_x_avg_m[1]*( eta_x_avg_m[0]*zeta_x_avg_m[2] - eta_x_avg_m[2]*zeta_x_avg_m[0] ) + xi_x_avg_m[2]*( eta_x_avg_m[0]*zeta_x_avg_m[1] - eta_x_avg_m[1]*zeta_x_avg_m[0] )
-
-                # xi_x_avg_p      = 0.5 * (xi[i+1][j][k] + xi[i][j][k])
-                # xi_y_avg_p      = 0.5 * (xi[i][j+1][k] + xi[i][j][k])
-                # xi_z_avg_p      = 0.5 * (xi[i][j][k+1] + xi[i][j][k])
-                # eta_x_avg_p     = 0.5 * (eta[i+1][j][k] + eta[i][j][k])
-                # eta_y_avg_p     = 0.5 * (eta[i][j+1][k] + eta[i][j][k])
-                # eta_z_avg_p     = 0.5 * (eta[i][j][k+1] + eta[i][j][k])
-                # zeta_x_avg_p    = 0.5 * (zeta[i+1][j][k] + zeta[i][j][k])
-                # zeta_y_avg_p    = 0.5 * (zeta[i][j+1][k] + zeta[i][j][k])
-                # zeta_z_avg_p    = 0.5 * (zeta[i][j][k+1] + zeta[i][j][k])
-
-                # xi_x_avg_m      = 0.5 * (xi[i-1][j][k] + xi[i][j][k])
-                # xi_y_avg_m      = 0.5 * (xi[i][j-1][k] + xi[i][j][k])
-                # xi_z_avg_m      = 0.5 * (xi[i][j][k-1] + xi[i][j][k])
-                # eta_x_avg_m     = 0.5 * (eta[i-1][j][k] + eta[i][j][k])
-                # eta_y_avg_m     = 0.5 * (eta[i][j-1][k] + eta[i][j][k])
-                # eta_z_avg_m     = 0.5 * (eta[i][j][k-1] + eta[i][j][k])
-                # zeta_x_avg_m    = 0.5 * (zeta[i-1][j][k] + zeta[i][j][k])
-                # zeta_y_avg_m    = 0.5 * (zeta[i][j-1][k] + zeta[i][j][k])
-                # zeta_z_avg_m    = 0.5 * (zeta[i][j][k-1] + zeta[i][j][k])
-
+                # xi face
                 # Velocity & Temperature derivatives
-                d_u_x_p = xi_x_avg_p[0] * (u[i+1][j][k] - u[i][j][k])/(grid[i+1][j][k][0] - grid[i][j][k][0]) + 0.5 * eta_x_avg_p[0] * ((u[i][j+1][k] - u[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (u[i+1][j+1][k] - u[i+1][j-1][k])/(grid[i+1][j+1][k][1] - grid[i+1][j-1][k][1])) + 0.5 * zeta_x_avg_p[0] * ((u[i][j][k+1] - u[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (u[i+1][j][k+1] - u[i+1][j][k-1])/(grid[i+1][j][k+1][2] - grid[i+1][j][k-1][2]))
-                d_u_y_p = xi_x_avg_p[1] * (u[i+1][j][k] - u[i][j][k])/(grid[i+1][j][k][0] - grid[i][j][k][0]) + 0.5 * eta_x_avg_p[1] * ((u[i][j+1][k] - u[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (u[i+1][j+1][k] - u[i+1][j-1][k])/(grid[i+1][j+1][k][1] - grid[i+1][j-1][k][1])) + 0.5 * zeta_x_avg_p[1] * ((u[i][j][k+1] - u[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (u[i+1][j][k+1] - u[i+1][j][k-1])/(grid[i+1][j][k+1][2] - grid[i+1][j][k-1][2]))
-                d_u_z_p = xi_x_avg_p[2] * (u[i+1][j][k] - u[i][j][k])/(grid[i+1][j][k][0] - grid[i][j][k][0]) + 0.5 * eta_x_avg_p[2] * ((u[i][j+1][k] - u[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (u[i+1][j+1][k] - u[i+1][j-1][k])/(grid[i+1][j+1][k][1] - grid[i+1][j-1][k][1])) + 0.5 * zeta_x_avg_p[2] * ((u[i][j][k+1] - u[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (u[i+1][j][k+1] - u[i+1][j][k-1])/(grid[i+1][j][k+1][2] - grid[i+1][j][k-1][2]))
-                d_v_x_p = xi_x_avg_p[0] * (v[i+1][j][k] - v[i][j][k])/(grid[i+1][j][k][0] - grid[i][j][k][0]) + 0.5 * eta_x_avg_p[0] * ((v[i][j+1][k] - v[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (v[i+1][j+1][k] - v[i+1][j-1][k])/(grid[i+1][j+1][k][1] - grid[i+1][j-1][k][1])) + 0.5 * zeta_x_avg_p[0] * ((v[i][j][k+1] - v[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (v[i+1][j][k+1] - v[i+1][j][k-1])/(grid[i+1][j][k+1][2] - grid[i+1][j][k-1][2]))
-                d_v_y_p = xi_x_avg_p[1] * (v[i+1][j][k] - v[i][j][k])/(grid[i+1][j][k][0] - grid[i][j][k][0]) + 0.5 * eta_x_avg_p[1] * ((v[i][j+1][k] - v[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (v[i+1][j+1][k] - v[i+1][j-1][k])/(grid[i+1][j+1][k][1] - grid[i+1][j-1][k][1])) + 0.5 * zeta_x_avg_p[1] * ((v[i][j][k+1] - v[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (v[i+1][j][k+1] - v[i+1][j][k-1])/(grid[i+1][j][k+1][2] - grid[i+1][j][k-1][2]))
-                d_v_z_p = xi_x_avg_p[2] * (v[i+1][j][k] - v[i][j][k])/(grid[i+1][j][k][0] - grid[i][j][k][0]) + 0.5 * eta_x_avg_p[2] * ((v[i][j+1][k] - v[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (v[i+1][j+1][k] - v[i+1][j-1][k])/(grid[i+1][j+1][k][1] - grid[i+1][j-1][k][1])) + 0.5 * zeta_x_avg_p[2] * ((v[i][j][k+1] - v[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (v[i+1][j][k+1] - v[i+1][j][k-1])/(grid[i+1][j][k+1][2] - grid[i+1][j][k-1][2]))
-                d_w_x_p = xi_x_avg_p[0] * (w[i+1][j][k] - w[i][j][k])/(grid[i+1][j][k][0] - grid[i][j][k][0]) + 0.5 * eta_x_avg_p[0] * ((w[i][j+1][k] - w[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (w[i+1][j+1][k] - w[i+1][j-1][k])/(grid[i+1][j+1][k][1] - grid[i+1][j-1][k][1])) + 0.5 * zeta_x_avg_p[0] * ((w[i][j][k+1] - w[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (w[i+1][j][k+1] - w[i+1][j][k-1])/(grid[i+1][j][k+1][2] - grid[i+1][j][k-1][2]))
-                d_w_y_p = xi_x_avg_p[1] * (w[i+1][j][k] - w[i][j][k])/(grid[i+1][j][k][0] - grid[i][j][k][0]) + 0.5 * eta_x_avg_p[1] * ((w[i][j+1][k] - w[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (w[i+1][j+1][k] - w[i+1][j-1][k])/(grid[i+1][j+1][k][1] - grid[i+1][j-1][k][1])) + 0.5 * zeta_x_avg_p[1] * ((w[i][j][k+1] - w[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (w[i+1][j][k+1] - w[i+1][j][k-1])/(grid[i+1][j][k+1][2] - grid[i+1][j][k-1][2]))
-                d_w_z_p = xi_x_avg_p[2] * (w[i+1][j][k] - w[i][j][k])/(grid[i+1][j][k][0] - grid[i][j][k][0]) + 0.5 * eta_x_avg_p[2] * ((w[i][j+1][k] - w[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (w[i+1][j+1][k] - w[i+1][j-1][k])/(grid[i+1][j+1][k][1] - grid[i+1][j-1][k][1])) + 0.5 * zeta_x_avg_p[2] * ((w[i][j][k+1] - w[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (w[i+1][j][k+1] - w[i+1][j][k-1])/(grid[i+1][j][k+1][2] - grid[i+1][j][k-1][2]))
-                d_T_x_p = xi_x_avg_p[0] * (T[i+1][j][k] - T[i][j][k])/(grid[i+1][j][k][0] - grid[i][j][k][0]) + 0.5 * eta_x_avg_p[0] * ((T[i][j+1][k] - T[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (T[i+1][j+1][k] - T[i+1][j-1][k])/(grid[i+1][j+1][k][1] - grid[i+1][j-1][k][1])) + 0.5 * zeta_x_avg_p[0] * ((T[i][j][k+1] - T[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (T[i+1][j][k+1] - T[i+1][j][k-1])/(grid[i+1][j][k+1][2] - grid[i+1][j][k-1][2])) 
-                d_T_y_p = xi_x_avg_p[1] * (T[i+1][j][k] - T[i][j][k])/(grid[i+1][j][k][0] - grid[i][j][k][0]) + 0.5 * eta_x_avg_p[1] * ((T[i][j+1][k] - T[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (T[i+1][j+1][k] - T[i+1][j-1][k])/(grid[i+1][j+1][k][1] - grid[i+1][j-1][k][1])) + 0.5 * zeta_x_avg_p[1] * ((T[i][j][k+1] - T[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (T[i+1][j][k+1] - T[i+1][j][k-1])/(grid[i+1][j][k+1][2] - grid[i+1][j][k-1][2])) 
-                d_T_z_p = xi_x_avg_p[2] * (T[i+1][j][k] - T[i][j][k])/(grid[i+1][j][k][0] - grid[i][j][k][0]) + 0.5 * eta_x_avg_p[2] * ((T[i][j+1][k] - T[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (T[i+1][j+1][k] - T[i+1][j-1][k])/(grid[i+1][j+1][k][1] - grid[i+1][j-1][k][1])) + 0.5 * zeta_x_avg_p[2] * ((T[i][j][k+1] - T[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (T[i+1][j][k+1] - T[i+1][j][k-1])/(grid[i+1][j][k+1][2] - grid[i+1][j][k-1][2])) 
+                d_u_x_p = facemetrics[i][j][k][0][0][0] * (u[i+1][j][k] - u[i][j][k])/(grid[i+1][j][k][0] - grid[i][j][k][0]) + 0.5 * facemetrics[i][j][k][0][1][0] * ((u[i][j+1][k] - u[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (u[i+1][j+1][k] - u[i+1][j-1][k])/(grid[i+1][j+1][k][1] - grid[i+1][j-1][k][1])) + 0.5 * facemetrics[i][j][k][0][2][0] * ((u[i][j][k+1] - u[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (u[i+1][j][k+1] - u[i+1][j][k-1])/(grid[i+1][j][k+1][2] - grid[i+1][j][k-1][2]))
+                d_u_y_p = facemetrics[i][j][k][0][0][1] * (u[i+1][j][k] - u[i][j][k])/(grid[i+1][j][k][0] - grid[i][j][k][0]) + 0.5 * facemetrics[i][j][k][0][1][1] * ((u[i][j+1][k] - u[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (u[i+1][j+1][k] - u[i+1][j-1][k])/(grid[i+1][j+1][k][1] - grid[i+1][j-1][k][1])) + 0.5 * facemetrics[i][j][k][0][2][1] * ((u[i][j][k+1] - u[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (u[i+1][j][k+1] - u[i+1][j][k-1])/(grid[i+1][j][k+1][2] - grid[i+1][j][k-1][2]))
+                d_u_z_p = facemetrics[i][j][k][0][0][2] * (u[i+1][j][k] - u[i][j][k])/(grid[i+1][j][k][0] - grid[i][j][k][0]) + 0.5 * facemetrics[i][j][k][0][1][2] * ((u[i][j+1][k] - u[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (u[i+1][j+1][k] - u[i+1][j-1][k])/(grid[i+1][j+1][k][1] - grid[i+1][j-1][k][1])) + 0.5 * facemetrics[i][j][k][0][2][2] * ((u[i][j][k+1] - u[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (u[i+1][j][k+1] - u[i+1][j][k-1])/(grid[i+1][j][k+1][2] - grid[i+1][j][k-1][2]))
+                d_v_x_p = facemetrics[i][j][k][0][0][0] * (v[i+1][j][k] - v[i][j][k])/(grid[i+1][j][k][0] - grid[i][j][k][0]) + 0.5 * facemetrics[i][j][k][0][1][0] * ((v[i][j+1][k] - v[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (v[i+1][j+1][k] - v[i+1][j-1][k])/(grid[i+1][j+1][k][1] - grid[i+1][j-1][k][1])) + 0.5 * facemetrics[i][j][k][0][2][0] * ((v[i][j][k+1] - v[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (v[i+1][j][k+1] - v[i+1][j][k-1])/(grid[i+1][j][k+1][2] - grid[i+1][j][k-1][2]))
+                d_v_y_p = facemetrics[i][j][k][0][0][1] * (v[i+1][j][k] - v[i][j][k])/(grid[i+1][j][k][0] - grid[i][j][k][0]) + 0.5 * facemetrics[i][j][k][0][1][1] * ((v[i][j+1][k] - v[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (v[i+1][j+1][k] - v[i+1][j-1][k])/(grid[i+1][j+1][k][1] - grid[i+1][j-1][k][1])) + 0.5 * facemetrics[i][j][k][0][2][1] * ((v[i][j][k+1] - v[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (v[i+1][j][k+1] - v[i+1][j][k-1])/(grid[i+1][j][k+1][2] - grid[i+1][j][k-1][2]))
+                d_v_z_p = facemetrics[i][j][k][0][0][2] * (v[i+1][j][k] - v[i][j][k])/(grid[i+1][j][k][0] - grid[i][j][k][0]) + 0.5 * facemetrics[i][j][k][0][1][2] * ((v[i][j+1][k] - v[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (v[i+1][j+1][k] - v[i+1][j-1][k])/(grid[i+1][j+1][k][1] - grid[i+1][j-1][k][1])) + 0.5 * facemetrics[i][j][k][0][2][2] * ((v[i][j][k+1] - v[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (v[i+1][j][k+1] - v[i+1][j][k-1])/(grid[i+1][j][k+1][2] - grid[i+1][j][k-1][2]))
+                d_w_x_p = facemetrics[i][j][k][0][0][0] * (w[i+1][j][k] - w[i][j][k])/(grid[i+1][j][k][0] - grid[i][j][k][0]) + 0.5 * facemetrics[i][j][k][0][1][0] * ((w[i][j+1][k] - w[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (w[i+1][j+1][k] - w[i+1][j-1][k])/(grid[i+1][j+1][k][1] - grid[i+1][j-1][k][1])) + 0.5 * facemetrics[i][j][k][0][2][0] * ((w[i][j][k+1] - w[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (w[i+1][j][k+1] - w[i+1][j][k-1])/(grid[i+1][j][k+1][2] - grid[i+1][j][k-1][2]))
+                d_w_y_p = facemetrics[i][j][k][0][0][1] * (w[i+1][j][k] - w[i][j][k])/(grid[i+1][j][k][0] - grid[i][j][k][0]) + 0.5 * facemetrics[i][j][k][0][1][1] * ((w[i][j+1][k] - w[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (w[i+1][j+1][k] - w[i+1][j-1][k])/(grid[i+1][j+1][k][1] - grid[i+1][j-1][k][1])) + 0.5 * facemetrics[i][j][k][0][2][1] * ((w[i][j][k+1] - w[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (w[i+1][j][k+1] - w[i+1][j][k-1])/(grid[i+1][j][k+1][2] - grid[i+1][j][k-1][2]))
+                d_w_z_p = facemetrics[i][j][k][0][0][2] * (w[i+1][j][k] - w[i][j][k])/(grid[i+1][j][k][0] - grid[i][j][k][0]) + 0.5 * facemetrics[i][j][k][0][1][2] * ((w[i][j+1][k] - w[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (w[i+1][j+1][k] - w[i+1][j-1][k])/(grid[i+1][j+1][k][1] - grid[i+1][j-1][k][1])) + 0.5 * facemetrics[i][j][k][0][2][2] * ((w[i][j][k+1] - w[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (w[i+1][j][k+1] - w[i+1][j][k-1])/(grid[i+1][j][k+1][2] - grid[i+1][j][k-1][2]))
+                d_T_x_p = facemetrics[i][j][k][0][0][0] * (T[i+1][j][k] - T[i][j][k])/(grid[i+1][j][k][0] - grid[i][j][k][0]) + 0.5 * facemetrics[i][j][k][0][1][0] * ((T[i][j+1][k] - T[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (T[i+1][j+1][k] - T[i+1][j-1][k])/(grid[i+1][j+1][k][1] - grid[i+1][j-1][k][1])) + 0.5 * facemetrics[i][j][k][0][2][0] * ((T[i][j][k+1] - T[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (T[i+1][j][k+1] - T[i+1][j][k-1])/(grid[i+1][j][k+1][2] - grid[i+1][j][k-1][2])) 
+                d_T_y_p = facemetrics[i][j][k][0][0][1] * (T[i+1][j][k] - T[i][j][k])/(grid[i+1][j][k][0] - grid[i][j][k][0]) + 0.5 * facemetrics[i][j][k][0][1][1] * ((T[i][j+1][k] - T[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (T[i+1][j+1][k] - T[i+1][j-1][k])/(grid[i+1][j+1][k][1] - grid[i+1][j-1][k][1])) + 0.5 * facemetrics[i][j][k][0][2][1] * ((T[i][j][k+1] - T[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (T[i+1][j][k+1] - T[i+1][j][k-1])/(grid[i+1][j][k+1][2] - grid[i+1][j][k-1][2])) 
+                d_T_z_p = facemetrics[i][j][k][0][0][2] * (T[i+1][j][k] - T[i][j][k])/(grid[i+1][j][k][0] - grid[i][j][k][0]) + 0.5 * facemetrics[i][j][k][0][1][2] * ((T[i][j+1][k] - T[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (T[i+1][j+1][k] - T[i+1][j-1][k])/(grid[i+1][j+1][k][1] - grid[i+1][j-1][k][1])) + 0.5 * facemetrics[i][j][k][0][2][2] * ((T[i][j][k+1] - T[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (T[i+1][j][k+1] - T[i+1][j][k-1])/(grid[i+1][j][k+1][2] - grid[i+1][j][k-1][2])) 
 
-                d_u_x_m = xi_x_avg_m[0] * (u[i][j][k] - u[i-1][j][k])/(grid[i][j][k][0] - grid[i-1][j][k][0]) + 0.5 * eta_x_avg_m[0] * ((u[i][j+1][k] - u[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (u[i-1][j+1][k] - u[i-1][j-1][k])/(grid[i-1][j+1][k][1] - grid[i-1][j-1][k][1])) + 0.5 * zeta_x_avg_m[0] * ((u[i][j][k+1] - u[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (u[i-1][j][k+1] - u[i-1][j][k-1])/(grid[i-1][j][k+1][2] - grid[i-1][j][k-1][2]))
-                d_u_y_m = xi_x_avg_m[1] * (u[i][j][k] - u[i-1][j][k])/(grid[i][j][k][0] - grid[i-1][j][k][0]) + 0.5 * eta_x_avg_m[1] * ((u[i][j+1][k] - u[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (u[i-1][j+1][k] - u[i-1][j-1][k])/(grid[i-1][j+1][k][1] - grid[i-1][j-1][k][1])) + 0.5 * zeta_x_avg_m[1] * ((u[i][j][k+1] - u[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (u[i-1][j][k+1] - u[i-1][j][k-1])/(grid[i-1][j][k+1][2] - grid[i-1][j][k-1][2]))
-                d_u_z_m = xi_x_avg_m[2] * (u[i][j][k] - u[i-1][j][k])/(grid[i][j][k][0] - grid[i-1][j][k][0]) + 0.5 * eta_x_avg_m[2] * ((u[i][j+1][k] - u[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (u[i-1][j+1][k] - u[i-1][j-1][k])/(grid[i-1][j+1][k][1] - grid[i-1][j-1][k][1])) + 0.5 * zeta_x_avg_m[2] * ((u[i][j][k+1] - u[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (u[i-1][j][k+1] - u[i-1][j][k-1])/(grid[i-1][j][k+1][2] - grid[i-1][j][k-1][2]))
-                d_v_x_m = xi_x_avg_m[0] * (v[i][j][k] - v[i-1][j][k])/(grid[i][j][k][0] - grid[i-1][j][k][0]) + 0.5 * eta_x_avg_m[0] * ((v[i][j+1][k] - v[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (v[i-1][j+1][k] - v[i-1][j-1][k])/(grid[i-1][j+1][k][1] - grid[i-1][j-1][k][1])) + 0.5 * zeta_x_avg_m[0] * ((v[i][j][k+1] - v[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (v[i-1][j][k+1] - v[i-1][j][k-1])/(grid[i-1][j][k+1][2] - grid[i-1][j][k-1][2]))
-                d_v_y_m = xi_x_avg_m[1] * (v[i][j][k] - v[i-1][j][k])/(grid[i][j][k][0] - grid[i-1][j][k][0]) + 0.5 * eta_x_avg_m[1] * ((v[i][j+1][k] - v[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (v[i-1][j+1][k] - v[i-1][j-1][k])/(grid[i-1][j+1][k][1] - grid[i-1][j-1][k][1])) + 0.5 * zeta_x_avg_m[1] * ((v[i][j][k+1] - v[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (v[i-1][j][k+1] - v[i-1][j][k-1])/(grid[i-1][j][k+1][2] - grid[i-1][j][k-1][2]))
-                d_v_z_m = xi_x_avg_m[2] * (v[i][j][k] - v[i-1][j][k])/(grid[i][j][k][0] - grid[i-1][j][k][0]) + 0.5 * eta_x_avg_m[2] * ((v[i][j+1][k] - v[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (v[i-1][j+1][k] - v[i-1][j-1][k])/(grid[i-1][j+1][k][1] - grid[i-1][j-1][k][1])) + 0.5 * zeta_x_avg_m[2] * ((v[i][j][k+1] - v[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (v[i-1][j][k+1] - v[i-1][j][k-1])/(grid[i-1][j][k+1][2] - grid[i-1][j][k-1][2]))
-                d_w_x_m = xi_x_avg_m[0] * (w[i][j][k] - w[i-1][j][k])/(grid[i][j][k][0] - grid[i-1][j][k][0]) + 0.5 * eta_x_avg_m[0] * ((w[i][j+1][k] - w[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (w[i-1][j+1][k] - w[i-1][j-1][k])/(grid[i-1][j+1][k][1] - grid[i-1][j-1][k][1])) + 0.5 * zeta_x_avg_m[0] * ((w[i][j][k+1] - w[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (w[i-1][j][k+1] - w[i-1][j][k-1])/(grid[i-1][j][k+1][2] - grid[i-1][j][k-1][2]))
-                d_w_y_m = xi_x_avg_m[1] * (w[i][j][k] - w[i-1][j][k])/(grid[i][j][k][0] - grid[i-1][j][k][0]) + 0.5 * eta_x_avg_m[1] * ((w[i][j+1][k] - w[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (w[i-1][j+1][k] - w[i-1][j-1][k])/(grid[i-1][j+1][k][1] - grid[i-1][j-1][k][1])) + 0.5 * zeta_x_avg_m[1] * ((w[i][j][k+1] - w[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (w[i-1][j][k+1] - w[i-1][j][k-1])/(grid[i-1][j][k+1][2] - grid[i-1][j][k-1][2]))
-                d_w_z_m = xi_x_avg_m[2] * (w[i][j][k] - w[i-1][j][k])/(grid[i][j][k][0] - grid[i-1][j][k][0]) + 0.5 * eta_x_avg_m[2] * ((w[i][j+1][k] - w[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (w[i-1][j+1][k] - w[i-1][j-1][k])/(grid[i-1][j+1][k][1] - grid[i-1][j-1][k][1])) + 0.5 * zeta_x_avg_m[2] * ((w[i][j][k+1] - w[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (w[i-1][j][k+1] - w[i-1][j][k-1])/(grid[i-1][j][k+1][2] - grid[i-1][j][k-1][2]))
-                d_T_x_m = xi_x_avg_m[0] * (T[i][j][k] - T[i-1][j][k])/(grid[i][j][k][0] - grid[i-1][j][k][0]) + 0.5 * eta_x_avg_m[0] * ((T[i][j+1][k] - T[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (T[i-1][j+1][k] - T[i-1][j-1][k])/(grid[i-1][j+1][k][1] - grid[i-1][j-1][k][1])) + 0.5 * zeta_x_avg_m[0] * ((T[i][j][k+1] - T[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (T[i-1][j][k+1] - T[i-1][j][k-1])/(grid[i-1][j][k+1][2] - grid[i-1][j][k-1][2]))
-                d_T_y_m = xi_x_avg_m[1] * (T[i][j][k] - T[i-1][j][k])/(grid[i][j][k][0] - grid[i-1][j][k][0]) + 0.5 * eta_x_avg_m[1] * ((T[i][j+1][k] - T[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (T[i-1][j+1][k] - T[i-1][j-1][k])/(grid[i-1][j+1][k][1] - grid[i-1][j-1][k][1])) + 0.5 * zeta_x_avg_m[1] * ((T[i][j][k+1] - T[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (T[i-1][j][k+1] - T[i-1][j][k-1])/(grid[i-1][j][k+1][2] - grid[i-1][j][k-1][2]))
-                d_T_z_m = xi_x_avg_m[2] * (T[i][j][k] - T[i-1][j][k])/(grid[i][j][k][0] - grid[i-1][j][k][0]) + 0.5 * eta_x_avg_m[2] * ((T[i][j+1][k] - T[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (T[i-1][j+1][k] - T[i-1][j-1][k])/(grid[i-1][j+1][k][1] - grid[i-1][j-1][k][1])) + 0.5 * zeta_x_avg_m[2] * ((T[i][j][k+1] - T[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (T[i-1][j][k+1] - T[i-1][j][k-1])/(grid[i-1][j][k+1][2] - grid[i-1][j][k-1][2]))                
+                d_u_x_m = facemetrics[i][j][k][1][0][0] * (u[i][j][k] - u[i-1][j][k])/(grid[i][j][k][0] - grid[i-1][j][k][0]) + 0.5 * facemetrics[i][j][k][1][1][0] * ((u[i][j+1][k] - u[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (u[i-1][j+1][k] - u[i-1][j-1][k])/(grid[i-1][j+1][k][1] - grid[i-1][j-1][k][1])) + 0.5 * facemetrics[i][j][k][1][2][0] * ((u[i][j][k+1] - u[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (u[i-1][j][k+1] - u[i-1][j][k-1])/(grid[i-1][j][k+1][2] - grid[i-1][j][k-1][2]))
+                d_u_y_m = facemetrics[i][j][k][1][0][1] * (u[i][j][k] - u[i-1][j][k])/(grid[i][j][k][0] - grid[i-1][j][k][0]) + 0.5 * facemetrics[i][j][k][1][1][1] * ((u[i][j+1][k] - u[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (u[i-1][j+1][k] - u[i-1][j-1][k])/(grid[i-1][j+1][k][1] - grid[i-1][j-1][k][1])) + 0.5 * facemetrics[i][j][k][1][2][1] * ((u[i][j][k+1] - u[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (u[i-1][j][k+1] - u[i-1][j][k-1])/(grid[i-1][j][k+1][2] - grid[i-1][j][k-1][2]))
+                d_u_z_m = facemetrics[i][j][k][1][0][2] * (u[i][j][k] - u[i-1][j][k])/(grid[i][j][k][0] - grid[i-1][j][k][0]) + 0.5 * facemetrics[i][j][k][1][1][2] * ((u[i][j+1][k] - u[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (u[i-1][j+1][k] - u[i-1][j-1][k])/(grid[i-1][j+1][k][1] - grid[i-1][j-1][k][1])) + 0.5 * facemetrics[i][j][k][1][2][2] * ((u[i][j][k+1] - u[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (u[i-1][j][k+1] - u[i-1][j][k-1])/(grid[i-1][j][k+1][2] - grid[i-1][j][k-1][2]))
+                d_v_x_m = facemetrics[i][j][k][1][0][0] * (v[i][j][k] - v[i-1][j][k])/(grid[i][j][k][0] - grid[i-1][j][k][0]) + 0.5 * facemetrics[i][j][k][1][1][0] * ((v[i][j+1][k] - v[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (v[i-1][j+1][k] - v[i-1][j-1][k])/(grid[i-1][j+1][k][1] - grid[i-1][j-1][k][1])) + 0.5 * facemetrics[i][j][k][1][2][0] * ((v[i][j][k+1] - v[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (v[i-1][j][k+1] - v[i-1][j][k-1])/(grid[i-1][j][k+1][2] - grid[i-1][j][k-1][2]))
+                d_v_y_m = facemetrics[i][j][k][1][0][1] * (v[i][j][k] - v[i-1][j][k])/(grid[i][j][k][0] - grid[i-1][j][k][0]) + 0.5 * facemetrics[i][j][k][1][1][1] * ((v[i][j+1][k] - v[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (v[i-1][j+1][k] - v[i-1][j-1][k])/(grid[i-1][j+1][k][1] - grid[i-1][j-1][k][1])) + 0.5 * facemetrics[i][j][k][1][2][1] * ((v[i][j][k+1] - v[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (v[i-1][j][k+1] - v[i-1][j][k-1])/(grid[i-1][j][k+1][2] - grid[i-1][j][k-1][2]))
+                d_v_z_m = facemetrics[i][j][k][1][0][2] * (v[i][j][k] - v[i-1][j][k])/(grid[i][j][k][0] - grid[i-1][j][k][0]) + 0.5 * facemetrics[i][j][k][1][1][2] * ((v[i][j+1][k] - v[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (v[i-1][j+1][k] - v[i-1][j-1][k])/(grid[i-1][j+1][k][1] - grid[i-1][j-1][k][1])) + 0.5 * facemetrics[i][j][k][1][2][2] * ((v[i][j][k+1] - v[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (v[i-1][j][k+1] - v[i-1][j][k-1])/(grid[i-1][j][k+1][2] - grid[i-1][j][k-1][2]))
+                d_w_x_m = facemetrics[i][j][k][1][0][0] * (w[i][j][k] - w[i-1][j][k])/(grid[i][j][k][0] - grid[i-1][j][k][0]) + 0.5 * facemetrics[i][j][k][1][1][0] * ((w[i][j+1][k] - w[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (w[i-1][j+1][k] - w[i-1][j-1][k])/(grid[i-1][j+1][k][1] - grid[i-1][j-1][k][1])) + 0.5 * facemetrics[i][j][k][1][2][0] * ((w[i][j][k+1] - w[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (w[i-1][j][k+1] - w[i-1][j][k-1])/(grid[i-1][j][k+1][2] - grid[i-1][j][k-1][2]))
+                d_w_y_m = facemetrics[i][j][k][1][0][1] * (w[i][j][k] - w[i-1][j][k])/(grid[i][j][k][0] - grid[i-1][j][k][0]) + 0.5 * facemetrics[i][j][k][1][1][1] * ((w[i][j+1][k] - w[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (w[i-1][j+1][k] - w[i-1][j-1][k])/(grid[i-1][j+1][k][1] - grid[i-1][j-1][k][1])) + 0.5 * facemetrics[i][j][k][1][2][1] * ((w[i][j][k+1] - w[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (w[i-1][j][k+1] - w[i-1][j][k-1])/(grid[i-1][j][k+1][2] - grid[i-1][j][k-1][2]))
+                d_w_z_m = facemetrics[i][j][k][1][0][2] * (w[i][j][k] - w[i-1][j][k])/(grid[i][j][k][0] - grid[i-1][j][k][0]) + 0.5 * facemetrics[i][j][k][1][1][2] * ((w[i][j+1][k] - w[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (w[i-1][j+1][k] - w[i-1][j-1][k])/(grid[i-1][j+1][k][1] - grid[i-1][j-1][k][1])) + 0.5 * facemetrics[i][j][k][1][2][2] * ((w[i][j][k+1] - w[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (w[i-1][j][k+1] - w[i-1][j][k-1])/(grid[i-1][j][k+1][2] - grid[i-1][j][k-1][2]))
+                d_T_x_m = facemetrics[i][j][k][1][0][0] * (T[i][j][k] - T[i-1][j][k])/(grid[i][j][k][0] - grid[i-1][j][k][0]) + 0.5 * facemetrics[i][j][k][1][1][0] * ((T[i][j+1][k] - T[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (T[i-1][j+1][k] - T[i-1][j-1][k])/(grid[i-1][j+1][k][1] - grid[i-1][j-1][k][1])) + 0.5 * facemetrics[i][j][k][1][2][0] * ((T[i][j][k+1] - T[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (T[i-1][j][k+1] - T[i-1][j][k-1])/(grid[i-1][j][k+1][2] - grid[i-1][j][k-1][2]))
+                d_T_y_m = facemetrics[i][j][k][1][0][1] * (T[i][j][k] - T[i-1][j][k])/(grid[i][j][k][0] - grid[i-1][j][k][0]) + 0.5 * facemetrics[i][j][k][1][1][1] * ((T[i][j+1][k] - T[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (T[i-1][j+1][k] - T[i-1][j-1][k])/(grid[i-1][j+1][k][1] - grid[i-1][j-1][k][1])) + 0.5 * facemetrics[i][j][k][1][2][1] * ((T[i][j][k+1] - T[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (T[i-1][j][k+1] - T[i-1][j][k-1])/(grid[i-1][j][k+1][2] - grid[i-1][j][k-1][2]))
+                d_T_z_m = facemetrics[i][j][k][1][0][2] * (T[i][j][k] - T[i-1][j][k])/(grid[i][j][k][0] - grid[i-1][j][k][0]) + 0.5 * facemetrics[i][j][k][1][1][2] * ((T[i][j+1][k] - T[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (T[i-1][j+1][k] - T[i-1][j-1][k])/(grid[i-1][j+1][k][1] - grid[i-1][j-1][k][1])) + 0.5 * facemetrics[i][j][k][1][2][2] * ((T[i][j][k+1] - T[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (T[i-1][j][k+1] - T[i-1][j][k-1])/(grid[i-1][j][k+1][2] - grid[i-1][j][k-1][2]))                
 
                 mu_avg_p      = 0.5 * (mu[i+1][j][k] + mu[i][j][k])
                 mu_avg_m      = 0.5 * (mu[i][j][k] + mu[i-1][j][k])
@@ -2115,79 +2147,33 @@ def viscous_fluxes( rhou_vis, rhov_vis, rhow_vis, rhoE_vis, work_vis_rhoe, u, v,
                 rhoE_x_p = u_avg_p * tau_xx_p + v_avg_p * tau_xy_p + w_avg_p * tau_xz_p - q_x_p
                 rhoE_x_m = u_avg_m * tau_xx_m + v_avg_m * tau_xy_m + w_avg_m * tau_xz_m - q_x_m
 
-                # eta-face
-                x_eta_avg_p[0] = 0.5 * ( (physical_grid[i+1][j+1][k][0] - physical_grid[i-1][j+1][k][0])/(grid[i+1][j+1][k][0] - grid[i-1][j+1][k][0]) + (physical_grid[i+1][j][k][0] - physical_grid[i-1][j][k][0])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) )
-                x_eta_avg_p[1] = (physical_grid[i][j+1][k][0] - physical_grid[i][j][k][0])/(grid[i][j+1][k][1] - grid[i][j][k][1])
-                x_eta_avg_p[2] = 0.5 * ( (physical_grid[i][j+1][k+1][0] - physical_grid[i][j+1][k-1][0])/(grid[i][j+1][k+1][2] - grid[i][j+1][k-1][2]) + (physical_grid[i][j][k+1][0] - physical_grid[i][j][k-1][0])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) )
-                x_eta_avg_m[0] = 0.5 * ( (physical_grid[i+1][j][k][0] - physical_grid[i-1][j][k][0])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (physical_grid[i+1][j-1][k][0] - physical_grid[i-1][j-1][k][0])/(grid[i+1][j-1][k][0] - grid[i-1][j-1][k][0]) )
-                x_eta_avg_m[1] = (physical_grid[i][j][k][0] - physical_grid[i][j-1][k][0])/(grid[i][j][k][1] - grid[i][j-1][k][1])
-                x_eta_avg_m[2] = 0.5 * ( (physical_grid[i][j][k+1][0] - physical_grid[i][j][k-1][0])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (physical_grid[i][j-1][k+1][0] - physical_grid[i][j-1][k-1][0])/(grid[i][j-1][k+1][2] - grid[i][j-1][k-1][2]) )
+                # eta face
+                # Velocity & Temperature derivatives
+                d_u_x_p = 0.5 * facemetrics[i][j][k][2][0][0] * ((u[i+1][j+1][k] - u[i-1][j+1][k])/(grid[i+1][j+1][k][0] - grid[i-1][j+1][k][0]) + (u[i+1][j][k] - u[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + facemetrics[i][j][k][2][1][0] * (u[i][j+1][k] - u[i][j][k])/(grid[i][j+1][k][1] - grid[i][j][k][1]) + 0.5 * facemetrics[i][j][k][2][2][0] * ((u[i][j+1][k+1] - u[i][j+1][k-1])/(grid[i][j+1][k+1][2] - grid[i][j+1][k-1][2]) + (u[i][j][k+1] - u[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]))
+                d_u_y_p = 0.5 * facemetrics[i][j][k][2][0][1] * ((u[i+1][j+1][k] - u[i-1][j+1][k])/(grid[i+1][j+1][k][0] - grid[i-1][j+1][k][0]) + (u[i+1][j][k] - u[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + facemetrics[i][j][k][2][1][1] * (u[i][j+1][k] - u[i][j][k])/(grid[i][j+1][k][1] - grid[i][j][k][1]) + 0.5 * facemetrics[i][j][k][2][2][1] * ((u[i][j+1][k+1] - u[i][j+1][k-1])/(grid[i][j+1][k+1][2] - grid[i][j+1][k-1][2]) + (u[i][j][k+1] - u[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]))
+                d_u_z_p = 0.5 * facemetrics[i][j][k][2][0][2] * ((u[i+1][j+1][k] - u[i-1][j+1][k])/(grid[i+1][j+1][k][0] - grid[i-1][j+1][k][0]) + (u[i+1][j][k] - u[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + facemetrics[i][j][k][2][1][2] * (u[i][j+1][k] - u[i][j][k])/(grid[i][j+1][k][1] - grid[i][j][k][1]) + 0.5 * facemetrics[i][j][k][2][2][2] * ((u[i][j+1][k+1] - u[i][j+1][k-1])/(grid[i][j+1][k+1][2] - grid[i][j+1][k-1][2]) + (u[i][j][k+1] - u[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]))
+                d_v_x_p = 0.5 * facemetrics[i][j][k][2][0][0] * ((v[i+1][j+1][k] - v[i-1][j+1][k])/(grid[i+1][j+1][k][0] - grid[i-1][j+1][k][0]) + (v[i+1][j][k] - v[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + facemetrics[i][j][k][2][1][0] * (v[i][j+1][k] - v[i][j][k])/(grid[i][j+1][k][1] - grid[i][j][k][1]) + 0.5 * facemetrics[i][j][k][2][2][0] * ((v[i][j+1][k+1] - v[i][j+1][k-1])/(grid[i][j+1][k+1][2] - grid[i][j+1][k-1][2]) + (v[i][j][k+1] - v[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]))
+                d_v_y_p = 0.5 * facemetrics[i][j][k][2][0][1] * ((v[i+1][j+1][k] - v[i-1][j+1][k])/(grid[i+1][j+1][k][0] - grid[i-1][j+1][k][0]) + (v[i+1][j][k] - v[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + facemetrics[i][j][k][2][1][1] * (v[i][j+1][k] - v[i][j][k])/(grid[i][j+1][k][1] - grid[i][j][k][1]) + 0.5 * facemetrics[i][j][k][2][2][1] * ((v[i][j+1][k+1] - v[i][j+1][k-1])/(grid[i][j+1][k+1][2] - grid[i][j+1][k-1][2]) + (v[i][j][k+1] - v[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]))
+                d_v_z_p = 0.5 * facemetrics[i][j][k][2][0][2] * ((v[i+1][j+1][k] - v[i-1][j+1][k])/(grid[i+1][j+1][k][0] - grid[i-1][j+1][k][0]) + (v[i+1][j][k] - v[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + facemetrics[i][j][k][2][1][2] * (v[i][j+1][k] - v[i][j][k])/(grid[i][j+1][k][1] - grid[i][j][k][1]) + 0.5 * facemetrics[i][j][k][2][2][2] * ((v[i][j+1][k+1] - v[i][j+1][k-1])/(grid[i][j+1][k+1][2] - grid[i][j+1][k-1][2]) + (v[i][j][k+1] - v[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]))
+                d_w_x_p = 0.5 * facemetrics[i][j][k][2][0][0] * ((w[i+1][j+1][k] - w[i-1][j+1][k])/(grid[i+1][j+1][k][0] - grid[i-1][j+1][k][0]) + (w[i+1][j][k] - w[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + facemetrics[i][j][k][2][1][0] * (w[i][j+1][k] - w[i][j][k])/(grid[i][j+1][k][1] - grid[i][j][k][1]) + 0.5 * facemetrics[i][j][k][2][2][0] * ((w[i][j+1][k+1] - w[i][j+1][k-1])/(grid[i][j+1][k+1][2] - grid[i][j+1][k-1][2]) + (w[i][j][k+1] - w[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]))
+                d_w_y_p = 0.5 * facemetrics[i][j][k][2][0][1] * ((w[i+1][j+1][k] - w[i-1][j+1][k])/(grid[i+1][j+1][k][0] - grid[i-1][j+1][k][0]) + (w[i+1][j][k] - w[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + facemetrics[i][j][k][2][1][1] * (w[i][j+1][k] - w[i][j][k])/(grid[i][j+1][k][1] - grid[i][j][k][1]) + 0.5 * facemetrics[i][j][k][2][2][1] * ((w[i][j+1][k+1] - w[i][j+1][k-1])/(grid[i][j+1][k+1][2] - grid[i][j+1][k-1][2]) + (w[i][j][k+1] - w[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]))
+                d_w_z_p = 0.5 * facemetrics[i][j][k][2][0][2] * ((w[i+1][j+1][k] - w[i-1][j+1][k])/(grid[i+1][j+1][k][0] - grid[i-1][j+1][k][0]) + (w[i+1][j][k] - w[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + facemetrics[i][j][k][2][1][2] * (w[i][j+1][k] - w[i][j][k])/(grid[i][j+1][k][1] - grid[i][j][k][1]) + 0.5 * facemetrics[i][j][k][2][2][2] * ((w[i][j+1][k+1] - w[i][j+1][k-1])/(grid[i][j+1][k+1][2] - grid[i][j+1][k-1][2]) + (w[i][j][k+1] - w[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]))
+                d_T_x_p = 0.5 * facemetrics[i][j][k][2][0][0] * ((T[i+1][j+1][k] - T[i-1][j+1][k])/(grid[i+1][j+1][k][0] - grid[i-1][j+1][k][0]) + (T[i+1][j][k] - T[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + facemetrics[i][j][k][2][1][0] * (T[i][j+1][k] - T[i][j][k])/(grid[i][j+1][k][1] - grid[i][j][k][1]) + 0.5 * facemetrics[i][j][k][2][2][0] * ((T[i][j+1][k+1] - T[i][j+1][k-1])/(grid[i][j+1][k+1][2] - grid[i][j+1][k-1][2]) + (T[i][j][k+1] - T[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]))
+                d_T_y_p = 0.5 * facemetrics[i][j][k][2][0][1] * ((T[i+1][j+1][k] - T[i-1][j+1][k])/(grid[i+1][j+1][k][0] - grid[i-1][j+1][k][0]) + (T[i+1][j][k] - T[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + facemetrics[i][j][k][2][1][1] * (T[i][j+1][k] - T[i][j][k])/(grid[i][j+1][k][1] - grid[i][j][k][1]) + 0.5 * facemetrics[i][j][k][2][2][1] * ((T[i][j+1][k+1] - T[i][j+1][k-1])/(grid[i][j+1][k+1][2] - grid[i][j+1][k-1][2]) + (T[i][j][k+1] - T[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]))
+                d_T_z_p = 0.5 * facemetrics[i][j][k][2][0][2] * ((T[i+1][j+1][k] - T[i-1][j+1][k])/(grid[i+1][j+1][k][0] - grid[i-1][j+1][k][0]) + (T[i+1][j][k] - T[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + facemetrics[i][j][k][2][1][2] * (T[i][j+1][k] - T[i][j][k])/(grid[i][j+1][k][1] - grid[i][j][k][1]) + 0.5 * facemetrics[i][j][k][2][2][2] * ((T[i][j+1][k+1] - T[i][j+1][k-1])/(grid[i][j+1][k+1][2] - grid[i][j+1][k-1][2]) + (T[i][j][k+1] - T[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]))
 
-                y_eta_avg_p[0] = 0.5 * ( (physical_grid[i+1][j+1][k][1] - physical_grid[i-1][j+1][k][1])/(grid[i+1][j+1][k][0] - grid[i-1][j+1][k][0]) + (physical_grid[i+1][j][k][1] - physical_grid[i-1][j][k][1])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) )
-                y_eta_avg_p[1] = (physical_grid[i][j+1][k][1] - physical_grid[i][j][k][1])/(grid[i][j+1][k][1] - grid[i][j][k][1])
-                y_eta_avg_p[2] = 0.5 * ( (physical_grid[i][j+1][k+1][1] - physical_grid[i][j+1][k-1][1])/(grid[i][j+1][k+1][2] - grid[i][j+1][k-1][2]) + (physical_grid[i][j][k+1][1] - physical_grid[i][j][k-1][1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) )
-                y_eta_avg_m[0] = 0.5 * ( (physical_grid[i+1][j][k][1] - physical_grid[i-1][j][k][1])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (physical_grid[i+1][j-1][k][1] - physical_grid[i-1][j-1][k][1])/(grid[i+1][j-1][k][0] - grid[i-1][j-1][k][0]) )
-                y_eta_avg_m[1] = (physical_grid[i][j][k][1] - physical_grid[i][j-1][k][1])/(grid[i][j][k][1] - grid[i][j-1][k][1])
-                y_eta_avg_m[2] = 0.5 * ( (physical_grid[i][j][k+1][1] - physical_grid[i][j][k-1][1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (physical_grid[i][j-1][k+1][1] - physical_grid[i][j-1][k-1][1])/(grid[i][j-1][k+1][2] - grid[i][j-1][k-1][2]) )
-
-                z_eta_avg_p[0] = 0.5 * ( (physical_grid[i+1][j+1][k][2] - physical_grid[i-1][j+1][k][2])/(grid[i+1][j+1][k][0] - grid[i-1][j+1][k][0]) + (physical_grid[i+1][j][k][2] - physical_grid[i-1][j][k][2])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) )
-                z_eta_avg_p[1] = (physical_grid[i][j+1][k][2] - physical_grid[i][j][k][2])/(grid[i][j+1][k][1] - grid[i][j][k][1])
-                z_eta_avg_p[2] = 0.5 * ( (physical_grid[i][j+1][k+1][2] - physical_grid[i][j+1][k-1][2])/(grid[i][j+1][k+1][2] - grid[i][j+1][k-1][2]) + (physical_grid[i][j][k+1][2] - physical_grid[i][j][k-1][2])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) )
-                z_eta_avg_m[0] = 0.5 * ( (physical_grid[i+1][j][k][2] - physical_grid[i-1][j][k][2])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (physical_grid[i+1][j-1][k][2] - physical_grid[i-1][j-1][k][2])/(grid[i+1][j-1][k][0] - grid[i-1][j-1][k][0]) )
-                z_eta_avg_m[1] = (physical_grid[i][j][k][2] - physical_grid[i][j-1][k][2])/(grid[i][j][k][1] - grid[i][j-1][k][1])
-                z_eta_avg_m[2] = 0.5 * ( (physical_grid[i][j][k+1][2] - physical_grid[i][j][k-1][2])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (physical_grid[i][j-1][k+1][2] - physical_grid[i][j-1][k-1][2])/(grid[i][j-1][k+1][2] - grid[i][j-1][k-1][2]) )
-
-                J_y_p = x_eta_avg_p[0]*y_eta_avg_p[1]*z_eta_avg_p[2] + x_eta_avg_p[1]*y_eta_avg_p[2]*z_eta_avg_p[0] + x_eta_avg_p[2]*y_eta_avg_p[0]*z_eta_avg_p[1] - x_eta_avg_p[2]*y_eta_avg_p[1]*z_eta_avg_p[0] - x_eta_avg_p[1]*y_eta_avg_p[0]*z_eta_avg_p[2] - x_eta_avg_p[0]*y_eta_avg_p[2]*z_eta_avg_p[1] # Calculate Jacobian of coordinate transformation to computational space (xi, eta, zeta)
-                J_y_m = x_eta_avg_m[0]*y_eta_avg_m[1]*z_eta_avg_m[2] + x_eta_avg_m[1]*y_eta_avg_m[2]*z_eta_avg_m[0] + x_eta_avg_m[2]*y_eta_avg_m[0]*z_eta_avg_m[1] - x_eta_avg_m[2]*y_eta_avg_m[1]*z_eta_avg_m[0] - x_eta_avg_m[1]*y_eta_avg_m[0]*z_eta_avg_m[2] - x_eta_avg_m[0]*y_eta_avg_m[2]*z_eta_avg_m[1] # Calculate Jacobian of coordinate transformation to computational space (xi, eta, zeta)
-
-                xi_y_avg_p[0]   = (y_eta_avg_p[1]*z_eta_avg_p[2] - y_eta_avg_p[2]*z_eta_avg_p[1]) / J_y_p # Gradient of xi in x direction
-                xi_y_avg_p[1]   = (x_eta_avg_p[2]*z_eta_avg_p[1] - x_eta_avg_p[1]*z_eta_avg_p[2]) / J_y_p # Gradient of xi in y direction
-                xi_y_avg_p[2]   = (x_eta_avg_p[1]*y_eta_avg_p[2] - x_eta_avg_p[2]*y_eta_avg_p[1]) / J_y_p # Gradient of xi in z direction
-                eta_y_avg_p[0]  = (y_eta_avg_p[2]*z_eta_avg_p[0] - y_eta_avg_p[0]*z_eta_avg_p[2]) / J_y_p # Gradient of eta in x direction
-                eta_y_avg_p[1]  = (x_eta_avg_p[0]*z_eta_avg_p[2] - x_eta_avg_p[2]*z_eta_avg_p[0]) / J_y_p # Gradient of eta in y direction
-                eta_y_avg_p[2]  = (x_eta_avg_p[2]*y_eta_avg_p[0] - x_eta_avg_p[0]*y_eta_avg_p[2]) / J_y_p # Gradient of eta in z direction
-                zeta_y_avg_p[0] = (y_eta_avg_p[0]*z_eta_avg_p[1] - y_eta_avg_p[1]*z_eta_avg_p[0]) / J_y_p # Gradient of zeta in x direction
-                zeta_y_avg_p[1] = (x_eta_avg_p[1]*z_eta_avg_p[0] - x_eta_avg_p[0]*z_eta_avg_p[1]) / J_y_p # Gradient of zeta in y direction
-                zeta_y_avg_p[2] = (x_eta_avg_p[0]*y_eta_avg_p[1] - x_eta_avg_p[1]*y_eta_avg_p[0]) / J_y_p # Gradient of zeta in z direction
-
-                xi_y_avg_m[0]   = (y_eta_avg_m[1]*z_eta_avg_m[2] - y_eta_avg_m[2]*z_eta_avg_m[1]) / J_y_m # Gradient of xi in x direction
-                xi_y_avg_m[1]   = (x_eta_avg_m[2]*z_eta_avg_m[1] - x_eta_avg_m[1]*z_eta_avg_m[2]) / J_y_m # Gradient of xi in y direction
-                xi_y_avg_m[2]   = (x_eta_avg_m[1]*y_eta_avg_m[2] - x_eta_avg_m[2]*y_eta_avg_m[1]) / J_y_m # Gradient of xi in z direction
-                eta_y_avg_m[0]  = (y_eta_avg_m[2]*z_eta_avg_m[0] - y_eta_avg_m[0]*z_eta_avg_m[2]) / J_y_m # Gradient of eta in x direction
-                eta_y_avg_m[1]  = (x_eta_avg_m[0]*z_eta_avg_m[2] - x_eta_avg_m[2]*z_eta_avg_m[0]) / J_y_m # Gradient of eta in y direction
-                eta_y_avg_m[2]  = (x_eta_avg_m[2]*y_eta_avg_m[0] - x_eta_avg_m[0]*y_eta_avg_m[2]) / J_y_m # Gradient of eta in z direction
-                zeta_y_avg_m[0] = (y_eta_avg_m[0]*z_eta_avg_m[1] - y_eta_avg_m[1]*z_eta_avg_m[0]) / J_y_m # Gradient of zeta in x direction
-                zeta_y_avg_m[1] = (x_eta_avg_m[1]*z_eta_avg_m[0] - x_eta_avg_m[0]*z_eta_avg_m[1]) / J_y_m # Gradient of zeta in y direction
-                zeta_y_avg_m[2] = (x_eta_avg_m[0]*y_eta_avg_m[1] - x_eta_avg_m[1]*y_eta_avg_m[0]) / J_y_m # Gradient of zeta in z direction
-
-                J_eta_p = xi_y_avg_p[0]*( eta_y_avg_p[1]*zeta_y_avg_p[2] - eta_y_avg_p[2]*zeta_y_avg_p[1] ) - xi_y_avg_p[1]*( eta_y_avg_p[0]*zeta_y_avg_p[2] - eta_y_avg_p[2]*zeta_y_avg_p[0] ) + xi_y_avg_p[2]*( eta_y_avg_p[0]*zeta_y_avg_p[1] - eta_y_avg_p[1]*zeta_y_avg_p[0] )
-                J_eta_m = xi_y_avg_m[0]*( eta_y_avg_m[1]*zeta_y_avg_m[2] - eta_y_avg_m[2]*zeta_y_avg_m[1] ) - xi_y_avg_m[1]*( eta_y_avg_m[0]*zeta_y_avg_m[2] - eta_y_avg_m[2]*zeta_y_avg_m[0] ) + xi_y_avg_m[2]*( eta_y_avg_m[0]*zeta_y_avg_m[1] - eta_y_avg_m[1]*zeta_y_avg_m[0] )
-
-                d_u_x_p = 0.5 * xi_y_avg_p[0] * ((u[i+1][j+1][k] - u[i-1][j+1][k])/(grid[i+1][j+1][k][0] - grid[i-1][j+1][k][0]) + (u[i+1][j][k] - u[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + eta_y_avg_p[0] * (u[i][j+1][k] - u[i][j][k])/(grid[i][j+1][k][1] - grid[i][j][k][1]) + 0.5 * zeta_y_avg_p[0] * ((u[i][j+1][k+1] - u[i][j+1][k-1])/(grid[i][j+1][k+1][2] - grid[i][j+1][k-1][2]) + (u[i][j][k+1] - u[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]))
-                d_u_y_p = 0.5 * xi_y_avg_p[1] * ((u[i+1][j+1][k] - u[i-1][j+1][k])/(grid[i+1][j+1][k][0] - grid[i-1][j+1][k][0]) + (u[i+1][j][k] - u[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + eta_y_avg_p[1] * (u[i][j+1][k] - u[i][j][k])/(grid[i][j+1][k][1] - grid[i][j][k][1]) + 0.5 * zeta_y_avg_p[1] * ((u[i][j+1][k+1] - u[i][j+1][k-1])/(grid[i][j+1][k+1][2] - grid[i][j+1][k-1][2]) + (u[i][j][k+1] - u[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]))
-                d_u_z_p = 0.5 * xi_y_avg_p[2] * ((u[i+1][j+1][k] - u[i-1][j+1][k])/(grid[i+1][j+1][k][0] - grid[i-1][j+1][k][0]) + (u[i+1][j][k] - u[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + eta_y_avg_p[2] * (u[i][j+1][k] - u[i][j][k])/(grid[i][j+1][k][1] - grid[i][j][k][1]) + 0.5 * zeta_y_avg_p[2] * ((u[i][j+1][k+1] - u[i][j+1][k-1])/(grid[i][j+1][k+1][2] - grid[i][j+1][k-1][2]) + (u[i][j][k+1] - u[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]))
-                d_v_x_p = 0.5 * xi_y_avg_p[0] * ((v[i+1][j+1][k] - v[i-1][j+1][k])/(grid[i+1][j+1][k][0] - grid[i-1][j+1][k][0]) + (v[i+1][j][k] - v[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + eta_y_avg_p[0] * (v[i][j+1][k] - v[i][j][k])/(grid[i][j+1][k][1] - grid[i][j][k][1]) + 0.5 * zeta_y_avg_p[0] * ((v[i][j+1][k+1] - v[i][j+1][k-1])/(grid[i][j+1][k+1][2] - grid[i][j+1][k-1][2]) + (v[i][j][k+1] - v[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]))
-                d_v_y_p = 0.5 * xi_y_avg_p[1] * ((v[i+1][j+1][k] - v[i-1][j+1][k])/(grid[i+1][j+1][k][0] - grid[i-1][j+1][k][0]) + (v[i+1][j][k] - v[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + eta_y_avg_p[1] * (v[i][j+1][k] - v[i][j][k])/(grid[i][j+1][k][1] - grid[i][j][k][1]) + 0.5 * zeta_y_avg_p[1] * ((v[i][j+1][k+1] - v[i][j+1][k-1])/(grid[i][j+1][k+1][2] - grid[i][j+1][k-1][2]) + (v[i][j][k+1] - v[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]))
-                d_v_z_p = 0.5 * xi_y_avg_p[2] * ((v[i+1][j+1][k] - v[i-1][j+1][k])/(grid[i+1][j+1][k][0] - grid[i-1][j+1][k][0]) + (v[i+1][j][k] - v[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + eta_y_avg_p[2] * (v[i][j+1][k] - v[i][j][k])/(grid[i][j+1][k][1] - grid[i][j][k][1]) + 0.5 * zeta_y_avg_p[2] * ((v[i][j+1][k+1] - v[i][j+1][k-1])/(grid[i][j+1][k+1][2] - grid[i][j+1][k-1][2]) + (v[i][j][k+1] - v[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]))
-                d_w_x_p = 0.5 * xi_y_avg_p[0] * ((w[i+1][j+1][k] - w[i-1][j+1][k])/(grid[i+1][j+1][k][0] - grid[i-1][j+1][k][0]) + (w[i+1][j][k] - w[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + eta_y_avg_p[0] * (w[i][j+1][k] - w[i][j][k])/(grid[i][j+1][k][1] - grid[i][j][k][1]) + 0.5 * zeta_y_avg_p[0] * ((w[i][j+1][k+1] - w[i][j+1][k-1])/(grid[i][j+1][k+1][2] - grid[i][j+1][k-1][2]) + (w[i][j][k+1] - w[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]))
-                d_w_y_p = 0.5 * xi_y_avg_p[1] * ((w[i+1][j+1][k] - w[i-1][j+1][k])/(grid[i+1][j+1][k][0] - grid[i-1][j+1][k][0]) + (w[i+1][j][k] - w[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + eta_y_avg_p[1] * (w[i][j+1][k] - w[i][j][k])/(grid[i][j+1][k][1] - grid[i][j][k][1]) + 0.5 * zeta_y_avg_p[1] * ((w[i][j+1][k+1] - w[i][j+1][k-1])/(grid[i][j+1][k+1][2] - grid[i][j+1][k-1][2]) + (w[i][j][k+1] - w[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]))
-                d_w_z_p = 0.5 * xi_y_avg_p[2] * ((w[i+1][j+1][k] - w[i-1][j+1][k])/(grid[i+1][j+1][k][0] - grid[i-1][j+1][k][0]) + (w[i+1][j][k] - w[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + eta_y_avg_p[2] * (w[i][j+1][k] - w[i][j][k])/(grid[i][j+1][k][1] - grid[i][j][k][1]) + 0.5 * zeta_y_avg_p[2] * ((w[i][j+1][k+1] - w[i][j+1][k-1])/(grid[i][j+1][k+1][2] - grid[i][j+1][k-1][2]) + (w[i][j][k+1] - w[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]))
-                d_T_x_p = 0.5 * xi_y_avg_p[0] * ((T[i+1][j+1][k] - T[i-1][j+1][k])/(grid[i+1][j+1][k][0] - grid[i-1][j+1][k][0]) + (T[i+1][j][k] - T[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + eta_y_avg_p[0] * (T[i][j+1][k] - T[i][j][k])/(grid[i][j+1][k][1] - grid[i][j][k][1]) + 0.5 * zeta_y_avg_p[0] * ((T[i][j+1][k+1] - T[i][j+1][k-1])/(grid[i][j+1][k+1][2] - grid[i][j+1][k-1][2]) + (T[i][j][k+1] - T[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]))
-                d_T_y_p = 0.5 * xi_y_avg_p[1] * ((T[i+1][j+1][k] - T[i-1][j+1][k])/(grid[i+1][j+1][k][0] - grid[i-1][j+1][k][0]) + (T[i+1][j][k] - T[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + eta_y_avg_p[1] * (T[i][j+1][k] - T[i][j][k])/(grid[i][j+1][k][1] - grid[i][j][k][1]) + 0.5 * zeta_y_avg_p[1] * ((T[i][j+1][k+1] - T[i][j+1][k-1])/(grid[i][j+1][k+1][2] - grid[i][j+1][k-1][2]) + (T[i][j][k+1] - T[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]))
-                d_T_z_p = 0.5 * xi_y_avg_p[2] * ((T[i+1][j+1][k] - T[i-1][j+1][k])/(grid[i+1][j+1][k][0] - grid[i-1][j+1][k][0]) + (T[i+1][j][k] - T[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + eta_y_avg_p[2] * (T[i][j+1][k] - T[i][j][k])/(grid[i][j+1][k][1] - grid[i][j][k][1]) + 0.5 * zeta_y_avg_p[2] * ((T[i][j+1][k+1] - T[i][j+1][k-1])/(grid[i][j+1][k+1][2] - grid[i][j+1][k-1][2]) + (T[i][j][k+1] - T[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]))
-
-                d_u_x_m = 0.5 * xi_y_avg_m[0] * ((u[i+1][j][k] - u[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (u[i+1][j-1][k] - u[i-1][j-1][k])/(grid[i+1][j-1][k][0] - grid[i-1][j-1][k][0])) + eta_y_avg_m[0] * (u[i][j][k] - u[i][j-1][k])/(grid[i][j][k][1] - grid[i][j-1][k][1]) + 0.5 * zeta_y_avg_m[0] * ((u[i][j][k+1] - u[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (u[i][j-1][k+1] - u[i][j-1][k+1])/(grid[i][j-1][k+1][2] - grid[i][j-1][k-1][2]))
-                d_u_y_m = 0.5 * xi_y_avg_m[1] * ((u[i+1][j][k] - u[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (u[i+1][j-1][k] - u[i-1][j-1][k])/(grid[i+1][j-1][k][0] - grid[i-1][j-1][k][0])) + eta_y_avg_m[1] * (u[i][j][k] - u[i][j-1][k])/(grid[i][j][k][1] - grid[i][j-1][k][1]) + 0.5 * zeta_y_avg_m[1] * ((u[i][j][k+1] - u[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (u[i][j-1][k+1] - u[i][j-1][k+1])/(grid[i][j-1][k+1][2] - grid[i][j-1][k-1][2]))
-                d_u_z_m = 0.5 * xi_y_avg_m[2] * ((u[i+1][j][k] - u[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (u[i+1][j-1][k] - u[i-1][j-1][k])/(grid[i+1][j-1][k][0] - grid[i-1][j-1][k][0])) + eta_y_avg_m[2] * (u[i][j][k] - u[i][j-1][k])/(grid[i][j][k][1] - grid[i][j-1][k][1]) + 0.5 * zeta_y_avg_m[2] * ((u[i][j][k+1] - u[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (u[i][j-1][k+1] - u[i][j-1][k+1])/(grid[i][j-1][k+1][2] - grid[i][j-1][k-1][2]))
-                d_v_x_m = 0.5 * xi_y_avg_m[0] * ((v[i+1][j][k] - v[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (v[i+1][j-1][k] - v[i-1][j-1][k])/(grid[i+1][j-1][k][0] - grid[i-1][j-1][k][0])) + eta_y_avg_m[0] * (v[i][j][k] - v[i][j-1][k])/(grid[i][j][k][1] - grid[i][j-1][k][1]) + 0.5 * zeta_y_avg_m[0] * ((v[i][j][k+1] - v[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (v[i][j-1][k+1] - v[i][j-1][k+1])/(grid[i][j-1][k+1][2] - grid[i][j-1][k-1][2]))
-                d_v_y_m = 0.5 * xi_y_avg_m[1] * ((v[i+1][j][k] - v[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (v[i+1][j-1][k] - v[i-1][j-1][k])/(grid[i+1][j-1][k][0] - grid[i-1][j-1][k][0])) + eta_y_avg_m[1] * (v[i][j][k] - v[i][j-1][k])/(grid[i][j][k][1] - grid[i][j-1][k][1]) + 0.5 * zeta_y_avg_m[1] * ((v[i][j][k+1] - v[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (v[i][j-1][k+1] - v[i][j-1][k+1])/(grid[i][j-1][k+1][2] - grid[i][j-1][k-1][2]))
-                d_v_z_m = 0.5 * xi_y_avg_m[2] * ((v[i+1][j][k] - v[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (v[i+1][j-1][k] - v[i-1][j-1][k])/(grid[i+1][j-1][k][0] - grid[i-1][j-1][k][0])) + eta_y_avg_m[2] * (v[i][j][k] - v[i][j-1][k])/(grid[i][j][k][1] - grid[i][j-1][k][1]) + 0.5 * zeta_y_avg_m[2] * ((v[i][j][k+1] - v[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (v[i][j-1][k+1] - v[i][j-1][k+1])/(grid[i][j-1][k+1][2] - grid[i][j-1][k-1][2]))
-                d_w_x_m = 0.5 * xi_y_avg_m[0] * ((w[i+1][j][k] - w[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (w[i+1][j-1][k] - w[i-1][j-1][k])/(grid[i+1][j-1][k][0] - grid[i-1][j-1][k][0])) + eta_y_avg_m[0] * (w[i][j][k] - w[i][j-1][k])/(grid[i][j][k][1] - grid[i][j-1][k][1]) + 0.5 * zeta_y_avg_m[0] * ((w[i][j][k+1] - w[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (w[i][j-1][k+1] - w[i][j-1][k+1])/(grid[i][j-1][k+1][2] - grid[i][j-1][k-1][2]))
-                d_w_y_m = 0.5 * xi_y_avg_m[1] * ((w[i+1][j][k] - w[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (w[i+1][j-1][k] - w[i-1][j-1][k])/(grid[i+1][j-1][k][0] - grid[i-1][j-1][k][0])) + eta_y_avg_m[1] * (w[i][j][k] - w[i][j-1][k])/(grid[i][j][k][1] - grid[i][j-1][k][1]) + 0.5 * zeta_y_avg_m[1] * ((w[i][j][k+1] - w[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (w[i][j-1][k+1] - w[i][j-1][k+1])/(grid[i][j-1][k+1][2] - grid[i][j-1][k-1][2]))
-                d_w_z_m = 0.5 * xi_y_avg_m[2] * ((w[i+1][j][k] - w[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (w[i+1][j-1][k] - w[i-1][j-1][k])/(grid[i+1][j-1][k][0] - grid[i-1][j-1][k][0])) + eta_y_avg_m[2] * (w[i][j][k] - w[i][j-1][k])/(grid[i][j][k][1] - grid[i][j-1][k][1]) + 0.5 * zeta_y_avg_m[2] * ((w[i][j][k+1] - w[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (w[i][j-1][k+1] - w[i][j-1][k+1])/(grid[i][j-1][k+1][2] - grid[i][j-1][k-1][2]))
-                d_T_x_m = 0.5 * xi_y_avg_m[0] * ((T[i+1][j][k] - T[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (T[i+1][j-1][k] - T[i-1][j-1][k])/(grid[i+1][j-1][k][0] - grid[i-1][j-1][k][0])) + eta_y_avg_m[0] * (T[i][j][k] - T[i][j-1][k])/(grid[i][j][k][1] - grid[i][j-1][k][1]) + 0.5 * zeta_y_avg_m[0] * ((T[i][j][k+1] - T[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (T[i][j-1][k+1] - T[i][j-1][k+1])/(grid[i][j-1][k+1][2] - grid[i][j-1][k-1][2]))
-                d_T_y_m = 0.5 * xi_y_avg_m[1] * ((T[i+1][j][k] - T[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (T[i+1][j-1][k] - T[i-1][j-1][k])/(grid[i+1][j-1][k][0] - grid[i-1][j-1][k][0])) + eta_y_avg_m[1] * (T[i][j][k] - T[i][j-1][k])/(grid[i][j][k][1] - grid[i][j-1][k][1]) + 0.5 * zeta_y_avg_m[1] * ((T[i][j][k+1] - T[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (T[i][j-1][k+1] - T[i][j-1][k+1])/(grid[i][j-1][k+1][2] - grid[i][j-1][k-1][2]))
-                d_T_z_m = 0.5 * xi_y_avg_m[2] * ((T[i+1][j][k] - T[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (T[i+1][j-1][k] - T[i-1][j-1][k])/(grid[i+1][j-1][k][0] - grid[i-1][j-1][k][0])) + eta_y_avg_m[2] * (T[i][j][k] - T[i][j-1][k])/(grid[i][j][k][1] - grid[i][j-1][k][1]) + 0.5 * zeta_y_avg_m[2] * ((T[i][j][k+1] - T[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (T[i][j-1][k+1] - T[i][j-1][k+1])/(grid[i][j-1][k+1][2] - grid[i][j-1][k-1][2]))
+                d_u_x_m = 0.5 * facemetrics[i][j][k][3][0][0] * ((u[i+1][j][k] - u[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (u[i+1][j-1][k] - u[i-1][j-1][k])/(grid[i+1][j-1][k][0] - grid[i-1][j-1][k][0])) + facemetrics[i][j][k][3][1][0] * (u[i][j][k] - u[i][j-1][k])/(grid[i][j][k][1] - grid[i][j-1][k][1]) + 0.5 * facemetrics[i][j][k][3][2][0] * ((u[i][j][k+1] - u[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (u[i][j-1][k+1] - u[i][j-1][k+1])/(grid[i][j-1][k+1][2] - grid[i][j-1][k-1][2]))
+                d_u_y_m = 0.5 * facemetrics[i][j][k][3][0][1] * ((u[i+1][j][k] - u[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (u[i+1][j-1][k] - u[i-1][j-1][k])/(grid[i+1][j-1][k][0] - grid[i-1][j-1][k][0])) + facemetrics[i][j][k][3][1][1] * (u[i][j][k] - u[i][j-1][k])/(grid[i][j][k][1] - grid[i][j-1][k][1]) + 0.5 * facemetrics[i][j][k][3][2][1] * ((u[i][j][k+1] - u[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (u[i][j-1][k+1] - u[i][j-1][k+1])/(grid[i][j-1][k+1][2] - grid[i][j-1][k-1][2]))
+                d_u_z_m = 0.5 * facemetrics[i][j][k][3][0][2] * ((u[i+1][j][k] - u[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (u[i+1][j-1][k] - u[i-1][j-1][k])/(grid[i+1][j-1][k][0] - grid[i-1][j-1][k][0])) + facemetrics[i][j][k][3][1][2] * (u[i][j][k] - u[i][j-1][k])/(grid[i][j][k][1] - grid[i][j-1][k][1]) + 0.5 * facemetrics[i][j][k][3][2][2] * ((u[i][j][k+1] - u[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (u[i][j-1][k+1] - u[i][j-1][k+1])/(grid[i][j-1][k+1][2] - grid[i][j-1][k-1][2]))
+                d_v_x_m = 0.5 * facemetrics[i][j][k][3][0][0] * ((v[i+1][j][k] - v[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (v[i+1][j-1][k] - v[i-1][j-1][k])/(grid[i+1][j-1][k][0] - grid[i-1][j-1][k][0])) + facemetrics[i][j][k][3][1][0] * (v[i][j][k] - v[i][j-1][k])/(grid[i][j][k][1] - grid[i][j-1][k][1]) + 0.5 * facemetrics[i][j][k][3][2][0] * ((v[i][j][k+1] - v[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (v[i][j-1][k+1] - v[i][j-1][k+1])/(grid[i][j-1][k+1][2] - grid[i][j-1][k-1][2]))
+                d_v_y_m = 0.5 * facemetrics[i][j][k][3][0][1] * ((v[i+1][j][k] - v[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (v[i+1][j-1][k] - v[i-1][j-1][k])/(grid[i+1][j-1][k][0] - grid[i-1][j-1][k][0])) + facemetrics[i][j][k][3][1][1] * (v[i][j][k] - v[i][j-1][k])/(grid[i][j][k][1] - grid[i][j-1][k][1]) + 0.5 * facemetrics[i][j][k][3][2][1] * ((v[i][j][k+1] - v[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (v[i][j-1][k+1] - v[i][j-1][k+1])/(grid[i][j-1][k+1][2] - grid[i][j-1][k-1][2]))
+                d_v_z_m = 0.5 * facemetrics[i][j][k][3][0][2] * ((v[i+1][j][k] - v[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (v[i+1][j-1][k] - v[i-1][j-1][k])/(grid[i+1][j-1][k][0] - grid[i-1][j-1][k][0])) + facemetrics[i][j][k][3][1][2] * (v[i][j][k] - v[i][j-1][k])/(grid[i][j][k][1] - grid[i][j-1][k][1]) + 0.5 * facemetrics[i][j][k][3][2][2] * ((v[i][j][k+1] - v[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (v[i][j-1][k+1] - v[i][j-1][k+1])/(grid[i][j-1][k+1][2] - grid[i][j-1][k-1][2]))
+                d_w_x_m = 0.5 * facemetrics[i][j][k][3][0][0] * ((w[i+1][j][k] - w[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (w[i+1][j-1][k] - w[i-1][j-1][k])/(grid[i+1][j-1][k][0] - grid[i-1][j-1][k][0])) + facemetrics[i][j][k][3][1][0] * (w[i][j][k] - w[i][j-1][k])/(grid[i][j][k][1] - grid[i][j-1][k][1]) + 0.5 * facemetrics[i][j][k][3][2][0] * ((w[i][j][k+1] - w[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (w[i][j-1][k+1] - w[i][j-1][k+1])/(grid[i][j-1][k+1][2] - grid[i][j-1][k-1][2]))
+                d_w_y_m = 0.5 * facemetrics[i][j][k][3][0][1] * ((w[i+1][j][k] - w[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (w[i+1][j-1][k] - w[i-1][j-1][k])/(grid[i+1][j-1][k][0] - grid[i-1][j-1][k][0])) + facemetrics[i][j][k][3][1][1] * (w[i][j][k] - w[i][j-1][k])/(grid[i][j][k][1] - grid[i][j-1][k][1]) + 0.5 * facemetrics[i][j][k][3][2][1] * ((w[i][j][k+1] - w[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (w[i][j-1][k+1] - w[i][j-1][k+1])/(grid[i][j-1][k+1][2] - grid[i][j-1][k-1][2]))
+                d_w_z_m = 0.5 * facemetrics[i][j][k][3][0][2] * ((w[i+1][j][k] - w[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (w[i+1][j-1][k] - w[i-1][j-1][k])/(grid[i+1][j-1][k][0] - grid[i-1][j-1][k][0])) + facemetrics[i][j][k][3][1][2] * (w[i][j][k] - w[i][j-1][k])/(grid[i][j][k][1] - grid[i][j-1][k][1]) + 0.5 * facemetrics[i][j][k][3][2][2] * ((w[i][j][k+1] - w[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (w[i][j-1][k+1] - w[i][j-1][k+1])/(grid[i][j-1][k+1][2] - grid[i][j-1][k-1][2]))
+                d_T_x_m = 0.5 * facemetrics[i][j][k][3][0][0] * ((T[i+1][j][k] - T[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (T[i+1][j-1][k] - T[i-1][j-1][k])/(grid[i+1][j-1][k][0] - grid[i-1][j-1][k][0])) + facemetrics[i][j][k][3][1][0] * (T[i][j][k] - T[i][j-1][k])/(grid[i][j][k][1] - grid[i][j-1][k][1]) + 0.5 * facemetrics[i][j][k][3][2][0] * ((T[i][j][k+1] - T[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (T[i][j-1][k+1] - T[i][j-1][k+1])/(grid[i][j-1][k+1][2] - grid[i][j-1][k-1][2]))
+                d_T_y_m = 0.5 * facemetrics[i][j][k][3][0][1] * ((T[i+1][j][k] - T[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (T[i+1][j-1][k] - T[i-1][j-1][k])/(grid[i+1][j-1][k][0] - grid[i-1][j-1][k][0])) + facemetrics[i][j][k][3][1][1] * (T[i][j][k] - T[i][j-1][k])/(grid[i][j][k][1] - grid[i][j-1][k][1]) + 0.5 * facemetrics[i][j][k][3][2][1] * ((T[i][j][k+1] - T[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (T[i][j-1][k+1] - T[i][j-1][k+1])/(grid[i][j-1][k+1][2] - grid[i][j-1][k-1][2]))
+                d_T_z_m = 0.5 * facemetrics[i][j][k][3][0][2] * ((T[i+1][j][k] - T[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (T[i+1][j-1][k] - T[i-1][j-1][k])/(grid[i+1][j-1][k][0] - grid[i-1][j-1][k][0])) + facemetrics[i][j][k][3][1][2] * (T[i][j][k] - T[i][j-1][k])/(grid[i][j][k][1] - grid[i][j-1][k][1]) + 0.5 * facemetrics[i][j][k][3][2][2] * ((T[i][j][k+1] - T[i][j][k-1])/(grid[i][j][k+1][2] - grid[i][j][k-1][2]) + (T[i][j-1][k+1] - T[i][j-1][k+1])/(grid[i][j-1][k+1][2] - grid[i][j-1][k-1][2]))
 
                 mu_avg_p      = 0.5 * (mu[i][j+1][k] + mu[i][j][k])
                 mu_avg_m      = 0.5 * (mu[i][j][k] + mu[i][j-1][k])
@@ -2213,79 +2199,33 @@ def viscous_fluxes( rhou_vis, rhov_vis, rhow_vis, rhoE_vis, work_vis_rhoe, u, v,
                 rhoE_y_p = u_avg_p * tau_yx_p + v_avg_p * tau_yy_p + w_avg_p * tau_yz_p - q_y_p
                 rhoE_y_m = u_avg_m * tau_yx_m + v_avg_m * tau_yy_m + w_avg_m * tau_yz_m - q_y_m
 
-                # zeta-face
-                x_zeta_avg_p[0] = 0.5 * ( (physical_grid[i+1][j][k+1][0] - physical_grid[i-1][j][k+1][0])/(grid[i+1][j][k+1][0] - grid[i-1][j][k+1][0]) + (physical_grid[i+1][j][k][0] - physical_grid[i-1][j][k][0])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) )
-                x_zeta_avg_p[1] = 0.5 * ( (physical_grid[i][j+1][k+1][0] - physical_grid[i][j-1][k+1][0])/(grid[i][j+1][k+1][1] - grid[i][j-1][k+1][1]) + (physical_grid[i][j+1][k][0] - physical_grid[i][j-1][k][0])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) )
-                x_zeta_avg_p[2] = (physical_grid[i][j][k+1][0] - physical_grid[i][j][k][0])/(grid[i][j][k+1][2] - grid[i][j][k][2])
-                x_zeta_avg_m[0] = 0.5 * ( (physical_grid[i+1][j][k][0] - physical_grid[i-1][j][k][0])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (physical_grid[i+1][j][k-1][0] - physical_grid[i-1][j][k-1][0])/(grid[i+1][j][k-1][0] - grid[i-1][j][k-1][0]) )
-                x_zeta_avg_m[1] = 0.5 * ( (physical_grid[i][j+1][k][0] - physical_grid[i][j-1][k][0])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (physical_grid[i][j+1][k-1][0] - physical_grid[i][j-1][k-1][0])/(grid[i][j+1][k-1][1] - grid[i][j-1][k-1][1]) )
-                x_zeta_avg_m[2] = (physical_grid[i][j][k][0] - physical_grid[i][j][k-1][0])/(grid[i][j][k][2] - grid[i][j][k-1][2])
+                # zeta face
+                # Velocity & Temperature derivatives
+                d_u_x_p = 0.5 * facemetrics[i][j][k][4][0][0] * ((u[i+1][j][k+1] - u[i-1][j][k+1])/(grid[i+1][j][k+1][0] - grid[i-1][j][k+1][0]) + (u[i+1][j][k] - u[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * facemetrics[i][j][k][4][1][0] * ((u[i][j+1][k+1] - u[i][j-1][k+1])/(grid[i][j+1][k+1][1] - grid[i][j-1][k+1][1]) + (u[i][j+1][k] - u[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1])) + facemetrics[i][j][k][4][2][0] * (u[i][j][k+1] - u[i][j][k])/(grid[i][j][k+1][2] - grid[i][j][k][2])
+                d_u_y_p = 0.5 * facemetrics[i][j][k][4][0][1] * ((u[i+1][j][k+1] - u[i-1][j][k+1])/(grid[i+1][j][k+1][0] - grid[i-1][j][k+1][0]) + (u[i+1][j][k] - u[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * facemetrics[i][j][k][4][1][1] * ((u[i][j+1][k+1] - u[i][j-1][k+1])/(grid[i][j+1][k+1][1] - grid[i][j-1][k+1][1]) + (u[i][j+1][k] - u[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1])) + facemetrics[i][j][k][4][2][1] * (u[i][j][k+1] - u[i][j][k])/(grid[i][j][k+1][2] - grid[i][j][k][2])
+                d_u_z_p = 0.5 * facemetrics[i][j][k][4][0][2] * ((u[i+1][j][k+1] - u[i-1][j][k+1])/(grid[i+1][j][k+1][0] - grid[i-1][j][k+1][0]) + (u[i+1][j][k] - u[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * facemetrics[i][j][k][4][1][2] * ((u[i][j+1][k+1] - u[i][j-1][k+1])/(grid[i][j+1][k+1][1] - grid[i][j-1][k+1][1]) + (u[i][j+1][k] - u[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1])) + facemetrics[i][j][k][4][2][2] * (u[i][j][k+1] - u[i][j][k])/(grid[i][j][k+1][2] - grid[i][j][k][2])
+                d_v_x_p = 0.5 * facemetrics[i][j][k][4][0][0] * ((v[i+1][j][k+1] - v[i-1][j][k+1])/(grid[i+1][j][k+1][0] - grid[i-1][j][k+1][0]) + (v[i+1][j][k] - v[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * facemetrics[i][j][k][4][1][0] * ((v[i][j+1][k+1] - v[i][j-1][k+1])/(grid[i][j+1][k+1][1] - grid[i][j-1][k+1][1]) + (v[i][j+1][k] - v[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1])) + facemetrics[i][j][k][4][2][0] * (v[i][j][k+1] - v[i][j][k])/(grid[i][j][k+1][2] - grid[i][j][k][2])
+                d_v_y_p = 0.5 * facemetrics[i][j][k][4][0][1] * ((v[i+1][j][k+1] - v[i-1][j][k+1])/(grid[i+1][j][k+1][0] - grid[i-1][j][k+1][0]) + (v[i+1][j][k] - v[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * facemetrics[i][j][k][4][1][1] * ((v[i][j+1][k+1] - v[i][j-1][k+1])/(grid[i][j+1][k+1][1] - grid[i][j-1][k+1][1]) + (v[i][j+1][k] - v[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1])) + facemetrics[i][j][k][4][2][1] * (v[i][j][k+1] - v[i][j][k])/(grid[i][j][k+1][2] - grid[i][j][k][2])
+                d_v_z_p = 0.5 * facemetrics[i][j][k][4][0][2] * ((v[i+1][j][k+1] - v[i-1][j][k+1])/(grid[i+1][j][k+1][0] - grid[i-1][j][k+1][0]) + (v[i+1][j][k] - v[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * facemetrics[i][j][k][4][1][2] * ((v[i][j+1][k+1] - v[i][j-1][k+1])/(grid[i][j+1][k+1][1] - grid[i][j-1][k+1][1]) + (v[i][j+1][k] - v[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1])) + facemetrics[i][j][k][4][2][2] * (v[i][j][k+1] - v[i][j][k])/(grid[i][j][k+1][2] - grid[i][j][k][2])
+                d_w_x_p = 0.5 * facemetrics[i][j][k][4][0][0] * ((w[i+1][j][k+1] - w[i-1][j][k+1])/(grid[i+1][j][k+1][0] - grid[i-1][j][k+1][0]) + (w[i+1][j][k] - w[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * facemetrics[i][j][k][4][1][0] * ((w[i][j+1][k+1] - w[i][j-1][k+1])/(grid[i][j+1][k+1][1] - grid[i][j-1][k+1][1]) + (w[i][j+1][k] - w[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1])) + facemetrics[i][j][k][4][2][0] * (w[i][j][k+1] - w[i][j][k])/(grid[i][j][k+1][2] - grid[i][j][k][2])
+                d_w_y_p = 0.5 * facemetrics[i][j][k][4][0][1] * ((w[i+1][j][k+1] - w[i-1][j][k+1])/(grid[i+1][j][k+1][0] - grid[i-1][j][k+1][0]) + (w[i+1][j][k] - w[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * facemetrics[i][j][k][4][1][1] * ((w[i][j+1][k+1] - w[i][j-1][k+1])/(grid[i][j+1][k+1][1] - grid[i][j-1][k+1][1]) + (w[i][j+1][k] - w[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1])) + facemetrics[i][j][k][4][2][1] * (w[i][j][k+1] - w[i][j][k])/(grid[i][j][k+1][2] - grid[i][j][k][2])
+                d_w_z_p = 0.5 * facemetrics[i][j][k][4][0][2] * ((w[i+1][j][k+1] - w[i-1][j][k+1])/(grid[i+1][j][k+1][0] - grid[i-1][j][k+1][0]) + (w[i+1][j][k] - w[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * facemetrics[i][j][k][4][1][2] * ((w[i][j+1][k+1] - w[i][j-1][k+1])/(grid[i][j+1][k+1][1] - grid[i][j-1][k+1][1]) + (w[i][j+1][k] - w[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1])) + facemetrics[i][j][k][4][2][2] * (w[i][j][k+1] - w[i][j][k])/(grid[i][j][k+1][2] - grid[i][j][k][2])
+                d_T_x_p = 0.5 * facemetrics[i][j][k][4][0][0] * ((T[i+1][j][k+1] - T[i-1][j][k+1])/(grid[i+1][j][k+1][0] - grid[i-1][j][k+1][0]) + (T[i+1][j][k] - T[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * facemetrics[i][j][k][4][1][0] * ((T[i][j+1][k+1] - T[i][j-1][k+1])/(grid[i][j+1][k+1][1] - grid[i][j-1][k+1][1]) + (T[i][j+1][k] - T[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1])) + facemetrics[i][j][k][4][2][0] * (T[i][j][k+1] - T[i][j][k])/(grid[i][j][k+1][2] - grid[i][j][k][2])
+                d_T_y_p = 0.5 * facemetrics[i][j][k][4][0][1] * ((T[i+1][j][k+1] - T[i-1][j][k+1])/(grid[i+1][j][k+1][0] - grid[i-1][j][k+1][0]) + (T[i+1][j][k] - T[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * facemetrics[i][j][k][4][1][1] * ((T[i][j+1][k+1] - T[i][j-1][k+1])/(grid[i][j+1][k+1][1] - grid[i][j-1][k+1][1]) + (T[i][j+1][k] - T[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1])) + facemetrics[i][j][k][4][2][1] * (T[i][j][k+1] - T[i][j][k])/(grid[i][j][k+1][2] - grid[i][j][k][2])
+                d_T_z_p = 0.5 * facemetrics[i][j][k][4][0][2] * ((T[i+1][j][k+1] - T[i-1][j][k+1])/(grid[i+1][j][k+1][0] - grid[i-1][j][k+1][0]) + (T[i+1][j][k] - T[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * facemetrics[i][j][k][4][1][2] * ((T[i][j+1][k+1] - T[i][j-1][k+1])/(grid[i][j+1][k+1][1] - grid[i][j-1][k+1][1]) + (T[i][j+1][k] - T[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1])) + facemetrics[i][j][k][4][2][2] * (T[i][j][k+1] - T[i][j][k])/(grid[i][j][k+1][2] - grid[i][j][k][2])
 
-                y_zeta_avg_p[0] = 0.5 * ( (physical_grid[i+1][j][k+1][1] - physical_grid[i-1][j][k+1][1])/(grid[i+1][j][k+1][0] - grid[i-1][j][k+1][0]) + (physical_grid[i+1][j][k][1] - physical_grid[i-1][j][k][1])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) )
-                y_zeta_avg_p[1] = 0.5 * ( (physical_grid[i][j+1][k+1][1] - physical_grid[i][j-1][k+1][1])/(grid[i][j+1][k+1][1] - grid[i][j-1][k+1][1]) + (physical_grid[i][j+1][k][1] - physical_grid[i][j-1][k][1])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) )
-                y_zeta_avg_p[2] = (physical_grid[i][j][k+1][1] - physical_grid[i][j][k][1])/(grid[i][j][k+1][2] - grid[i][j][k][2])
-                y_zeta_avg_m[0] = 0.5 * ( (physical_grid[i+1][j][k][1] - physical_grid[i-1][j][k][1])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (physical_grid[i+1][j][k-1][1] - physical_grid[i-1][j][k-1][1])/(grid[i+1][j][k-1][0] - grid[i-1][j][k-1][0]) )
-                y_zeta_avg_m[1] = 0.5 * ( (physical_grid[i][j+1][k][1] - physical_grid[i][j-1][k][1])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (physical_grid[i][j+1][k-1][1] - physical_grid[i][j-1][k-1][1])/(grid[i][j+1][k-1][1] - grid[i][j-1][k-1][1]) )
-                y_zeta_avg_m[2] = (physical_grid[i][j][k][0] - physical_grid[i][j][k-1][0])/(grid[i][j][k][2] - grid[i][j][k-1][2])
-
-                z_zeta_avg_p[0] = 0.5 * ( (physical_grid[i+1][j][k+1][2] - physical_grid[i-1][j][k+1][2])/(grid[i+1][j][k+1][0] - grid[i-1][j][k+1][0]) + (physical_grid[i+1][j][k][2] - physical_grid[i-1][j][k][2])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) )
-                z_zeta_avg_p[1] = 0.5 * ( (physical_grid[i][j+1][k+1][2] - physical_grid[i][j-1][k+1][2])/(grid[i][j+1][k+1][1] - grid[i][j-1][k+1][1]) + (physical_grid[i][j+1][k][2] - physical_grid[i][j-1][k][2])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) )
-                z_zeta_avg_p[2] = (physical_grid[i][j][k+1][2] - physical_grid[i][j][k][2])/(grid[i][j][k+1][2] - grid[i][j][k][2])
-                z_zeta_avg_m[0] = 0.5 * ( (physical_grid[i+1][j][k][2] - physical_grid[i-1][j][k][2])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (physical_grid[i+1][j][k-1][2] - physical_grid[i-1][j][k-1][2])/(grid[i+1][j][k-1][0] - grid[i-1][j][k-1][0]) )
-                z_zeta_avg_m[1] = 0.5 * ( (physical_grid[i][j+1][k][2] - physical_grid[i][j-1][k][2])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (physical_grid[i][j+1][k-1][2] - physical_grid[i][j-1][k-1][2])/(grid[i][j+1][k-1][1] - grid[i][j-1][k-1][1]) )
-                z_zeta_avg_m[2] = (physical_grid[i][j][k][2] - physical_grid[i][j][k-1][2])/(grid[i][j][k][2] - grid[i][j][k-1][2])
-
-                J_z_p = x_zeta_avg_p[0]*y_zeta_avg_p[1]*z_zeta_avg_p[2] + x_zeta_avg_p[1]*y_zeta_avg_p[2]*z_zeta_avg_p[0] + x_zeta_avg_p[2]*y_zeta_avg_p[0]*z_zeta_avg_p[1] - x_zeta_avg_p[2]*y_zeta_avg_p[1]*z_zeta_avg_p[0] - x_zeta_avg_p[1]*y_zeta_avg_p[0]*z_zeta_avg_p[2] - x_zeta_avg_p[0]*y_zeta_avg_p[2]*z_zeta_avg_p[1] # Calculate Jacobian of coordinate transformation to computational space (xi, eta, zeta)
-                J_z_m = x_zeta_avg_m[0]*y_zeta_avg_m[1]*z_zeta_avg_m[2] + x_zeta_avg_m[1]*y_zeta_avg_m[2]*z_zeta_avg_m[0] + x_zeta_avg_m[2]*y_zeta_avg_m[0]*z_zeta_avg_m[1] - x_zeta_avg_m[2]*y_zeta_avg_m[1]*z_zeta_avg_m[0] - x_zeta_avg_m[1]*y_zeta_avg_m[0]*z_zeta_avg_m[2] - x_zeta_avg_m[0]*y_zeta_avg_m[2]*z_zeta_avg_m[1] # Calculate Jacobian of coordinate transformation to computational space (xi, eta, zeta)
-
-                xi_z_avg_p[0]   = (y_zeta_avg_p[1]*z_zeta_avg_p[2] - y_zeta_avg_p[2]*z_zeta_avg_p[1]) / J_z_p # Gradient of xi in x direction
-                xi_z_avg_p[1]   = (x_zeta_avg_p[2]*z_zeta_avg_p[1] - x_zeta_avg_p[1]*z_zeta_avg_p[2]) / J_z_p # Gradient of xi in y direction
-                xi_z_avg_p[2]   = (x_zeta_avg_p[1]*y_zeta_avg_p[2] - x_zeta_avg_p[2]*y_zeta_avg_p[1]) / J_z_p # Gradient of xi in z direction
-                eta_z_avg_p[0]  = (y_zeta_avg_p[2]*z_zeta_avg_p[0] - y_zeta_avg_p[0]*z_zeta_avg_p[2]) / J_z_p # Gradient of eta in x direction
-                eta_z_avg_p[1]  = (x_zeta_avg_p[0]*z_zeta_avg_p[2] - x_zeta_avg_p[2]*z_zeta_avg_p[0]) / J_z_p # Gradient of eta in y direction
-                eta_z_avg_p[2]  = (x_zeta_avg_p[2]*y_zeta_avg_p[0] - x_zeta_avg_p[0]*y_zeta_avg_p[2]) / J_z_p # Gradient of eta in z direction
-                zeta_z_avg_p[0] = (y_zeta_avg_p[0]*z_zeta_avg_p[1] - y_zeta_avg_p[1]*z_zeta_avg_p[0]) / J_z_p # Gradient of zeta in x direction
-                zeta_z_avg_p[1] = (x_zeta_avg_p[1]*z_zeta_avg_p[0] - x_zeta_avg_p[0]*z_zeta_avg_p[1]) / J_z_p # Gradient of zeta in y direction
-                zeta_z_avg_p[2] = (x_zeta_avg_p[0]*y_zeta_avg_p[1] - x_zeta_avg_p[1]*y_zeta_avg_p[0]) / J_z_p # Gradient of zeta in z direction
-
-                xi_z_avg_m[0]   = (y_zeta_avg_m[1]*z_zeta_avg_m[2] - y_zeta_avg_m[2]*z_zeta_avg_m[1]) / J_z_m # Gradient of xi in x direction
-                xi_z_avg_m[1]   = (x_zeta_avg_m[2]*z_zeta_avg_m[1] - x_zeta_avg_m[1]*z_zeta_avg_m[2]) / J_z_m # Gradient of xi in y direction
-                xi_z_avg_m[2]   = (x_zeta_avg_m[1]*y_zeta_avg_m[2] - x_zeta_avg_m[2]*y_zeta_avg_m[1]) / J_z_m # Gradient of xi in z direction
-                eta_z_avg_m[0]  = (y_zeta_avg_m[2]*z_zeta_avg_m[0] - y_zeta_avg_m[0]*z_zeta_avg_m[2]) / J_z_m # Gradient of eta in x direction
-                eta_z_avg_m[1]  = (x_zeta_avg_m[0]*z_zeta_avg_m[2] - x_zeta_avg_m[2]*z_zeta_avg_m[0]) / J_z_m # Gradient of eta in y direction
-                eta_z_avg_m[2]  = (x_zeta_avg_m[2]*y_zeta_avg_m[0] - x_zeta_avg_m[0]*y_zeta_avg_m[2]) / J_z_m # Gradient of eta in z direction
-                zeta_z_avg_m[0] = (y_zeta_avg_m[0]*z_zeta_avg_m[1] - y_zeta_avg_m[1]*z_zeta_avg_m[0]) / J_z_m # Gradient of zeta in x direction
-                zeta_z_avg_m[1] = (x_zeta_avg_m[1]*z_zeta_avg_m[0] - x_zeta_avg_m[0]*z_zeta_avg_m[1]) / J_z_m # Gradient of zeta in y direction
-                zeta_z_avg_m[2] = (x_zeta_avg_m[0]*y_zeta_avg_m[1] - x_zeta_avg_m[1]*y_zeta_avg_m[0]) / J_z_m # Gradient of zeta in z direction
-
-                J_zeta_p = xi_z_avg_p[0]*( eta_z_avg_p[1]*zeta_z_avg_p[2] - eta_z_avg_p[2]*zeta_z_avg_p[1] ) - xi_z_avg_p[1]*( eta_z_avg_p[0]*zeta_z_avg_p[2] - eta_z_avg_p[2]*zeta_z_avg_p[0] ) + xi_z_avg_p[2]*( eta_z_avg_p[0]*zeta_z_avg_p[1] - eta_z_avg_p[1]*zeta_z_avg_p[0] )
-                J_zeta_m = xi_z_avg_m[0]*( eta_z_avg_m[1]*zeta_z_avg_m[2] - eta_z_avg_m[2]*zeta_z_avg_m[1] ) - xi_z_avg_m[1]*( eta_z_avg_m[0]*zeta_z_avg_m[2] - eta_z_avg_m[2]*zeta_z_avg_m[0] ) + xi_z_avg_m[2]*( eta_z_avg_m[0]*zeta_z_avg_m[1] - eta_z_avg_m[1]*zeta_z_avg_m[0] )
-
-                d_u_x_p = 0.5 * xi_z_avg_p[0] * ((u[i+1][j][k+1] - u[i-1][j][k+1])/(grid[i+1][j][k+1][0] - grid[i-1][j][k+1][0]) + (u[i+1][j][k] - u[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * eta_z_avg_p[0] * ((u[i][j+1][k+1] - u[i][j-1][k+1])/(grid[i][j+1][k+1][1] - grid[i][j-1][k+1][1]) + (u[i][j+1][k] - u[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1])) + zeta_z_avg_p[0] * (u[i][j][k+1] - u[i][j][k])/(grid[i][j][k+1][2] - grid[i][j][k][2])
-                d_u_y_p = 0.5 * xi_z_avg_p[1] * ((u[i+1][j][k+1] - u[i-1][j][k+1])/(grid[i+1][j][k+1][0] - grid[i-1][j][k+1][0]) + (u[i+1][j][k] - u[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * eta_z_avg_p[1] * ((u[i][j+1][k+1] - u[i][j-1][k+1])/(grid[i][j+1][k+1][1] - grid[i][j-1][k+1][1]) + (u[i][j+1][k] - u[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1])) + zeta_z_avg_p[1] * (u[i][j][k+1] - u[i][j][k])/(grid[i][j][k+1][2] - grid[i][j][k][2])
-                d_u_z_p = 0.5 * xi_z_avg_p[2] * ((u[i+1][j][k+1] - u[i-1][j][k+1])/(grid[i+1][j][k+1][0] - grid[i-1][j][k+1][0]) + (u[i+1][j][k] - u[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * eta_z_avg_p[2] * ((u[i][j+1][k+1] - u[i][j-1][k+1])/(grid[i][j+1][k+1][1] - grid[i][j-1][k+1][1]) + (u[i][j+1][k] - u[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1])) + zeta_z_avg_p[2] * (u[i][j][k+1] - u[i][j][k])/(grid[i][j][k+1][2] - grid[i][j][k][2])
-                d_v_x_p = 0.5 * xi_z_avg_p[0] * ((v[i+1][j][k+1] - v[i-1][j][k+1])/(grid[i+1][j][k+1][0] - grid[i-1][j][k+1][0]) + (v[i+1][j][k] - v[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * eta_z_avg_p[0] * ((v[i][j+1][k+1] - v[i][j-1][k+1])/(grid[i][j+1][k+1][1] - grid[i][j-1][k+1][1]) + (v[i][j+1][k] - v[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1])) + zeta_z_avg_p[0] * (v[i][j][k+1] - v[i][j][k])/(grid[i][j][k+1][2] - grid[i][j][k][2])
-                d_v_y_p = 0.5 * xi_z_avg_p[1] * ((v[i+1][j][k+1] - v[i-1][j][k+1])/(grid[i+1][j][k+1][0] - grid[i-1][j][k+1][0]) + (v[i+1][j][k] - v[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * eta_z_avg_p[1] * ((v[i][j+1][k+1] - v[i][j-1][k+1])/(grid[i][j+1][k+1][1] - grid[i][j-1][k+1][1]) + (v[i][j+1][k] - v[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1])) + zeta_z_avg_p[1] * (v[i][j][k+1] - v[i][j][k])/(grid[i][j][k+1][2] - grid[i][j][k][2])
-                d_v_z_p = 0.5 * xi_z_avg_p[2] * ((v[i+1][j][k+1] - v[i-1][j][k+1])/(grid[i+1][j][k+1][0] - grid[i-1][j][k+1][0]) + (v[i+1][j][k] - v[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * eta_z_avg_p[2] * ((v[i][j+1][k+1] - v[i][j-1][k+1])/(grid[i][j+1][k+1][1] - grid[i][j-1][k+1][1]) + (v[i][j+1][k] - v[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1])) + zeta_z_avg_p[2] * (v[i][j][k+1] - v[i][j][k])/(grid[i][j][k+1][2] - grid[i][j][k][2])
-                d_w_x_p = 0.5 * xi_z_avg_p[0] * ((w[i+1][j][k+1] - w[i-1][j][k+1])/(grid[i+1][j][k+1][0] - grid[i-1][j][k+1][0]) + (w[i+1][j][k] - w[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * eta_z_avg_p[0] * ((w[i][j+1][k+1] - w[i][j-1][k+1])/(grid[i][j+1][k+1][1] - grid[i][j-1][k+1][1]) + (w[i][j+1][k] - w[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1])) + zeta_z_avg_p[0] * (w[i][j][k+1] - w[i][j][k])/(grid[i][j][k+1][2] - grid[i][j][k][2])
-                d_w_y_p = 0.5 * xi_z_avg_p[1] * ((w[i+1][j][k+1] - w[i-1][j][k+1])/(grid[i+1][j][k+1][0] - grid[i-1][j][k+1][0]) + (w[i+1][j][k] - w[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * eta_z_avg_p[1] * ((w[i][j+1][k+1] - w[i][j-1][k+1])/(grid[i][j+1][k+1][1] - grid[i][j-1][k+1][1]) + (w[i][j+1][k] - w[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1])) + zeta_z_avg_p[1] * (w[i][j][k+1] - w[i][j][k])/(grid[i][j][k+1][2] - grid[i][j][k][2])
-                d_w_z_p = 0.5 * xi_z_avg_p[2] * ((w[i+1][j][k+1] - w[i-1][j][k+1])/(grid[i+1][j][k+1][0] - grid[i-1][j][k+1][0]) + (w[i+1][j][k] - w[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * eta_z_avg_p[2] * ((w[i][j+1][k+1] - w[i][j-1][k+1])/(grid[i][j+1][k+1][1] - grid[i][j-1][k+1][1]) + (w[i][j+1][k] - w[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1])) + zeta_z_avg_p[2] * (w[i][j][k+1] - w[i][j][k])/(grid[i][j][k+1][2] - grid[i][j][k][2])
-                d_T_x_p = 0.5 * xi_z_avg_p[0] * ((T[i+1][j][k+1] - T[i-1][j][k+1])/(grid[i+1][j][k+1][0] - grid[i-1][j][k+1][0]) + (T[i+1][j][k] - T[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * eta_z_avg_p[0] * ((T[i][j+1][k+1] - T[i][j-1][k+1])/(grid[i][j+1][k+1][1] - grid[i][j-1][k+1][1]) + (T[i][j+1][k] - T[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1])) + zeta_z_avg_p[0] * (T[i][j][k+1] - T[i][j][k])/(grid[i][j][k+1][2] - grid[i][j][k][2])
-                d_T_y_p = 0.5 * xi_z_avg_p[1] * ((T[i+1][j][k+1] - T[i-1][j][k+1])/(grid[i+1][j][k+1][0] - grid[i-1][j][k+1][0]) + (T[i+1][j][k] - T[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * eta_z_avg_p[1] * ((T[i][j+1][k+1] - T[i][j-1][k+1])/(grid[i][j+1][k+1][1] - grid[i][j-1][k+1][1]) + (T[i][j+1][k] - T[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1])) + zeta_z_avg_p[1] * (T[i][j][k+1] - T[i][j][k])/(grid[i][j][k+1][2] - grid[i][j][k][2])
-                d_T_z_p = 0.5 * xi_z_avg_p[2] * ((T[i+1][j][k+1] - T[i-1][j][k+1])/(grid[i+1][j][k+1][0] - grid[i-1][j][k+1][0]) + (T[i+1][j][k] - T[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * eta_z_avg_p[2] * ((T[i][j+1][k+1] - T[i][j-1][k+1])/(grid[i][j+1][k+1][1] - grid[i][j-1][k+1][1]) + (T[i][j+1][k] - T[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1])) + zeta_z_avg_p[2] * (T[i][j][k+1] - T[i][j][k])/(grid[i][j][k+1][2] - grid[i][j][k][2])
-
-                d_u_x_m = 0.5 * xi_z_avg_m[0] * ((u[i+1][j][k] - u[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (u[i+1][j][k-1] - u[i-1][j][k-1])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * eta_z_avg_p[0] * ((u[i][j+1][k] - u[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (u[i][j+1][k-1] - u[i][j-1][k-1])/(grid[i][j+1][k-1][1] - grid[i][j-1][k-1][1])) + zeta_z_avg_p[0] * (u[i][j][k] - u[i][j][k-1])/(grid[i][j][k][2] - grid[i][j][k-1][2])
-                d_u_y_m = 0.5 * xi_z_avg_m[1] * ((u[i+1][j][k] - u[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (u[i+1][j][k-1] - u[i-1][j][k-1])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * eta_z_avg_p[1] * ((u[i][j+1][k] - u[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (u[i][j+1][k-1] - u[i][j-1][k-1])/(grid[i][j+1][k-1][1] - grid[i][j-1][k-1][1])) + zeta_z_avg_p[1] * (u[i][j][k] - u[i][j][k-1])/(grid[i][j][k][2] - grid[i][j][k-1][2])
-                d_u_z_m = 0.5 * xi_z_avg_m[2] * ((u[i+1][j][k] - u[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (u[i+1][j][k-1] - u[i-1][j][k-1])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * eta_z_avg_p[2] * ((u[i][j+1][k] - u[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (u[i][j+1][k-1] - u[i][j-1][k-1])/(grid[i][j+1][k-1][1] - grid[i][j-1][k-1][1])) + zeta_z_avg_p[2] * (u[i][j][k] - u[i][j][k-1])/(grid[i][j][k][2] - grid[i][j][k-1][2])
-                d_v_x_m = 0.5 * xi_z_avg_m[0] * ((v[i+1][j][k] - v[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (v[i+1][j][k-1] - v[i-1][j][k-1])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * eta_z_avg_p[0] * ((v[i][j+1][k] - v[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (v[i][j+1][k-1] - v[i][j-1][k-1])/(grid[i][j+1][k-1][1] - grid[i][j-1][k-1][1])) + zeta_z_avg_p[0] * (v[i][j][k] - v[i][j][k-1])/(grid[i][j][k][2] - grid[i][j][k-1][2])
-                d_v_y_m = 0.5 * xi_z_avg_m[1] * ((v[i+1][j][k] - v[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (v[i+1][j][k-1] - v[i-1][j][k-1])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * eta_z_avg_p[1] * ((v[i][j+1][k] - v[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (v[i][j+1][k-1] - v[i][j-1][k-1])/(grid[i][j+1][k-1][1] - grid[i][j-1][k-1][1])) + zeta_z_avg_p[1] * (v[i][j][k] - v[i][j][k-1])/(grid[i][j][k][2] - grid[i][j][k-1][2])
-                d_v_z_m = 0.5 * xi_z_avg_m[2] * ((v[i+1][j][k] - v[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (v[i+1][j][k-1] - v[i-1][j][k-1])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * eta_z_avg_p[2] * ((v[i][j+1][k] - v[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (v[i][j+1][k-1] - v[i][j-1][k-1])/(grid[i][j+1][k-1][1] - grid[i][j-1][k-1][1])) + zeta_z_avg_p[2] * (v[i][j][k] - v[i][j][k-1])/(grid[i][j][k][2] - grid[i][j][k-1][2])
-                d_w_x_m = 0.5 * xi_z_avg_m[0] * ((w[i+1][j][k] - w[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (w[i+1][j][k-1] - w[i-1][j][k-1])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * eta_z_avg_p[0] * ((w[i][j+1][k] - w[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (w[i][j+1][k-1] - w[i][j-1][k-1])/(grid[i][j+1][k-1][1] - grid[i][j-1][k-1][1])) + zeta_z_avg_p[0] * (w[i][j][k] - w[i][j][k-1])/(grid[i][j][k][2] - grid[i][j][k-1][2])
-                d_w_y_m = 0.5 * xi_z_avg_m[1] * ((w[i+1][j][k] - w[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (w[i+1][j][k-1] - w[i-1][j][k-1])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * eta_z_avg_p[1] * ((w[i][j+1][k] - w[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (w[i][j+1][k-1] - w[i][j-1][k-1])/(grid[i][j+1][k-1][1] - grid[i][j-1][k-1][1])) + zeta_z_avg_p[1] * (w[i][j][k] - w[i][j][k-1])/(grid[i][j][k][2] - grid[i][j][k-1][2])
-                d_w_z_m = 0.5 * xi_z_avg_m[2] * ((w[i+1][j][k] - w[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (w[i+1][j][k-1] - w[i-1][j][k-1])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * eta_z_avg_p[2] * ((w[i][j+1][k] - w[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (w[i][j+1][k-1] - w[i][j-1][k-1])/(grid[i][j+1][k-1][1] - grid[i][j-1][k-1][1])) + zeta_z_avg_p[2] * (w[i][j][k] - w[i][j][k-1])/(grid[i][j][k][2] - grid[i][j][k-1][2])
-                d_T_x_m = 0.5 * xi_z_avg_m[0] * ((T[i+1][j][k] - T[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (T[i+1][j][k-1] - T[i-1][j][k-1])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * eta_z_avg_p[0] * ((T[i][j+1][k] - T[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (T[i][j+1][k-1] - T[i][j-1][k-1])/(grid[i][j+1][k-1][1] - grid[i][j-1][k-1][1])) + zeta_z_avg_p[0] * (T[i][j][k] - T[i][j][k-1])/(grid[i][j][k][2] - grid[i][j][k-1][2])
-                d_T_y_m = 0.5 * xi_z_avg_m[1] * ((T[i+1][j][k] - T[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (T[i+1][j][k-1] - T[i-1][j][k-1])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * eta_z_avg_p[1] * ((T[i][j+1][k] - T[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (T[i][j+1][k-1] - T[i][j-1][k-1])/(grid[i][j+1][k-1][1] - grid[i][j-1][k-1][1])) + zeta_z_avg_p[1] * (T[i][j][k] - T[i][j][k-1])/(grid[i][j][k][2] - grid[i][j][k-1][2])
-                d_T_z_m = 0.5 * xi_z_avg_m[2] * ((T[i+1][j][k] - T[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (T[i+1][j][k-1] - T[i-1][j][k-1])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * eta_z_avg_p[2] * ((T[i][j+1][k] - T[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (T[i][j+1][k-1] - T[i][j-1][k-1])/(grid[i][j+1][k-1][1] - grid[i][j-1][k-1][1])) + zeta_z_avg_p[2] * (T[i][j][k] - T[i][j][k-1])/(grid[i][j][k][2] - grid[i][j][k-1][2])
+                d_u_x_m = 0.5 * facemetrics[i][j][k][5][0][0] * ((u[i+1][j][k] - u[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (u[i+1][j][k-1] - u[i-1][j][k-1])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * facemetrics[i][j][k][5][1][0] * ((u[i][j+1][k] - u[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (u[i][j+1][k-1] - u[i][j-1][k-1])/(grid[i][j+1][k-1][1] - grid[i][j-1][k-1][1])) + facemetrics[i][j][k][5][2][0] * (u[i][j][k] - u[i][j][k-1])/(grid[i][j][k][2] - grid[i][j][k-1][2])
+                d_u_y_m = 0.5 * facemetrics[i][j][k][5][0][1] * ((u[i+1][j][k] - u[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (u[i+1][j][k-1] - u[i-1][j][k-1])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * facemetrics[i][j][k][5][1][1] * ((u[i][j+1][k] - u[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (u[i][j+1][k-1] - u[i][j-1][k-1])/(grid[i][j+1][k-1][1] - grid[i][j-1][k-1][1])) + facemetrics[i][j][k][5][2][1] * (u[i][j][k] - u[i][j][k-1])/(grid[i][j][k][2] - grid[i][j][k-1][2])
+                d_u_z_m = 0.5 * facemetrics[i][j][k][5][0][2] * ((u[i+1][j][k] - u[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (u[i+1][j][k-1] - u[i-1][j][k-1])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * facemetrics[i][j][k][5][1][2] * ((u[i][j+1][k] - u[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (u[i][j+1][k-1] - u[i][j-1][k-1])/(grid[i][j+1][k-1][1] - grid[i][j-1][k-1][1])) + facemetrics[i][j][k][5][2][2] * (u[i][j][k] - u[i][j][k-1])/(grid[i][j][k][2] - grid[i][j][k-1][2])
+                d_v_x_m = 0.5 * facemetrics[i][j][k][5][0][0] * ((v[i+1][j][k] - v[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (v[i+1][j][k-1] - v[i-1][j][k-1])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * facemetrics[i][j][k][5][1][0] * ((v[i][j+1][k] - v[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (v[i][j+1][k-1] - v[i][j-1][k-1])/(grid[i][j+1][k-1][1] - grid[i][j-1][k-1][1])) + facemetrics[i][j][k][5][2][0] * (v[i][j][k] - v[i][j][k-1])/(grid[i][j][k][2] - grid[i][j][k-1][2])
+                d_v_y_m = 0.5 * facemetrics[i][j][k][5][0][1] * ((v[i+1][j][k] - v[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (v[i+1][j][k-1] - v[i-1][j][k-1])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * facemetrics[i][j][k][5][1][1] * ((v[i][j+1][k] - v[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (v[i][j+1][k-1] - v[i][j-1][k-1])/(grid[i][j+1][k-1][1] - grid[i][j-1][k-1][1])) + facemetrics[i][j][k][5][2][1] * (v[i][j][k] - v[i][j][k-1])/(grid[i][j][k][2] - grid[i][j][k-1][2])
+                d_v_z_m = 0.5 * facemetrics[i][j][k][5][0][2] * ((v[i+1][j][k] - v[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (v[i+1][j][k-1] - v[i-1][j][k-1])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * facemetrics[i][j][k][5][1][2] * ((v[i][j+1][k] - v[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (v[i][j+1][k-1] - v[i][j-1][k-1])/(grid[i][j+1][k-1][1] - grid[i][j-1][k-1][1])) + facemetrics[i][j][k][5][2][2] * (v[i][j][k] - v[i][j][k-1])/(grid[i][j][k][2] - grid[i][j][k-1][2])
+                d_w_x_m = 0.5 * facemetrics[i][j][k][5][0][0] * ((w[i+1][j][k] - w[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (w[i+1][j][k-1] - w[i-1][j][k-1])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * facemetrics[i][j][k][5][1][0] * ((w[i][j+1][k] - w[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (w[i][j+1][k-1] - w[i][j-1][k-1])/(grid[i][j+1][k-1][1] - grid[i][j-1][k-1][1])) + facemetrics[i][j][k][5][2][0] * (w[i][j][k] - w[i][j][k-1])/(grid[i][j][k][2] - grid[i][j][k-1][2])
+                d_w_y_m = 0.5 * facemetrics[i][j][k][5][0][1] * ((w[i+1][j][k] - w[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (w[i+1][j][k-1] - w[i-1][j][k-1])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * facemetrics[i][j][k][5][1][1] * ((w[i][j+1][k] - w[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (w[i][j+1][k-1] - w[i][j-1][k-1])/(grid[i][j+1][k-1][1] - grid[i][j-1][k-1][1])) + facemetrics[i][j][k][5][2][1] * (w[i][j][k] - w[i][j][k-1])/(grid[i][j][k][2] - grid[i][j][k-1][2])
+                d_w_z_m = 0.5 * facemetrics[i][j][k][5][0][2] * ((w[i+1][j][k] - w[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (w[i+1][j][k-1] - w[i-1][j][k-1])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * facemetrics[i][j][k][5][1][2] * ((w[i][j+1][k] - w[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (w[i][j+1][k-1] - w[i][j-1][k-1])/(grid[i][j+1][k-1][1] - grid[i][j-1][k-1][1])) + facemetrics[i][j][k][5][2][2] * (w[i][j][k] - w[i][j][k-1])/(grid[i][j][k][2] - grid[i][j][k-1][2])
+                d_T_x_m = 0.5 * facemetrics[i][j][k][5][0][0] * ((T[i+1][j][k] - T[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (T[i+1][j][k-1] - T[i-1][j][k-1])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * facemetrics[i][j][k][5][1][0] * ((T[i][j+1][k] - T[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (T[i][j+1][k-1] - T[i][j-1][k-1])/(grid[i][j+1][k-1][1] - grid[i][j-1][k-1][1])) + facemetrics[i][j][k][5][2][0] * (T[i][j][k] - T[i][j][k-1])/(grid[i][j][k][2] - grid[i][j][k-1][2])
+                d_T_y_m = 0.5 * facemetrics[i][j][k][5][0][1] * ((T[i+1][j][k] - T[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (T[i+1][j][k-1] - T[i-1][j][k-1])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * facemetrics[i][j][k][5][1][1] * ((T[i][j+1][k] - T[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (T[i][j+1][k-1] - T[i][j-1][k-1])/(grid[i][j+1][k-1][1] - grid[i][j-1][k-1][1])) + facemetrics[i][j][k][5][2][1] * (T[i][j][k] - T[i][j][k-1])/(grid[i][j][k][2] - grid[i][j][k-1][2])
+                d_T_z_m = 0.5 * facemetrics[i][j][k][5][0][2] * ((T[i+1][j][k] - T[i-1][j][k])/(grid[i+1][j][k][0] - grid[i-1][j][k][0]) + (T[i+1][j][k-1] - T[i-1][j][k-1])/(grid[i+1][j][k][0] - grid[i-1][j][k][0])) + 0.5 * facemetrics[i][j][k][5][1][2] * ((T[i][j+1][k] - T[i][j-1][k])/(grid[i][j+1][k][1] - grid[i][j-1][k][1]) + (T[i][j+1][k-1] - T[i][j-1][k-1])/(grid[i][j+1][k-1][1] - grid[i][j-1][k-1][1])) + facemetrics[i][j][k][5][2][2] * (T[i][j][k] - T[i][j][k-1])/(grid[i][j][k][2] - grid[i][j][k-1][2])
 
                 mu_avg_p      = 0.5 * (mu[i][j][k+1] + mu[i][j][k])
                 mu_avg_m      = 0.5 * (mu[i][j][k] + mu[i][j][k-1])
@@ -2311,30 +2251,13 @@ def viscous_fluxes( rhou_vis, rhov_vis, rhow_vis, rhoE_vis, work_vis_rhoe, u, v,
                 rhoE_z_p = u_avg_p * tau_zx_p + v_avg_p * tau_zy_p + w_avg_p * tau_zz_p - q_z_p
                 rhoE_z_m = u_avg_m * tau_zx_m + v_avg_m * tau_zy_m + w_avg_m * tau_zz_m - q_z_m
 
-                # print(tau_zx_p, tau_zy_p, tau_zz_p)
-                # print('------------------------------')
-
                 # Conservative flux terms
-                # xi_J_avg_p   = 0.5 * (xi[i+1][j][k]/det_Jacobian[i+1][j][k] + xi[i][j][k]/det_Jacobian[i][j][k])
-                # xi_J_avg_m   = 0.5 * (xi[i][j][k]/det_Jacobian[i][j][k] + xi[i-1][j][k]/det_Jacobian[i-1][j][k])
-                # eta_J_avg_p  = 0.5 * (eta[i][j+1][k]/det_Jacobian[i][j+1][k] + eta[i][j][k]/det_Jacobian[i][j][k])
-                # eta_J_avg_m  = 0.5 * (eta[i][j][k]/det_Jacobian[i][j][k] + eta[i][j-1][k]/det_Jacobian[i][j-1][k])
-                # zeta_J_avg_p = 0.5 * (zeta[i][j][k+1]/det_Jacobian[i][j][k+1] + zeta[i][j][k]/det_Jacobian[i][j][k])
-                # zeta_J_avg_m = 0.5 * (zeta[i][j][k]/det_Jacobian[i][j][k] + zeta[i][j][k-1]/det_Jacobian[i][j][k-1])
-
-                xi_J_avg_p   = xi_x_avg_p / J_xi_p
-                xi_J_avg_m   = xi_x_avg_m / J_xi_m
-                eta_J_avg_p  = eta_y_avg_p / J_eta_p
-                eta_J_avg_m  = eta_y_avg_m / J_eta_m
-                zeta_J_avg_p = zeta_z_avg_p / J_zeta_p
-                zeta_J_avg_m = zeta_z_avg_m / J_zeta_m
-
-                # xi_p = 0.5 * (grid[i][j][k][0] + grid[i+1][j][k][0])
-                # xi_m = 0.5 * (grid[i][j][k][0] + grid[i-1][j][k][0])
-                # eta_p = 0.5 * (grid[i][j][k][1] + grid[i][j+1][k][1])
-                # eta_m = 0.5 * (grid[i][j][k][1] + grid[i][j-1][k][1])
-                # zeta_p = 0.5 * (grid[i][j][k][2] + grid[i][j][k+1][2])
-                # zeta_m = 0.5 * (grid[i][j][k][2] + grid[i][j][k-1][2])
+                xi_J_avg_p   = facemetrics[i][j][k][0][0] / face_J[i][j][k][0]
+                xi_J_avg_m   = facemetrics[i][j][k][1][0] / face_J[i][j][k][1]
+                eta_J_avg_p  = facemetrics[i][j][k][2][1] / face_J[i][j][k][2]
+                eta_J_avg_m  = facemetrics[i][j][k][3][1] / face_J[i][j][k][3]
+                zeta_J_avg_p = facemetrics[i][j][k][4][2] / face_J[i][j][k][4]
+                zeta_J_avg_m = facemetrics[i][j][k][5][2] / face_J[i][j][k][5]
 
                 # x direction
                 rhou_F_p = xi_J_avg_p[0] * tau_xx_p + xi_J_avg_p[1] * tau_yx_p + xi_J_avg_p[2] * tau_zx_p
@@ -2398,119 +2321,12 @@ def viscous_fluxes( rhou_vis, rhov_vis, rhow_vis, rhoE_vis, work_vis_rhoe, u, v,
 
                 work_vis_rhoe[i][j][k] = 1.0 # ( -1.0 )*div_q + div_uvw_tau_rhoe
 
-        # print (rhou_vis[i][-2][k], rhov_vis[i][-2][k], rhow_vis[i][-2][k], rhoE_vis[i][-2][k])
-    
-        # print(i,j,k,(xi_J_avg_p[0] - xi_J_avg_m[0])/(xi_p - xi_m) + (eta_J_avg_p[0] - eta_J_avg_m[0])/(eta_p - eta_m) + (zeta_J_avg_p[0] - zeta_J_avg_m[0])/(zeta_p - zeta_m))
-        # print(i,j,k,(xi_J_avg_p[1] - xi_J_avg_m[1])/(xi_p - xi_m) + (eta_J_avg_p[1] - eta_J_avg_m[1])/(eta_p - eta_m) + (zeta_J_avg_p[1] - zeta_J_avg_m[1])/(zeta_p - zeta_m))
-        # print(i,j,k,(xi_J_avg_p[2] - xi_J_avg_m[2])/(xi_p - xi_m) + (eta_J_avg_p[2] - eta_J_avg_m[2])/(eta_p - eta_m) + (zeta_J_avg_p[2] - zeta_J_avg_m[2])/(zeta_p - zeta_m))
-
-
     #print( rhou_vis )
     #print( rhov_vis )
     #print( rhow_vis )
     #print( rhoE_vis )
     #print( work_vis_rhoe )
-
-# def viscous_fluxes( rhou_vis, rhov_vis, rhow_vis, rhoE_vis, work_vis_rhoe, u, v, w, T, mu, kappa, grid ):
-    
-#     # Second-order central finite differences for derivatives:
-#     # P. Moin.
-#     # Fundamentals of engineering numerical analysis.
-#     # Cambridge University Press, 2010.
-    
-#     # Internal points
-#     for i in range( 1, num_grid_x + 1 ):    
-#         for j in range( 1, num_grid_y + 1 ):    
-#             for k in range( 1, num_grid_z + 1 ):
-#                 ## Geometric stuff
-#                 delta_x = 0.5*( grid[i+1][j][k][0] - grid[i-1][j][k][0] ) 
-#                 delta_y = 0.5*( grid[i][j+1][k][1] - grid[i][j-1][k][1] ) 
-#                 delta_z = 0.5*( grid[i][j][k+1][2] - grid[i][j][k-1][2] )
-#                 ## Velocity derivatives
-#                 d_u_x = ( u[i+1][j][k] - u[i-1][j][k] )/( 2.0*delta_x )
-#                 d_u_y = ( u[i][j+1][k] - u[i][j-1][k] )/( 2.0*delta_y )
-#                 d_u_z = ( u[i][j][k+1] - u[i][j][k-1] )/( 2.0*delta_z )
-#                 d_v_x = ( v[i+1][j][k] - v[i-1][j][k] )/( 2.0*delta_x )
-#                 d_v_y = ( v[i][j+1][k] - v[i][j-1][k] )/( 2.0*delta_y )
-#                 d_v_z = ( v[i][j][k+1] - v[i][j][k-1] )/( 2.0*delta_z )
-#                 d_w_x = ( w[i+1][j][k] - w[i-1][j][k] )/( 2.0*delta_x )
-#                 d_w_y = ( w[i][j+1][k] - w[i][j-1][k] )/( 2.0*delta_y )
-#                 d_w_z = ( w[i][j][k+1] - w[i][j][k-1] )/( 2.0*delta_z )
-#                 ## Temperature derivatives
-#                 d_T_x = ( T[i+1][j][k] - T[i-1][j][k] )/( 2.0*delta_x )
-#                 d_T_y = ( T[i][j+1][k] - T[i][j-1][k] )/( 2.0*delta_y )
-#                 d_T_z = ( T[i][j][k+1] - T[i][j][k-1] )/( 2.0*delta_z )
-#                 ## Transport coefficients derivatives
-#                 d_mu_x    = ( mu[i+1][j][k] - mu[i-1][j][k] )/( 2.0*delta_x )
-#                 d_mu_y    = ( mu[i][j+1][k] - mu[i][j-1][k] )/( 2.0*delta_y )
-#                 d_mu_z    = ( mu[i][j][k+1] - mu[i][j][k-1] )/( 2.0*delta_z )
-#                 d_kappa_x = ( kappa[i+1][j][k] - kappa[i-1][j][k] )/( 2.0*delta_x )
-#                 d_kappa_y = ( kappa[i][j+1][k] - kappa[i][j-1][k] )/( 2.0*delta_y )
-#                 d_kappa_z = ( kappa[i][j][k+1] - kappa[i][j][k-1] )/( 2.0*delta_z )
-#                 ## Divergence of velocity
-#                 div_uvw = d_u_x + d_v_y + d_w_z
-#                 ## Viscous stresses ( symmetric tensor )
-#                 tau_xx = 2.0*mu[i][j][k]*( d_u_x - ( div_uvw/3.0 ) )
-#                 tau_xy = mu[i][j][k]*( d_u_y + d_v_x )
-#                 tau_xz = mu[i][j][k]*( d_u_z + d_w_x )
-#                 tau_yy = 2.0*mu[i][j][k]*( d_v_y - ( div_uvw/3.0 ) )
-#                 tau_yz = mu[i][j][k]*( d_v_z + d_w_y )
-#                 tau_zz = 2.0*mu[i][j][k]*( d_w_z - ( div_uvw/3.0 ) )
-#                 ## Divergence of viscous stresses
-#                 div_tau_x = mu[i][j][k]*( ( 1.00/delta_x )*( ( u[i+1][j][k] - u[i][j][k] )/( grid[i+1][j][k][0] - grid[i][j][k][0] )
-#                                                            - ( u[i][j][k] - u[i-1][j][k] )/( grid[i][j][k][0] - grid[i-1][j][k][0] ) )
-#                                         + ( 1.00/delta_y )*( ( u[i][j+1][k] - u[i][j][k] )/( grid[i][j+1][k][1] - grid[i][j][k][1] )
-#                                                            - ( u[i][j][k] - u[i][j-1][k] )/( grid[i][j][k][1] - grid[i][j-1][k][1] ) )
-#                                         + ( 1.00/delta_z )*( ( u[i][j][k+1] - u[i][j][k] )/( grid[i][j][k+1][2] - grid[i][j][k][2] )
-#                                                            - ( u[i][j][k] - u[i][j][k-1] )/( grid[i][j][k][2] - grid[i][j][k-1][2] ) ) )                                                                                                                                    + ( 1.0/3.0 )*mu[i][j][k]*( ( 1.00/delta_x )*( ( u[i+1][j][k] - u[i][j][k] )/( grid[i+1][j][k][0] - grid[i][j][k][0] )
-#                                                            - ( u[i][j][k] - u[i-1][j][k] )/( grid[i][j][k][0] - grid[i-1][j][k][0] ) )
-#                                         + ( 0.25/delta_x )*( ( v[i+1][j+1][k] - v[i+1][j-1][k] )/delta_y
-#                                                            - ( v[i-1][j+1][k] - v[i-1][j-1][k] )/delta_y )
-#                                         + ( 0.25/delta_x )*( ( w[i+1][j][k+1] - w[i+1][j][k-1] )/delta_z
-#                                                            - ( w[i-1][j][k+1] - w[i-1][j][k-1] )/delta_z ) )                                                                                                                                                                + ( d_mu_x*tau_xx + d_mu_y*tau_xy + d_mu_z*tau_xz )/( mu[i][j][k] + epsilon )
-#                 div_tau_y = mu[i][j][k]*( ( 1.00/delta_x )*( ( v[i+1][j][k] - v[i][j][k] )/( grid[i+1][j][k][0] - grid[i][j][k][0] )
-#                                                            - ( v[i][j][k] - v[i-1][j][k] )/( grid[i][j][k][0] - grid[i-1][j][k][0] ) )
-#                                         + ( 1.00/delta_y )*( ( v[i][j+1][k] - v[i][j][k] )/( grid[i][j+1][k][1] - grid[i][j][k][1] )
-#                                                            - ( v[i][j][k] - v[i][j-1][k] )/( grid[i][j][k][1] - grid[i][j-1][k][1] ) )
-#                                         + ( 1.00/delta_z )*( ( v[i][j][k+1] - v[i][j][k] )/( grid[i][j][k+1][2] - grid[i][j][k][2] )
-#                                                            - ( v[i][j][k] - v[i][j][k-1] )/( grid[i][j][k][2] - grid[i][j][k-1][2] ) ) )                                                                                                                                    + ( 1.0/3.0 )*mu[i][j][k]*( ( 0.25/delta_y )*( ( u[i+1][j+1][k] - u[i-1][j+1][k] )/delta_x
-#                                                            - ( u[i+1][j-1][k] - u[i-1][j-1][k] )/delta_x )
-#                                         + ( 1.00/delta_y )*( ( v[i][j+1][k] - v[i][j][k] )/( grid[i][j+1][k][1] - grid[i][j][k][1] )
-#                                                            - ( v[i][j][k] - v[i][j-1][k] )/( grid[i][j][k][1] - grid[i][j-1][k][1] ) )
-#                                         + ( 0.25/delta_y )*( ( w[i][j+1][k+1] - w[i][j+1][k-1] )/delta_z
-#                                                            - ( w[i][j-1][k+1] - w[i][j-1][k-1] )/delta_z ) )                                                                                                                                                                + ( d_mu_x*tau_xy + d_mu_y*tau_yy + d_mu_z*tau_yz )/( mu[i][j][k] + epsilon )
-#                 div_tau_z = mu[i][j][k]*( ( 1.00/delta_x )*( ( w[i+1][j][k] - w[i][j][k] )/( grid[i+1][j][k][0] - grid[i][j][k][0] )
-#                                                            - ( w[i][j][k] - w[i-1][j][k] )/( grid[i][j][k][0] - grid[i-1][j][k][0] ) )
-#                                         + ( 1.00/delta_y )*( ( w[i][j+1][k] - w[i][j][k] )/( grid[i][j+1][k][1] - grid[i][j][k][1] )
-#                                                            - ( w[i][j][k] - w[i][j-1][k] )/( grid[i][j][k][1] - grid[i][j-1][k][1] ) )
-#                                         + ( 1.00/delta_z )*( ( w[i][j][k+1] - w[i][j][k] )/( grid[i][j][k+1][2] - grid[i][j][k][2] )
-#                                                            - ( w[i][j][k] - w[i][j][k-1] )/( grid[i][j][k][2] - grid[i][j][k-1][2] ) ) )                                                                                                                                    + ( 1.0/3.0 )*mu[i][j][k]*( ( 0.25/delta_z )*( ( u[i+1][j][k+1] - u[i-1][j][k+1] )/delta_x
-#                                                            - ( u[i+1][j][k-1] - u[i-1][j][k-1] )/delta_x )
-#                                         + ( 0.25/delta_z )*( ( v[i][j+1][k+1] - v[i][j-1][k+1] )/delta_y
-#                                                            - ( v[i][j+1][k-1] - v[i][j-1][k-1] )/delta_y )
-#                                         + ( 1.00/delta_z )*( ( w[i][j][k+1] - w[i][j][k] )/( grid[i][j][k+1][2] - grid[i][j][k][2] )
-#                                                            - ( w[i][j][k] - w[i][j][k-1] )/( grid[i][j][k][2] - grid[i][j][k-1][2] ) ) )                                                                                                                                    + ( d_mu_x*tau_xz + d_mu_y*tau_yz + d_mu_z*tau_zz )/( mu[i][j][k] + epsilon )
-#                 ## Fourier term
-#                 div_q = ( -1.0 )*kappa[i][j][k]*( ( 1.0/delta_x )*( ( T[i+1][j][k] - T[i][j][k] )/( grid[i+1][j][k][0] - grid[i][j][k][0] )
-#                                                                   - ( T[i][j][k] - T[i-1][j][k] )/( grid[i][j][k][0] - grid[i-1][j][k][0] ) )
-#                                                 + ( 1.0/delta_y )*( ( T[i][j+1][k] - T[i][j][k] )/( grid[i][j+1][k][1] - grid[i][j][k][1] )
-#                                                                   - ( T[i][j][k] - T[i][j-1][k] )/( grid[i][j][k][1] - grid[i][j-1][k][1] ) )
-#                                                 + ( 1.0/delta_z )*( ( T[i][j][k+1] - T[i][j][k] )/( grid[i][j][k+1][2] - grid[i][j][k][2] )
-#                                                                   - ( T[i][j][k] - T[i][j][k-1] )/( grid[i][j][k][2] - grid[i][j][k-1][2] ) ) )                                                                                                                                     - d_kappa_x*d_T_x - d_kappa_y*d_T_y - d_kappa_z*d_T_z
-#                 ## Work of viscous stresses for internal energy
-#                 div_uvw_tau_rhoe = tau_xx*d_u_x + tau_xy*d_u_y + tau_xz*d_u_z + tau_xy*d_v_x + tau_yy*d_v_y + tau_yz*d_v_z + tau_xz*d_w_x + tau_yz*d_w_y + tau_zz*d_w_z
-#                 ## Work of viscous stresses for kinetic energy
-#                 div_uvw_tau_rhoke = u[i][j][k]*div_tau_x + v[i][j][k]*div_tau_y + w[i][j][k]*div_tau_z
-#                 ## Work of viscous stresses for total energy
-#                 div_uvw_tau_rhoE = div_uvw_tau_rhoe + div_uvw_tau_rhoke
-#                 ## Viscous fluxes
-#                 rhou_vis[i][j][k] = div_tau_x
-#                 rhov_vis[i][j][k] = div_tau_y
-#                 rhow_vis[i][j][k] = div_tau_z
-#                 rhoE_vis[i][j][k] = ( -1.0 )*div_q + div_uvw_tau_rhoE
-#                 work_vis_rhoe[i][j][k] = ( -1.0 )*div_q + div_uvw_tau_rhoe;
-
-#     print (u[i][j+1][k], u[i][j][k], u[i][j-1][k])
+                
 
 ### Sum inviscid & viscous fluxes and source terms
 #@njit

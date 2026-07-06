@@ -1,0 +1,32 @@
+it=     0 t=2.8260e-09 dt=2.83e-09  Ma_throat=0.200  Ma_exit=0.200  P_exit=149.999 bar  rho_th=84.23
+it= 10000 t=2.8189e-05 dt=2.83e-09  Ma_throat=0.303  Ma_exit=0.263  P_exit=128.845 bar  rho_th=82.52
+it= 20000 t=5.6799e-05 dt=2.89e-09  Ma_throat=0.321  Ma_exit=0.319  P_exit=107.999 bar  rho_th=73.51
+it= 30000 t=8.5719e-05 dt=2.89e-09  Ma_throat=0.392  Ma_exit=0.378  P_exit=90.581 bar  rho_th=72.20
+it= 40000 t=1.1464e-04 dt=2.90e-09  Ma_throat=0.483  Ma_exit=0.448  P_exit=76.858 bar  rho_th=70.48
+it= 50000 t=1.4378e-04 dt=2.93e-09  Ma_throat=0.588  Ma_exit=0.510  P_exit=64.340 bar  rho_th=65.07
+it= 60000 t=1.7330e-04 dt=2.97e-09  Ma_throat=0.717  Ma_exit=0.606  P_exit=56.255 bar  rho_th=59.49
+it= 70000 t=2.0308e-04 dt=2.98e-09  Ma_throat=0.812  Ma_exit=0.701  P_exit=48.851 bar  rho_th=56.26
+it= 80000 t=2.3290e-04 dt=2.98e-09  Ma_throat=0.840  Ma_exit=0.795  P_exit=42.173 bar  rho_th=55.77
+it= 90000 t=2.6269e-04 dt=2.98e-09  Ma_throat=0.843  Ma_exit=0.893  P_exit=36.721 bar  rho_th=55.80
+it=100000 t=2.9246e-04 dt=2.98e-09  Ma_throat=0.843  Ma_exit=0.987  P_exit=31.781 bar  rho_th=55.74
+it=110000 t=3.2224e-04 dt=2.98e-09  Ma_throat=0.843  Ma_exit=1.078  P_exit=27.283 bar  rho_th=55.72
+it=120000 t=3.5202e-04 dt=2.98e-09  Ma_throat=0.843  Ma_exit=1.175  P_exit=23.261 bar  rho_th=55.73
+it=130000 t=3.8180e-04 dt=2.98e-09  Ma_throat=0.843  Ma_exit=1.316  P_exit=19.340 bar  rho_th=55.74
+it=140000 t=4.1158e-04 dt=2.98e-09  Ma_throat=0.843  Ma_exit=1.956  P_exit=9.898 bar  rho_th=55.73
+it=150000 t=4.4136e-04 dt=2.98e-09  Ma_throat=0.843  Ma_exit=2.789  P_exit=4.505 bar  rho_th=55.73
+it=160000 t=4.7113e-04 dt=2.98e-09  Ma_throat=0.843  Ma_exit=2.795  P_exit=4.480 bar  rho_th=55.73
+it=170000 t=5.0091e-04 dt=2.98e-09  Ma_throat=0.843  Ma_exit=2.795  P_exit=4.480 bar  rho_th=55.73
+it=180000 t=5.3069e-04 dt=2.98e-09  Ma_throat=0.843  Ma_exit=2.795  P_exit=4.480 bar  rho_th=55.73
+it=190000 t=5.6047e-04 dt=2.98e-09  Ma_throat=0.843  Ma_exit=2.795  P_exit=4.480 bar  rho_th=55.73
+it=200000 t=5.9025e-04 dt=2.98e-09  Ma_throat=0.843  Ma_exit=2.795  P_exit=4.480 bar  rho_th=55.73
+it=210000 t=6.2003e-04 dt=2.98e-09  Ma_throat=0.843  Ma_exit=2.795  P_exit=4.480 bar  rho_th=55.73
+it=220000 t=6.4980e-04 dt=2.98e-09  Ma_throat=0.843  Ma_exit=2.795  P_exit=4.480 bar  rho_th=55.73
+it=230000 t=6.7958e-04 dt=2.98e-09  Ma_throat=0.843  Ma_exit=2.795  P_exit=4.480 bar  rho_th=55.73
+it=240000 t=7.0936e-04 dt=2.98e-09  Ma_throat=0.843  Ma_exit=2.795  P_exit=4.480 bar  rho_th=55.73
+it=250000 t=7.3914e-04 dt=2.98e-09  Ma_throat=0.843  Ma_exit=2.795  P_exit=4.480 bar  rho_th=55.73
+it=260000 t=7.6892e-04 dt=2.98e-09  Ma_throat=0.843  Ma_exit=2.795  P_exit=4.480 bar  rho_th=55.73
+it=270000 t=7.9870e-04 dt=2.98e-09  Ma_throat=0.843  Ma_exit=2.795  P_exit=4.480 bar  rho_th=55.73
+it=280000 t=8.2847e-04 dt=2.98e-09  Ma_throat=0.843  Ma_exit=2.795  P_exit=4.480 bar  rho_th=55.73
+it=290000 t=8.5825e-04 dt=2.98e-09  Ma_throat=0.843  Ma_exit=2.795  P_exit=4.480 bar  rho_th=55.73
+it=299999 t=8.8803e-04 dt=2.98e-09  Ma_throat=0.843  Ma_exit=2.795  P_exit=4.480 bar  rho_th=55.73
+wrote centerline.csv and field.csv

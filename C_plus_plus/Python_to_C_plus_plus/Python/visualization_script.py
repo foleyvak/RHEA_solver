@@ -18,7 +18,7 @@ import math
 ########## SET PARAMETERS ############
 
 ###################### DATA IMPORT SETTINGS ##########################
-output_iter     = 114000  # Select imported data iteration
+output_iter     = 1000  # Select imported data iteration
 
 name_file_out   = 'output_data_'  # Name of output data [-]
 filename = name_file_out + str(output_iter) + '.csv'
@@ -28,7 +28,7 @@ filename = name_file_out + str(output_iter) + '.csv'
 # Stretching factors: x = L*eta + A*( 0.5*L - L*eta )*( 1.0 - eta )*eta, with eta = ( l - 0.5 )/num_grid
 # A < 0: stretching at ends; A = 0: uniform; A > 0: stretching at center
 A_x = 0.0  # Stretching factor in x-direction
-A_y = 0.0  # Stretching factor in y-direction
+A_y = -1.0  # Stretching factor in y-direction
 A_z = 0.0  # Stretching factor in z-direction
 ######################################################################
 
@@ -117,13 +117,16 @@ def spatial_discretization():
                 # L_y[i] = L_y_0 + (L_y_f-L_y_0)/L_x*grid[i][j][k][0] # Example geometry -- a linearly expanding duct
                 
                 # # Hyperbolic tangent
-                # 1. Extract the current X coordinate for readability
-                x_coord = grid[i][j][k][0]
-                # # 2. Define a scaling/sharpness parameter (s)
-                # # s = 3.0 is a good default where the transition finishes right at the boundaries.
-                s = 3.5 
-                # # 3. The tanh geometry transformation
-                # L_y[i] = L_y_0 + (L_y_f - L_y_0) * 0.5 * (1.0 + np.tanh(s * (2.0 * x_coord / L_x - 1.0)))
+                # # 1. Extract the current X coordinate for readability
+                # x_coord = grid[i][j][k][0]
+                # # # 2. Define a scaling/sharpness parameter (s)
+                # # # s = 3.0 is a good default where the transition finishes right at the boundaries.
+                # s = 3.5 
+                # # # 3. The tanh geometry transformation
+                # if x_coord < 1.5*L:
+                #     L_y[i] = L_y_0
+                # else:
+                #     L_y[i] = L_y_0 + (L_y_f - L_y_0) * 0.5 * (1.0 + np.tanh(s * (2.0 * (x_coord - 1.5*L) / (L_x - 1.5*L) - 1.0)))
 
                 # Convergent-Divergent nozzle
                 # Clean variable for the current x-coordinate
@@ -422,7 +425,7 @@ domain_width = x_max - x_min
 
 # Queremos que la flecha más rápida mida el 4% (0.04) del ancho del dominio. 
 # Puedes ajustar este 0.04 (más grande = flechas más largas; más chico = flechas más cortas)
-desired_max_arrow_length = 0.01 * domain_width 
+desired_max_arrow_length = 0.05 * domain_width 
 
 # El scale correcto para 'scale_units=xy' es: velocidad_maxima / longitud_deseada
 dynamic_scale = max_vel / desired_max_arrow_length
